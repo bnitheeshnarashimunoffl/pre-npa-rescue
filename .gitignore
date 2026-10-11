@@ -1,0 +1,40 @@
+# --- data and model artifacts (never commit; see A5.6)
+data/raw/
+data/generated/
+packages/models/artifacts/
+
+# --- secrets
+.env
+.env.*
+!.env.example
+
+# --- python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# --- node / web
+node_modules/
+.next/
+out/
+.pnpm-store/
+apps/web/test-results/
+apps/web/playwright-report/
+
+# --- editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

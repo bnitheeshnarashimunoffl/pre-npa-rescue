@@ -1,0 +1,17 @@
+{
+  "docket_no": "CMP-20261011-0001",
+  "customer_id": "CUST-DEMO-PRIYA",
+  "category": "fees_and_charges",
+  "text": "I was charged a late fee even though I paid two days after the due date.",
+  "lang": "en",
+  "status": "acknowledged",
+  "escalation_level": 0,
+  "created_at": "2026-10-11T06:35:00Z",
+  "sla_due_at": "2026-11-10T06:35:00Z",
+  "grievance_officer": {
+    "name": "Anjali Rao (fictional)",
+    "email": "grievance.officer@demo-bank.example",
+    "phone": "+91-44-0000-0000",
+    "address": "Grievance Redressal Cell, Demo Bank Ltd (fictional), 1 Example Road, Chennai 600001"
+  }
+}

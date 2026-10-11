@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    },
+    "ReasonCode": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "examples": [
+            "SALARY_STOPPED"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "text": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Lang"
+          },
+          "title": "Text",
+          "type": "object"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "code",
+        "weight",
+        "text"
+      ],
+      "title": "ReasonCode",
+      "type": "object"
+    },
+    "RiskBand": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "RiskBand",
+      "type": "string"
+    }
+  },
+  "$id": "RiskScore.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "title": "Account Id",
+      "type": "string"
+    },
+    "as_of_month": {
+      "examples": [
+        "2026-09"
+      ],
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+      "title": "As Of Month",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "p_roll_forward": {
+      "description": "Probability of rolling forward in 30-60 days.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "P Roll Forward",
+      "type": "number"
+    },
+    "reasons": {
+      "description": "Top 3 reasons.",
+      "items": {
+        "$ref": "#/$defs/ReasonCode"
+      },
+      "maxItems": 3,
+      "title": "Reasons",
+      "type": "array"
+    },
+    "risk_band": {
+      "$ref": "#/$defs/RiskBand"
+    }
+  },
+  "required": [
+    "account_id",
+    "as_of_month",
+    "p_roll_forward",
+    "risk_band",
+    "reasons",
+    "model_version"
+  ],
+  "title": "RiskScore",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

@@ -1,0 +1,33 @@
+{
+  "$id": "GrievanceOfficer.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Grievance officer details from ``bank_policy.yaml`` (RBI RBC Directions para 454AA).",
+  "properties": {
+    "address": {
+      "title": "Address",
+      "type": "string"
+    },
+    "email": {
+      "title": "Email",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "phone": {
+      "title": "Phone",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "phone",
+    "address"
+  ],
+  "title": "GrievanceOfficer",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

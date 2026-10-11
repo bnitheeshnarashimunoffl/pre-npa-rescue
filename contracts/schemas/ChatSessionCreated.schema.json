@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ChatSessionCreated.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "lang": {
+      "$ref": "#/$defs/Lang"
+    },
+    "session_id": {
+      "examples": [
+        "SESS-1b4e28ba-2fa1-11d2-883f-0016d3cca427"
+      ],
+      "title": "Session Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "customer_id",
+    "lang",
+    "created_at"
+  ],
+  "title": "ChatSessionCreated",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

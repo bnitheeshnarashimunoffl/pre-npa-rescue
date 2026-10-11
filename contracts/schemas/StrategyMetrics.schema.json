@@ -1,0 +1,48 @@
+{
+  "$id": "StrategyMetrics.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "collection_cost_paise": {
+      "description": "Amount in paise (1 rupee = 100 paise).",
+      "minimum": 0,
+      "title": "Collection Cost Paise",
+      "type": "integer"
+    },
+    "contacts_made": {
+      "minimum": 0,
+      "title": "Contacts Made",
+      "type": "integer"
+    },
+    "cure_rate": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Cure Rate",
+      "type": "number"
+    },
+    "npa_rate": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Npa Rate",
+      "type": "number"
+    },
+    "strategy": {
+      "examples": [
+        "call_everyone",
+        "pre_npa_rescue"
+      ],
+      "title": "Strategy",
+      "type": "string"
+    }
+  },
+  "required": [
+    "strategy",
+    "npa_rate",
+    "cure_rate",
+    "collection_cost_paise",
+    "contacts_made"
+  ],
+  "title": "StrategyMetrics",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

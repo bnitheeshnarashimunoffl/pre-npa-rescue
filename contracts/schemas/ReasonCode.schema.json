@@ -1,0 +1,47 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ReasonCode.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "examples": [
+        "SALARY_STOPPED"
+      ],
+      "title": "Code",
+      "type": "string"
+    },
+    "text": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/Lang"
+      },
+      "title": "Text",
+      "type": "object"
+    },
+    "weight": {
+      "title": "Weight",
+      "type": "number"
+    }
+  },
+  "required": [
+    "code",
+    "weight",
+    "text"
+  ],
+  "title": "ReasonCode",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

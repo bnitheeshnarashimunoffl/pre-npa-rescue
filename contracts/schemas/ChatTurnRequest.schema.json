@@ -1,0 +1,42 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ChatTurnRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "lang": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Lang"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "None means auto-detect."
+    },
+    "text": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "title": "ChatTurnRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

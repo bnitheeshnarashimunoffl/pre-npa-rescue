@@ -1,0 +1,130 @@
+{
+  "$defs": {
+    "ReliefType": {
+      "enum": [
+        "fee_waiver",
+        "emi_conversion",
+        "restructuring",
+        "compromise_settlement",
+        "insurance_referral",
+        "review_date"
+      ],
+      "title": "ReliefType",
+      "type": "string"
+    }
+  },
+  "$id": "ReliefOption.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "disclosure_keys": {
+      "description": "i18n keys of mandatory trade-off texts.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Disclosure Keys",
+      "type": "array"
+    },
+    "eligibility_reason": {
+      "title": "Eligibility Reason",
+      "type": "string"
+    },
+    "monthly_amount_paise": {
+      "anyOf": [
+        {
+          "description": "Amount in paise (1 rupee = 100 paise).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Monthly Amount Paise"
+    },
+    "option_id": {
+      "title": "Option Id",
+      "type": "string"
+    },
+    "policy_ref": {
+      "examples": [
+        "bank_policy.yaml#fee_waiver.v1"
+      ],
+      "title": "Policy Ref",
+      "type": "string"
+    },
+    "regulatory_refs": {
+      "examples": [
+        [
+          "RBI Prudential Framework 2019"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "title": "Regulatory Refs",
+      "type": "array"
+    },
+    "requires_human_approval": {
+      "title": "Requires Human Approval",
+      "type": "boolean"
+    },
+    "settlement_amount_paise": {
+      "anyOf": [
+        {
+          "description": "Amount in paise (1 rupee = 100 paise).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Settlement Amount Paise"
+    },
+    "tenure_months": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tenure Months"
+    },
+    "type": {
+      "$ref": "#/$defs/ReliefType"
+    },
+    "waiver_paise": {
+      "anyOf": [
+        {
+          "description": "Amount in paise (1 rupee = 100 paise).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Waiver Paise"
+    }
+  },
+  "required": [
+    "option_id",
+    "type",
+    "monthly_amount_paise",
+    "tenure_months",
+    "waiver_paise",
+    "settlement_amount_paise",
+    "policy_ref",
+    "regulatory_refs",
+    "disclosure_keys",
+    "requires_human_approval",
+    "eligibility_reason"
+  ],
+  "title": "ReliefOption",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

@@ -1,0 +1,56 @@
+# Local demo stack (owned by WS5). `docker compose up` -> postgres :5432, api :8000, web :3000.
+# Task 5.5 hardens this; the web service is enabled once WS6 provides apps/web/Dockerfile.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: npa
+      POSTGRES_PASSWORD: npa
+      POSTGRES_DB: npa
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U npa -d npa"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://npa:npa@postgres:5432/npa
+      DATA_DIR: /data/generated
+      MODEL_DIR: /models
+      CONTRACTS_DIR: /app/contracts
+      POLICY_PATH: /app/packages/rules/policies/bank_policy.yaml
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./data/generated:/data/generated:ro
+      - ./packages/models/artifacts:/models:ro
+
+  # web:
+  #   build:
+  #     context: apps/web
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+  #     NEXT_PUBLIC_USE_MOCKS: "false"
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - api
+
+volumes:
+  pgdata:

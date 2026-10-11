@@ -1,0 +1,60 @@
+{
+  "$defs": {
+    "ComplaintStatus": {
+      "enum": [
+        "open",
+        "acknowledged",
+        "escalated",
+        "resolved",
+        "closed"
+      ],
+      "title": "ComplaintStatus",
+      "type": "string"
+    }
+  },
+  "$id": "ComplaintUpdateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "escalation_level": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Escalation Level"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ComplaintStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "ComplaintUpdateRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

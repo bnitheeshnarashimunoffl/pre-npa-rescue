@@ -1,0 +1,343 @@
+{
+  "$defs": {
+    "Bucket": {
+      "description": "Delinquency bucket from days past due (see ``constants.BUCKET_THRESHOLDS``).\n\ndpd 0 -> current; 1-30 -> sma0; 31-60 -> sma1; 61-90 -> sma2; >90 -> npa.",
+      "enum": [
+        "current",
+        "sma0",
+        "sma1",
+        "sma2",
+        "npa"
+      ],
+      "title": "Bucket",
+      "type": "string"
+    },
+    "Channel": {
+      "enum": [
+        "chat",
+        "whatsapp_sim",
+        "sms",
+        "email",
+        "call",
+        "voice_sim"
+      ],
+      "title": "Channel",
+      "type": "string"
+    },
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    },
+    "NextAction": {
+      "enum": [
+        "no_contact",
+        "reminder",
+        "chat_invite",
+        "agent_call",
+        "hardship_officer",
+        "firm_process"
+      ],
+      "title": "NextAction",
+      "type": "string"
+    },
+    "NextBestAction": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/NextAction"
+        },
+        "channel": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Channel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "earliest_contact_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Earliest Contact At"
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        },
+        "risk": {
+          "$ref": "#/$defs/RiskScore"
+        },
+        "segment": {
+          "$ref": "#/$defs/SegmentResult"
+        },
+        "uplift": {
+          "$ref": "#/$defs/UpliftResult"
+        }
+      },
+      "required": [
+        "account_id",
+        "action",
+        "channel",
+        "earliest_contact_at",
+        "reason_codes",
+        "risk",
+        "segment",
+        "uplift"
+      ],
+      "title": "NextBestAction",
+      "type": "object"
+    },
+    "ReasonCode": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "examples": [
+            "SALARY_STOPPED"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "text": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Lang"
+          },
+          "title": "Text",
+          "type": "object"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "code",
+        "weight",
+        "text"
+      ],
+      "title": "ReasonCode",
+      "type": "object"
+    },
+    "RiskBand": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "RiskBand",
+      "type": "string"
+    },
+    "RiskScore": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "as_of_month": {
+          "examples": [
+            "2026-09"
+          ],
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "As Of Month",
+          "type": "string"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "p_roll_forward": {
+          "description": "Probability of rolling forward in 30-60 days.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Roll Forward",
+          "type": "number"
+        },
+        "reasons": {
+          "description": "Top 3 reasons.",
+          "items": {
+            "$ref": "#/$defs/ReasonCode"
+          },
+          "maxItems": 3,
+          "title": "Reasons",
+          "type": "array"
+        },
+        "risk_band": {
+          "$ref": "#/$defs/RiskBand"
+        }
+      },
+      "required": [
+        "account_id",
+        "as_of_month",
+        "p_roll_forward",
+        "risk_band",
+        "reasons",
+        "model_version"
+      ],
+      "title": "RiskScore",
+      "type": "object"
+    },
+    "Segment": {
+      "enum": [
+        "forgot",
+        "cant_pay",
+        "wont_pay",
+        "not_at_risk"
+      ],
+      "title": "Segment",
+      "type": "string"
+    },
+    "SegmentResult": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "segment": {
+          "$ref": "#/$defs/Segment"
+        }
+      },
+      "required": [
+        "account_id",
+        "segment",
+        "confidence",
+        "model_version"
+      ],
+      "title": "SegmentResult",
+      "type": "object"
+    },
+    "Treatment": {
+      "enum": [
+        "none",
+        "reminder",
+        "chat_invite",
+        "agent_call",
+        "relief_offer"
+      ],
+      "title": "Treatment",
+      "type": "string"
+    },
+    "UpliftGroup": {
+      "enum": [
+        "persuadable",
+        "sure_thing",
+        "lost_cause",
+        "sleeping_dog"
+      ],
+      "title": "UpliftGroup",
+      "type": "string"
+    },
+    "UpliftResult": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "recommended_treatment": {
+          "$ref": "#/$defs/Treatment"
+        },
+        "uplift_group": {
+          "$ref": "#/$defs/UpliftGroup"
+        },
+        "uplift_score": {
+          "description": "Estimated cure-probability gain if treated.",
+          "title": "Uplift Score",
+          "type": "number"
+        }
+      },
+      "required": [
+        "account_id",
+        "uplift_score",
+        "uplift_group",
+        "recommended_treatment",
+        "model_version"
+      ],
+      "title": "UpliftResult",
+      "type": "object"
+    }
+  },
+  "$id": "QueueItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "title": "Account Id",
+      "type": "string"
+    },
+    "bucket": {
+      "$ref": "#/$defs/Bucket"
+    },
+    "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+    },
+    "dpd": {
+      "minimum": 0,
+      "title": "Dpd",
+      "type": "integer"
+    },
+    "nba": {
+      "$ref": "#/$defs/NextBestAction"
+    },
+    "priority": {
+      "title": "Priority",
+      "type": "number"
+    },
+    "total_due_paise": {
+      "description": "Amount in paise (1 rupee = 100 paise).",
+      "minimum": 0,
+      "title": "Total Due Paise",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "account_id",
+    "customer_name",
+    "bucket",
+    "dpd",
+    "total_due_paise",
+    "nba",
+    "priority"
+  ],
+  "title": "QueueItem",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

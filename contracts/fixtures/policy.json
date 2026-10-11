@@ -1,0 +1,60 @@
+{
+  "version": "v1",
+  "effective_from": "2026-04-01",
+  "updated_at": "2026-10-01T04:30:00Z",
+  "updated_by": "admin1",
+  "policy": {
+    "policy_id": "demo-bank-card-collections-policy",
+    "board_approval_ref": "BOARD-RES-2026-04 (simulated)",
+    "note": "Fixture shape only. WS3 owns packages/rules/policies/bank_policy.yaml.",
+    "grievance_officer": {
+      "name": "Anjali Rao (fictional)",
+      "email": "grievance.officer@demo-bank.example",
+      "phone": "+91-44-0000-0000",
+      "address": "Grievance Redressal Cell, Demo Bank Ltd (fictional), 1 Example Road, Chennai 600001"
+    },
+    "contact": {
+      "window_start": "08:00",
+      "window_end": "19:00",
+      "timezone": "Asia/Kolkata"
+    },
+    "relief": {
+      "fee_waiver": {
+        "version": "v1",
+        "max_waiver_paise": 300000,
+        "requires_human_approval": true
+      },
+      "emi_conversion": {
+        "version": "v1",
+        "tenures_months": [
+          3,
+          6,
+          9,
+          12
+        ],
+        "requires_human_approval": true
+      },
+      "restructuring": {
+        "version": "v1",
+        "disclosures": [
+          "disclosure.restructuring.npa_downgrade"
+        ]
+      },
+      "compromise_settlement": {
+        "version": "v1",
+        "cooling_period_months": 12,
+        "disclosures": [
+          "disclosure.settlement.cooling_period"
+        ]
+      },
+      "insurance_referral": {
+        "version": "v1",
+        "requires_human_approval": false
+      },
+      "review_date": {
+        "version": "v1",
+        "requires_human_approval": true
+      }
+    }
+  }
+}

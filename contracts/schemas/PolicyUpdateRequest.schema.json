@@ -1,0 +1,25 @@
+{
+  "$id": "PolicyUpdateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "change_note": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Change Note",
+      "type": "string"
+    },
+    "policy": {
+      "additionalProperties": true,
+      "title": "Policy",
+      "type": "object"
+    }
+  },
+  "required": [
+    "policy",
+    "change_note"
+  ],
+  "title": "PolicyUpdateRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

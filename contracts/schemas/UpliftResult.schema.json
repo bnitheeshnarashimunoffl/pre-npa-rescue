@@ -1,0 +1,59 @@
+{
+  "$defs": {
+    "Treatment": {
+      "enum": [
+        "none",
+        "reminder",
+        "chat_invite",
+        "agent_call",
+        "relief_offer"
+      ],
+      "title": "Treatment",
+      "type": "string"
+    },
+    "UpliftGroup": {
+      "enum": [
+        "persuadable",
+        "sure_thing",
+        "lost_cause",
+        "sleeping_dog"
+      ],
+      "title": "UpliftGroup",
+      "type": "string"
+    }
+  },
+  "$id": "UpliftResult.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "title": "Account Id",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "recommended_treatment": {
+      "$ref": "#/$defs/Treatment"
+    },
+    "uplift_group": {
+      "$ref": "#/$defs/UpliftGroup"
+    },
+    "uplift_score": {
+      "description": "Estimated cure-probability gain if treated.",
+      "title": "Uplift Score",
+      "type": "number"
+    }
+  },
+  "required": [
+    "account_id",
+    "uplift_score",
+    "uplift_group",
+    "recommended_treatment",
+    "model_version"
+  ],
+  "title": "UpliftResult",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

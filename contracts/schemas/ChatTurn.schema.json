@@ -1,0 +1,61 @@
+{
+  "$defs": {
+    "Actor": {
+      "enum": [
+        "bot",
+        "agent",
+        "hardship_officer",
+        "system",
+        "customer"
+      ],
+      "title": "Actor",
+      "type": "string"
+    },
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ChatTurn.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "$ref": "#/$defs/Actor"
+    },
+    "flags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Flags",
+      "type": "array"
+    },
+    "lang": {
+      "$ref": "#/$defs/Lang"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "ts": {
+      "format": "date-time",
+      "title": "Ts",
+      "type": "string"
+    }
+  },
+  "required": [
+    "actor",
+    "text",
+    "lang",
+    "ts",
+    "flags"
+  ],
+  "title": "ChatTurn",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

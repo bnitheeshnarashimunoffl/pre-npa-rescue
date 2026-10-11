@@ -1,0 +1,64 @@
+{
+  "$id": "KpiReport.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Contact-centre KPIs (IS/ISO 18295-1/-2:2017).",
+  "properties": {
+    "as_of": {
+      "format": "date-time",
+      "title": "As Of",
+      "type": "string"
+    },
+    "avg_turns_to_resolution": {
+      "title": "Avg Turns To Resolution",
+      "type": "number"
+    },
+    "complaints_breaching_sla": {
+      "minimum": 0,
+      "title": "Complaints Breaching Sla",
+      "type": "integer"
+    },
+    "complaints_open": {
+      "minimum": 0,
+      "title": "Complaints Open",
+      "type": "integer"
+    },
+    "contacts_per_account": {
+      "title": "Contacts Per Account",
+      "type": "number"
+    },
+    "handoff_rate": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Handoff Rate",
+      "type": "number"
+    },
+    "in_window_share": {
+      "description": "Should be 1.0 (RBI para 454Y(4)).",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "In Window Share",
+      "type": "number"
+    },
+    "standard_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Standard Refs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "as_of",
+    "contacts_per_account",
+    "in_window_share",
+    "complaints_open",
+    "complaints_breaching_sla",
+    "handoff_rate",
+    "avg_turns_to_resolution",
+    "standard_refs"
+  ],
+  "title": "KpiReport",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

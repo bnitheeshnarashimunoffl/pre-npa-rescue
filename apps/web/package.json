@@ -1,0 +1,10 @@
+{
+  "name": "web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pre-NPA Rescue frontend (WS6). Bootstrap stub: WS6 replaces this with the Next.js app.",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

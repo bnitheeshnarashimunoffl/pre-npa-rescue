@@ -1,0 +1,54 @@
+{
+  "$defs": {
+    "Role": {
+      "enum": [
+        "customer",
+        "collector",
+        "hardship_officer",
+        "admin",
+        "auditor"
+      ],
+      "title": "Role",
+      "type": "string"
+    }
+  },
+  "$id": "CallbackCreateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "customer_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Staff only; customers book for self.",
+      "title": "Customer Id"
+    },
+    "role": {
+      "$ref": "#/$defs/Role"
+    },
+    "slot_start": {
+      "format": "date-time",
+      "title": "Slot Start",
+      "type": "string"
+    },
+    "summary": {
+      "maxLength": 2000,
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "slot_start",
+    "role",
+    "summary"
+  ],
+  "title": "CallbackCreateRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

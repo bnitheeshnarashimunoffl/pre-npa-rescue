@@ -1,0 +1,56 @@
+{
+  "$defs": {
+    "Actor": {
+      "enum": [
+        "bot",
+        "agent",
+        "hardship_officer",
+        "system",
+        "customer"
+      ],
+      "title": "Actor",
+      "type": "string"
+    },
+    "Channel": {
+      "enum": [
+        "chat",
+        "whatsapp_sim",
+        "sms",
+        "email",
+        "call",
+        "voice_sim"
+      ],
+      "title": "Channel",
+      "type": "string"
+    }
+  },
+  "$id": "ContactCheckRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "$ref": "#/$defs/Actor"
+    },
+    "at": {
+      "format": "date-time",
+      "title": "At",
+      "type": "string"
+    },
+    "channel": {
+      "$ref": "#/$defs/Channel"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "channel",
+    "at",
+    "actor"
+  ],
+  "title": "ContactCheckRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

@@ -1,0 +1,488 @@
+{
+  "$defs": {
+    "Actor": {
+      "enum": [
+        "bot",
+        "agent",
+        "hardship_officer",
+        "system",
+        "customer"
+      ],
+      "title": "Actor",
+      "type": "string"
+    },
+    "Callback": {
+      "additionalProperties": false,
+      "properties": {
+        "callback_id": {
+          "title": "Callback Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "customer_id": {
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "slot_end": {
+          "format": "date-time",
+          "title": "Slot End",
+          "type": "string"
+        },
+        "slot_start": {
+          "format": "date-time",
+          "title": "Slot Start",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "callback_id",
+        "customer_id",
+        "role",
+        "slot_start",
+        "slot_end",
+        "summary",
+        "created_at"
+      ],
+      "title": "Callback",
+      "type": "object"
+    },
+    "Complaint": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "customer_id": {
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "docket_no": {
+          "examples": [
+            "CMP-20260920-0001"
+          ],
+          "pattern": "^CMP-\\d{8}-\\d{4}$",
+          "title": "Docket No",
+          "type": "string"
+        },
+        "escalation_level": {
+          "minimum": 0,
+          "title": "Escalation Level",
+          "type": "integer"
+        },
+        "grievance_officer": {
+          "$ref": "#/$defs/GrievanceOfficer"
+        },
+        "lang": {
+          "$ref": "#/$defs/Lang"
+        },
+        "sla_due_at": {
+          "description": "created_at + 30 days (IS/ISO 10002:2018).",
+          "format": "date-time",
+          "title": "Sla Due At",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ComplaintStatus"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "docket_no",
+        "customer_id",
+        "category",
+        "text",
+        "lang",
+        "status",
+        "escalation_level",
+        "created_at",
+        "sla_due_at",
+        "grievance_officer"
+      ],
+      "title": "Complaint",
+      "type": "object"
+    },
+    "ComplaintStatus": {
+      "enum": [
+        "open",
+        "acknowledged",
+        "escalated",
+        "resolved",
+        "closed"
+      ],
+      "title": "ComplaintStatus",
+      "type": "string"
+    },
+    "GrievanceOfficer": {
+      "additionalProperties": false,
+      "description": "Grievance officer details from ``bank_policy.yaml`` (RBI RBC Directions para 454AA).",
+      "properties": {
+        "address": {
+          "title": "Address",
+          "type": "string"
+        },
+        "email": {
+          "title": "Email",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "phone": {
+          "title": "Phone",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "phone",
+        "address"
+      ],
+      "title": "GrievanceOfficer",
+      "type": "object"
+    },
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    },
+    "Offer": {
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "string"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Approved By"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "customer_id": {
+          "title": "Customer Id",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "offer_id": {
+          "examples": [
+            "OFFER-1b4e28ba-2fa1-11d2-883f-0016d3cca427"
+          ],
+          "title": "Offer Id",
+          "type": "string"
+        },
+        "option": {
+          "$ref": "#/$defs/ReliefOption"
+        },
+        "proposed_by": {
+          "$ref": "#/$defs/Actor"
+        },
+        "status": {
+          "$ref": "#/$defs/OfferStatus"
+        }
+      },
+      "required": [
+        "offer_id",
+        "customer_id",
+        "account_id",
+        "option",
+        "status",
+        "proposed_by",
+        "approved_by",
+        "created_at",
+        "expires_at"
+      ],
+      "title": "Offer",
+      "type": "object"
+    },
+    "OfferStatus": {
+      "enum": [
+        "proposed",
+        "approved",
+        "presented",
+        "accepted",
+        "rejected",
+        "expired"
+      ],
+      "title": "OfferStatus",
+      "type": "string"
+    },
+    "QuickReply": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "QuickReply",
+      "type": "object"
+    },
+    "ReliefOption": {
+      "additionalProperties": false,
+      "properties": {
+        "disclosure_keys": {
+          "description": "i18n keys of mandatory trade-off texts.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Disclosure Keys",
+          "type": "array"
+        },
+        "eligibility_reason": {
+          "title": "Eligibility Reason",
+          "type": "string"
+        },
+        "monthly_amount_paise": {
+          "anyOf": [
+            {
+              "description": "Amount in paise (1 rupee = 100 paise).",
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Monthly Amount Paise"
+        },
+        "option_id": {
+          "title": "Option Id",
+          "type": "string"
+        },
+        "policy_ref": {
+          "examples": [
+            "bank_policy.yaml#fee_waiver.v1"
+          ],
+          "title": "Policy Ref",
+          "type": "string"
+        },
+        "regulatory_refs": {
+          "examples": [
+            [
+              "RBI Prudential Framework 2019"
+            ]
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulatory Refs",
+          "type": "array"
+        },
+        "requires_human_approval": {
+          "title": "Requires Human Approval",
+          "type": "boolean"
+        },
+        "settlement_amount_paise": {
+          "anyOf": [
+            {
+              "description": "Amount in paise (1 rupee = 100 paise).",
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Settlement Amount Paise"
+        },
+        "tenure_months": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tenure Months"
+        },
+        "type": {
+          "$ref": "#/$defs/ReliefType"
+        },
+        "waiver_paise": {
+          "anyOf": [
+            {
+              "description": "Amount in paise (1 rupee = 100 paise).",
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Waiver Paise"
+        }
+      },
+      "required": [
+        "option_id",
+        "type",
+        "monthly_amount_paise",
+        "tenure_months",
+        "waiver_paise",
+        "settlement_amount_paise",
+        "policy_ref",
+        "regulatory_refs",
+        "disclosure_keys",
+        "requires_human_approval",
+        "eligibility_reason"
+      ],
+      "title": "ReliefOption",
+      "type": "object"
+    },
+    "ReliefType": {
+      "enum": [
+        "fee_waiver",
+        "emi_conversion",
+        "restructuring",
+        "compromise_settlement",
+        "insurance_referral",
+        "review_date"
+      ],
+      "title": "ReliefType",
+      "type": "string"
+    },
+    "Role": {
+      "enum": [
+        "customer",
+        "collector",
+        "hardship_officer",
+        "admin",
+        "auditor"
+      ],
+      "title": "Role",
+      "type": "string"
+    }
+  },
+  "$id": "BotReply.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "complaint": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Complaint"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "flags": {
+      "examples": [
+        [
+          "distress_detected",
+          "zero_capacity",
+          "injection_blocked"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "title": "Flags",
+      "type": "array"
+    },
+    "handoff": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Callback"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lang": {
+      "$ref": "#/$defs/Lang"
+    },
+    "offers": {
+      "items": {
+        "$ref": "#/$defs/Offer"
+      },
+      "title": "Offers",
+      "type": "array"
+    },
+    "quick_replies": {
+      "items": {
+        "$ref": "#/$defs/QuickReply"
+      },
+      "title": "Quick Replies",
+      "type": "array"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "state": {
+      "description": "Current conversation state name.",
+      "title": "State",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "text",
+    "lang",
+    "quick_replies",
+    "offers",
+    "handoff",
+    "complaint",
+    "flags",
+    "state"
+  ],
+  "title": "BotReply",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

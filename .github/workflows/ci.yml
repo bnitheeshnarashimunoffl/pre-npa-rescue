@@ -1,0 +1,173 @@
+# CI (owned by WS5) - A8.6. Branch protection should require the single "ci-passed" check.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHON_VERSION: "3.11"
+  DATAGEN_N_CUSTOMERS: "2000"
+  LLM_PROVIDER: mock
+  SEED: "42"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      contracts: ${{ steps.filter.outputs.contracts }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      # On push to main every job runs anyway, so only PRs are path-filtered.
+      - uses: dorny/paths-filter@v3
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          filters: |
+            shared: &shared
+              - '.github/workflows/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.python-version'
+            python:
+              - *shared
+              - 'packages/**'
+              - 'services/**'
+              - 'redteam/**'
+              - 'scripts/**'
+              - 'contracts/fixtures/**'
+            contracts:
+              - *shared
+              - 'contracts/**'
+              - 'packages/contracts/**'
+              - 'services/api/app/**'
+              - 'scripts/**'
+            web:
+              - '.github/workflows/**'
+              - 'apps/web/**'
+              - 'contracts/openapi.yaml'
+              - 'contracts/fixtures/**'
+
+  python:
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: uv sync --frozen
+        run: uv sync --frozen
+      - name: ruff check
+        run: uv run ruff check --output-format=github .
+      - name: ruff format --check
+        run: uv run ruff format --check .
+      - name: mypy
+        run: uv run python -m mypy
+      - name: pytest (all packages)
+        run: uv run pytest
+      - name: npa_contracts coverage must be 100%
+        run: uv run pytest packages/contracts/tests -q --cov=npa_contracts --cov-fail-under=100
+
+  contracts:
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen
+      - name: JSON Schemas are up to date
+        run: uv run python scripts/export_schemas.py --check
+      - name: openapi.yaml is up to date with the API routes
+        run: uv run python scripts/export_openapi.py --check
+      - name: Validate schemas, openapi and fixtures
+        run: uv run python scripts/check_contracts.py
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect web app
+        id: detect
+        working-directory: .
+        run: |
+          if [ -f apps/web/pnpm-lock.yaml ]; then echo "present=true" >> "$GITHUB_OUTPUT";
+          else echo "present=false" >> "$GITHUB_OUTPUT"; echo "::notice::apps/web has no pnpm-lock.yaml yet (WS6 task 6.1); skipping web checks"; fi
+      - uses: pnpm/action-setup@v4
+        if: steps.detect.outputs.present == 'true'
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        if: steps.detect.outputs.present == 'true'
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm lint
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm typecheck
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm test
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm build
+      - name: Generated API types match contracts/openapi.yaml
+        if: steps.detect.outputs.present == 'true' && hashFiles('apps/web/lib/api/types.ts') != ''
+        run: |
+          pnpm exec openapi-typescript ../../contracts/openapi.yaml -o lib/api/types.ts
+          git diff --exit-code -- lib/api/types.ts
+
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: No file larger than 5 MB
+        run: |
+          big=$(git ls-files -z | xargs -0 -r stat -c '%s %n' | awk '$1 > 5242880')
+          if [ -n "$big" ]; then echo "::error::Files over 5 MB:"; echo "$big"; exit 1; fi
+      - name: No .env files committed
+        run: |
+          envs=$(git ls-files | grep -E '(^|/)\.env(\..+)?$' | grep -v '\.env\.example$' || true)
+          if [ -n "$envs" ]; then echo "::error::Committed env files:"; echo "$envs"; exit 1; fi
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  ci-passed:
+    if: always()
+    needs: [changes, python, contracts, web, hygiene]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All required jobs passed or were skipped
+        run: |
+          echo '${{ toJSON(needs) }}' | jq -e 'to_entries | all(.value.result == "success" or .value.result == "skipped")'

@@ -1,0 +1,48 @@
+{
+  "$id": "ComplianceDecision.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowed": {
+      "title": "Allowed",
+      "type": "boolean"
+    },
+    "explanation": {
+      "title": "Explanation",
+      "type": "string"
+    },
+    "next_allowed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Allowed At"
+    },
+    "rule_ids": {
+      "examples": [
+        [
+          "RBI-454Y4-WINDOW"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "title": "Rule Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "allowed",
+    "rule_ids",
+    "next_allowed_at",
+    "explanation"
+  ],
+  "title": "ComplianceDecision",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

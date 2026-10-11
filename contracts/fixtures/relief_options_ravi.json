@@ -1,0 +1,37 @@
+[
+  {
+    "option_id": "OPT-RAVI-INSURANCE",
+    "type": "insurance_referral",
+    "monthly_amount_paise": null,
+    "tenure_months": null,
+    "waiver_paise": null,
+    "settlement_amount_paise": null,
+    "policy_ref": "bank_policy.yaml#insurance_referral.v1",
+    "regulatory_refs": [
+      "RBI RBC Directions 2026 para 454D"
+    ],
+    "disclosure_keys": [
+      "disclosure.insurance_referral.claim_not_guaranteed"
+    ],
+    "requires_human_approval": false,
+    "eligibility_reason": "Card carries job-loss insurance cover; customer reports job loss."
+  },
+  {
+    "option_id": "OPT-RAVI-REVIEW-DATE",
+    "type": "review_date",
+    "monthly_amount_paise": null,
+    "tenure_months": null,
+    "waiver_paise": null,
+    "settlement_amount_paise": null,
+    "policy_ref": "bank_policy.yaml#review_date.v1",
+    "regulatory_refs": [
+      "RBI RBC Directions 2026 para 454D"
+    ],
+    "disclosure_keys": [
+      "disclosure.review_date.no_payment_now",
+      "disclosure.review_date.dues_continue"
+    ],
+    "requires_human_approval": true,
+    "eligibility_reason": "Zero repayment capacity declared; documented engagement and an agreed review date with a hardship officer before any escalation."
+  }
+]

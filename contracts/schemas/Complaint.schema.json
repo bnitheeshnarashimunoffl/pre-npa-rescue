@@ -1,0 +1,119 @@
+{
+  "$defs": {
+    "ComplaintStatus": {
+      "enum": [
+        "open",
+        "acknowledged",
+        "escalated",
+        "resolved",
+        "closed"
+      ],
+      "title": "ComplaintStatus",
+      "type": "string"
+    },
+    "GrievanceOfficer": {
+      "additionalProperties": false,
+      "description": "Grievance officer details from ``bank_policy.yaml`` (RBI RBC Directions para 454AA).",
+      "properties": {
+        "address": {
+          "title": "Address",
+          "type": "string"
+        },
+        "email": {
+          "title": "Email",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "phone": {
+          "title": "Phone",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "phone",
+        "address"
+      ],
+      "title": "GrievanceOfficer",
+      "type": "object"
+    },
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "Complaint.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "title": "Category",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "docket_no": {
+      "examples": [
+        "CMP-20260920-0001"
+      ],
+      "pattern": "^CMP-\\d{8}-\\d{4}$",
+      "title": "Docket No",
+      "type": "string"
+    },
+    "escalation_level": {
+      "minimum": 0,
+      "title": "Escalation Level",
+      "type": "integer"
+    },
+    "grievance_officer": {
+      "$ref": "#/$defs/GrievanceOfficer"
+    },
+    "lang": {
+      "$ref": "#/$defs/Lang"
+    },
+    "sla_due_at": {
+      "description": "created_at + 30 days (IS/ISO 10002:2018).",
+      "format": "date-time",
+      "title": "Sla Due At",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ComplaintStatus"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "docket_no",
+    "customer_id",
+    "category",
+    "text",
+    "lang",
+    "status",
+    "escalation_level",
+    "created_at",
+    "sla_due_at",
+    "grievance_officer"
+  ],
+  "title": "Complaint",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ChatSessionCreateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "lang": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Lang"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "ChatSessionCreateRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

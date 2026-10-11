@@ -1,0 +1,52 @@
+{
+  "$id": "HealthResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "api_version": {
+      "title": "Api Version",
+      "type": "string"
+    },
+    "contract_version": {
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "packages": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Installed npa_* package versions.",
+      "title": "Packages",
+      "type": "object"
+    },
+    "providers": {
+      "additionalProperties": {
+        "enum": [
+          "real",
+          "fixture"
+        ],
+        "type": "string"
+      },
+      "title": "Providers",
+      "type": "object"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "degraded"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "api_version",
+    "contract_version",
+    "packages",
+    "providers"
+  ],
+  "title": "HealthResponse",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

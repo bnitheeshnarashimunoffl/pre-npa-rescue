@@ -1,0 +1,41 @@
+{
+  "$id": "PolicyDocument.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The bank policy (``bank_policy.yaml``, owned by WS3) as JSON, with version metadata.",
+  "properties": {
+    "effective_from": {
+      "format": "date",
+      "title": "Effective From",
+      "type": "string"
+    },
+    "policy": {
+      "additionalProperties": true,
+      "title": "Policy",
+      "type": "object"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "updated_by": {
+      "title": "Updated By",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "effective_from",
+    "updated_at",
+    "updated_by",
+    "policy"
+  ],
+  "title": "PolicyDocument",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

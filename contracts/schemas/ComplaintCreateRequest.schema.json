@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ComplaintCreateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "title": "Category",
+      "type": "string"
+    },
+    "customer_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Staff only; customers file for self.",
+      "title": "Customer Id"
+    },
+    "lang": {
+      "$ref": "#/$defs/Lang"
+    },
+    "text": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "category",
+    "text",
+    "lang"
+  ],
+  "title": "ComplaintCreateRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

@@ -1,0 +1,55 @@
+{
+  "session_id": "SESS-0d5e8a71-9c3f-4b2e-8a61-7f2c4e9b1d05",
+  "text": "உங்கள் நிலைமையைப் பகிர்ந்ததற்கு நன்றி. வங்கியின் கொள்கைப்படி உங்களுக்கு இந்தத் திட்டம் கிடைக்கிறது: மாதம் ₹2,000 வீதம் 6 மாதங்கள், தாமதக் கட்டணம் ₹1,180 தள்ளுபடி. ஏற்றுக்கொள்வதற்கு முன் வட்டி விவரங்களையும் நிபந்தனைகளையும் பார்க்கலாம். இந்த உரையாடல் பதிவு செய்யப்படுகிறது.",
+  "lang": "ta",
+  "quick_replies": [
+    {
+      "id": "accept_offer",
+      "label": "ஏற்றுக்கொள்கிறேன்"
+    },
+    {
+      "id": "show_details",
+      "label": "விவரங்களைக் காட்டு"
+    },
+    {
+      "id": "talk_to_officer",
+      "label": "அதிகாரியுடன் பேச வேண்டும்"
+    }
+  ],
+  "offers": [
+    {
+      "offer_id": "OFFER-6f1c2a9e-3b7d-4c51-9a0e-2d4b8f7e1c33",
+      "customer_id": "CUST-DEMO-PRIYA",
+      "account_id": "ACC-DEMO-PRIYA",
+      "option": {
+        "option_id": "OPT-PRIYA-EMI6-WAIVER",
+        "type": "emi_conversion",
+        "monthly_amount_paise": 200000,
+        "tenure_months": 6,
+        "waiver_paise": 118000,
+        "settlement_amount_paise": null,
+        "policy_ref": "bank_policy.yaml#emi_conversion.v1",
+        "regulatory_refs": [
+          "RBI Credit Card Directions 2025",
+          "RBI RBC Directions 2026 para 454D"
+        ],
+        "disclosure_keys": [
+          "disclosure.emi_conversion.interest_breakdown",
+          "disclosure.fee_waiver.scope",
+          "disclosure.missed_instalment.consequence"
+        ],
+        "requires_human_approval": true,
+        "eligibility_reason": "Declared capacity of Rs 2,500/month covers a Rs 2,000 instalment; account is SMA-0, not NPA; late fees eligible for waiver under the charges policy."
+      },
+      "status": "presented",
+      "proposed_by": "bot",
+      "approved_by": "officer1",
+      "created_at": "2026-10-11T05:42:00Z",
+      "expires_at": "2026-10-18T05:42:00Z"
+    }
+  ],
+  "handoff": null,
+  "complaint": null,
+  "flags": [],
+  "state": "offer_presented"
+}

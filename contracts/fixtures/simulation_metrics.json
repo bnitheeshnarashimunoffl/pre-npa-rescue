@@ -1,0 +1,22 @@
+{
+  "as_of_month": "2026-09",
+  "n_accounts": 10000,
+  "horizon_days": 90,
+  "baseline": {
+    "strategy": "call_everyone",
+    "npa_rate": 0.084,
+    "cure_rate": 0.41,
+    "collection_cost_paise": 1250000000,
+    "contacts_made": 48200
+  },
+  "ours": {
+    "strategy": "pre_npa_rescue",
+    "npa_rate": 0.061,
+    "cure_rate": 0.52,
+    "collection_cost_paise": 710000000,
+    "contacts_made": 21900
+  },
+  "npa_reduction_pct": 27.38,
+  "illustrative": true,
+  "source": "contracts/fixtures v0 placeholder; replaced by packages/models/reports/policy_simulation.json"
+}

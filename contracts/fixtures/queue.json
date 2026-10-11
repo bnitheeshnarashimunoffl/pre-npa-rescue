@@ -1,0 +1,585 @@
+{
+  "items": [
+    {
+      "account_id": "ACC-DEMO-PRIYA",
+      "customer_name": "Priya Raman",
+      "bucket": "sma0",
+      "dpd": 12,
+      "total_due_paise": 1318000,
+      "nba": {
+        "account_id": "ACC-DEMO-PRIYA",
+        "action": "chat_invite",
+        "channel": "chat",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "SALARY_STOPPED",
+          "MIN_DUE_ONLY_STREAK",
+          "UTILISATION_RISING"
+        ],
+        "risk": {
+          "account_id": "ACC-DEMO-PRIYA",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.82,
+          "risk_band": "high",
+          "reasons": [
+            {
+              "code": "SALARY_STOPPED",
+              "weight": 0.41,
+              "text": {
+                "en": "Salary credits have stopped in the last 3 months.",
+                "ta": "கடந்த 3 மாதங்களாக சம்பளம் வரவு வைக்கப்படவில்லை.",
+                "hi": "पिछले 3 महीनों से वेतन जमा नहीं हुआ है।"
+              }
+            },
+            {
+              "code": "MIN_DUE_ONLY_STREAK",
+              "weight": 0.27,
+              "text": {
+                "en": "Only the minimum due has been paid for 3 months in a row.",
+                "ta": "தொடர்ந்து 3 மாதங்களாக குறைந்தபட்சத் தொகை மட்டுமே செலுத்தப்பட்டுள்ளது.",
+                "hi": "लगातार 3 महीनों से केवल न्यूनतम देय राशि का भुगतान हुआ है।"
+              }
+            },
+            {
+              "code": "UTILISATION_RISING",
+              "weight": 0.14,
+              "text": {
+                "en": "Card usage has risen sharply compared with the credit limit.",
+                "ta": "கடன் வரம்புடன் ஒப்பிடும்போது அட்டைப் பயன்பாடு வேகமாக அதிகரித்துள்ளது.",
+                "hi": "क्रेडिट सीमा की तुलना में कार्ड का उपयोग तेज़ी से बढ़ा है।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-DEMO-PRIYA",
+          "segment": "cant_pay",
+          "confidence": 0.77,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-DEMO-PRIYA",
+          "uplift_score": 0.21,
+          "uplift_group": "persuadable",
+          "recommended_treatment": "relief_offer",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.97
+    },
+    {
+      "account_id": "ACC-DEMO-RAVI",
+      "customer_name": "Ravi Shankar",
+      "bucket": "sma1",
+      "dpd": 45,
+      "total_due_paise": 6480000,
+      "nba": {
+        "account_id": "ACC-DEMO-RAVI",
+        "action": "hardship_officer",
+        "channel": "call",
+        "earliest_contact_at": "2026-10-12T05:30:00Z",
+        "reason_codes": [
+          "SALARY_STOPPED",
+          "PAYMENT_MISSED",
+          "ESSENTIALS_SPEND_DOWN"
+        ],
+        "risk": {
+          "account_id": "ACC-DEMO-RAVI",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.91,
+          "risk_band": "high",
+          "reasons": [
+            {
+              "code": "SALARY_STOPPED",
+              "weight": 0.48,
+              "text": {
+                "en": "Salary credits have stopped in the last 3 months.",
+                "ta": "கடந்த 3 மாதங்களாக சம்பளம் வரவு வைக்கப்படவில்லை.",
+                "hi": "पिछले 3 महीनों से वेतन जमा नहीं हुआ है।"
+              }
+            },
+            {
+              "code": "PAYMENT_MISSED",
+              "weight": 0.25,
+              "text": {
+                "en": "The last payment was missed.",
+                "ta": "கடைசி கட்டணம் செலுத்தப்படவில்லை.",
+                "hi": "पिछला भुगतान नहीं हुआ।"
+              }
+            },
+            {
+              "code": "ESSENTIALS_SPEND_DOWN",
+              "weight": 0.11,
+              "text": {
+                "en": "Spending on essentials has dropped, which can signal financial stress.",
+                "ta": "அத்தியாவசியச் செலவுகள் குறைந்துள்ளன; இது நிதி நெருக்கடியைக் குறிக்கலாம்.",
+                "hi": "ज़रूरी खर्च घटे हैं, जो आर्थिक तनाव का संकेत हो सकता है।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-DEMO-RAVI",
+          "segment": "cant_pay",
+          "confidence": 0.84,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-DEMO-RAVI",
+          "uplift_score": 0.03,
+          "uplift_group": "lost_cause",
+          "recommended_treatment": "agent_call",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.95
+    },
+    {
+      "account_id": "ACC-001006",
+      "customer_name": "Kavya Reddy",
+      "bucket": "sma2",
+      "dpd": 66,
+      "total_due_paise": 12300000,
+      "nba": {
+        "account_id": "ACC-001006",
+        "action": "agent_call",
+        "channel": "call",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "SALARY_STOPPED",
+          "PAYMENT_MISSED"
+        ],
+        "risk": {
+          "account_id": "ACC-001006",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.86,
+          "risk_band": "high",
+          "reasons": [
+            {
+              "code": "SALARY_STOPPED",
+              "weight": 0.4,
+              "text": {
+                "en": "Salary credits have stopped in the last 3 months.",
+                "ta": "கடந்த 3 மாதங்களாக சம்பளம் வரவு வைக்கப்படவில்லை.",
+                "hi": "पिछले 3 महीनों से वेतन जमा नहीं हुआ है।"
+              }
+            },
+            {
+              "code": "PAYMENT_MISSED",
+              "weight": 0.3,
+              "text": {
+                "en": "The last payment was missed.",
+                "ta": "கடைசி கட்டணம் செலுத்தப்படவில்லை.",
+                "hi": "पिछला भुगतान नहीं हुआ।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-001006",
+          "segment": "cant_pay",
+          "confidence": 0.8,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-001006",
+          "uplift_score": 0.15,
+          "uplift_group": "persuadable",
+          "recommended_treatment": "agent_call",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.88
+    },
+    {
+      "account_id": "ACC-000823",
+      "customer_name": "Meena Iyer",
+      "bucket": "sma1",
+      "dpd": 44,
+      "total_due_paise": 7600000,
+      "nba": {
+        "account_id": "ACC-000823",
+        "action": "chat_invite",
+        "channel": "chat",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "SALARY_STOPPED",
+          "MIN_DUE_ONLY_STREAK"
+        ],
+        "risk": {
+          "account_id": "ACC-000823",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.79,
+          "risk_band": "high",
+          "reasons": [
+            {
+              "code": "SALARY_STOPPED",
+              "weight": 0.36,
+              "text": {
+                "en": "Salary credits have stopped in the last 3 months.",
+                "ta": "கடந்த 3 மாதங்களாக சம்பளம் வரவு வைக்கப்படவில்லை.",
+                "hi": "पिछले 3 महीनों से वेतन जमा नहीं हुआ है।"
+              }
+            },
+            {
+              "code": "MIN_DUE_ONLY_STREAK",
+              "weight": 0.21,
+              "text": {
+                "en": "Only the minimum due has been paid for 3 months in a row.",
+                "ta": "தொடர்ந்து 3 மாதங்களாக குறைந்தபட்சத் தொகை மட்டுமே செலுத்தப்பட்டுள்ளது.",
+                "hi": "लगातार 3 महीनों से केवल न्यूनतम देय राशि का भुगतान हुआ है।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-000823",
+          "segment": "cant_pay",
+          "confidence": 0.72,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-000823",
+          "uplift_score": 0.19,
+          "uplift_group": "persuadable",
+          "recommended_treatment": "relief_offer",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.85
+    },
+    {
+      "account_id": "ACC-000342",
+      "customer_name": "Lakshmi Narayanan",
+      "bucket": "sma1",
+      "dpd": 38,
+      "total_due_paise": 9870000,
+      "nba": {
+        "account_id": "ACC-000342",
+        "action": "chat_invite",
+        "channel": "chat",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "MIN_DUE_ONLY_STREAK",
+          "UTILISATION_RISING"
+        ],
+        "risk": {
+          "account_id": "ACC-000342",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.73,
+          "risk_band": "high",
+          "reasons": [
+            {
+              "code": "MIN_DUE_ONLY_STREAK",
+              "weight": 0.3,
+              "text": {
+                "en": "Only the minimum due has been paid for 3 months in a row.",
+                "ta": "தொடர்ந்து 3 மாதங்களாக குறைந்தபட்சத் தொகை மட்டுமே செலுத்தப்பட்டுள்ளது.",
+                "hi": "लगातार 3 महीनों से केवल न्यूनतम देय राशि का भुगतान हुआ है।"
+              }
+            },
+            {
+              "code": "UTILISATION_RISING",
+              "weight": 0.2,
+              "text": {
+                "en": "Card usage has risen sharply compared with the credit limit.",
+                "ta": "கடன் வரம்புடன் ஒப்பிடும்போது அட்டைப் பயன்பாடு வேகமாக அதிகரித்துள்ளது.",
+                "hi": "क्रेडिट सीमा की तुलना में कार्ड का उपयोग तेज़ी से बढ़ा है।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-000342",
+          "segment": "cant_pay",
+          "confidence": 0.69,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-000342",
+          "uplift_score": 0.17,
+          "uplift_group": "persuadable",
+          "recommended_treatment": "chat_invite",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.81
+    },
+    {
+      "account_id": "ACC-000611",
+      "customer_name": "Fatima Shaikh",
+      "bucket": "sma0",
+      "dpd": 15,
+      "total_due_paise": 3120000,
+      "nba": {
+        "account_id": "ACC-000611",
+        "action": "chat_invite",
+        "channel": "whatsapp_sim",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "ESSENTIALS_SPEND_DOWN",
+          "PAYMENT_MISSED"
+        ],
+        "risk": {
+          "account_id": "ACC-000611",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.55,
+          "risk_band": "medium",
+          "reasons": [
+            {
+              "code": "ESSENTIALS_SPEND_DOWN",
+              "weight": 0.22,
+              "text": {
+                "en": "Spending on essentials has dropped, which can signal financial stress.",
+                "ta": "அத்தியாவசியச் செலவுகள் குறைந்துள்ளன; இது நிதி நெருக்கடியைக் குறிக்கலாம்.",
+                "hi": "ज़रूरी खर्च घटे हैं, जो आर्थिक तनाव का संकेत हो सकता है।"
+              }
+            },
+            {
+              "code": "PAYMENT_MISSED",
+              "weight": 0.19,
+              "text": {
+                "en": "The last payment was missed.",
+                "ta": "கடைசி கட்டணம் செலுத்தப்படவில்லை.",
+                "hi": "पिछला भुगतान नहीं हुआ।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-000611",
+          "segment": "cant_pay",
+          "confidence": 0.58,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-000611",
+          "uplift_score": 0.12,
+          "uplift_group": "persuadable",
+          "recommended_treatment": "chat_invite",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.74
+    },
+    {
+      "account_id": "ACC-000509",
+      "customer_name": "Rahul Verma",
+      "bucket": "sma2",
+      "dpd": 72,
+      "total_due_paise": 18450000,
+      "nba": {
+        "account_id": "ACC-000509",
+        "action": "firm_process",
+        "channel": "call",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "PAYMENT_MISSED",
+          "UTILISATION_RISING"
+        ],
+        "risk": {
+          "account_id": "ACC-000509",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.88,
+          "risk_band": "high",
+          "reasons": [
+            {
+              "code": "PAYMENT_MISSED",
+              "weight": 0.44,
+              "text": {
+                "en": "The last payment was missed.",
+                "ta": "கடைசி கட்டணம் செலுத்தப்படவில்லை.",
+                "hi": "पिछला भुगतान नहीं हुआ।"
+              }
+            },
+            {
+              "code": "UTILISATION_RISING",
+              "weight": 0.18,
+              "text": {
+                "en": "Card usage has risen sharply compared with the credit limit.",
+                "ta": "கடன் வரம்புடன் ஒப்பிடும்போது அட்டைப் பயன்பாடு வேகமாக அதிகரித்துள்ளது.",
+                "hi": "क्रेडिट सीमा की तुलना में कार्ड का उपयोग तेज़ी से बढ़ा है।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-000509",
+          "segment": "wont_pay",
+          "confidence": 0.62,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-000509",
+          "uplift_score": -0.01,
+          "uplift_group": "lost_cause",
+          "recommended_treatment": "agent_call",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.66
+    },
+    {
+      "account_id": "ACC-000117",
+      "customer_name": "Arjun Mehta",
+      "bucket": "sma0",
+      "dpd": 8,
+      "total_due_paise": 4235000,
+      "nba": {
+        "account_id": "ACC-000117",
+        "action": "reminder",
+        "channel": "sms",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "FIRST_LATE_PAYMENT",
+          "PAYMENT_MISSED"
+        ],
+        "risk": {
+          "account_id": "ACC-000117",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.64,
+          "risk_band": "medium",
+          "reasons": [
+            {
+              "code": "FIRST_LATE_PAYMENT",
+              "weight": 0.33,
+              "text": {
+                "en": "A first-time late payment after a long on-time history.",
+                "ta": "நீண்ட காலம் சரியான நேரத்தில் செலுத்திய பிறகு முதல் தாமதம்.",
+                "hi": "लंबे समय तक समय पर भुगतान के बाद पहली बार देरी।"
+              }
+            },
+            {
+              "code": "PAYMENT_MISSED",
+              "weight": 0.2,
+              "text": {
+                "en": "The last payment was missed.",
+                "ta": "கடைசி கட்டணம் செலுத்தப்படவில்லை.",
+                "hi": "पिछला भुगतान नहीं हुआ।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-000117",
+          "segment": "forgot",
+          "confidence": 0.81,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-000117",
+          "uplift_score": 0.02,
+          "uplift_group": "sure_thing",
+          "recommended_treatment": "reminder",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.58
+    },
+    {
+      "account_id": "ACC-000954",
+      "customer_name": "Vikram Singh",
+      "bucket": "sma0",
+      "dpd": 5,
+      "total_due_paise": 2250000,
+      "nba": {
+        "account_id": "ACC-000954",
+        "action": "reminder",
+        "channel": "email",
+        "earliest_contact_at": "2026-10-12T04:30:00Z",
+        "reason_codes": [
+          "FIRST_LATE_PAYMENT"
+        ],
+        "risk": {
+          "account_id": "ACC-000954",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.47,
+          "risk_band": "medium",
+          "reasons": [
+            {
+              "code": "FIRST_LATE_PAYMENT",
+              "weight": 0.29,
+              "text": {
+                "en": "A first-time late payment after a long on-time history.",
+                "ta": "நீண்ட காலம் சரியான நேரத்தில் செலுத்திய பிறகு முதல் தாமதம்.",
+                "hi": "लंबे समय तक समय पर भुगतान के बाद पहली बार देरी।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-000954",
+          "segment": "forgot",
+          "confidence": 0.86,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-000954",
+          "uplift_score": 0.05,
+          "uplift_group": "sure_thing",
+          "recommended_treatment": "reminder",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.41
+    },
+    {
+      "account_id": "ACC-000778",
+      "customer_name": "Suresh Kumar",
+      "bucket": "current",
+      "dpd": 0,
+      "total_due_paise": 1560000,
+      "nba": {
+        "account_id": "ACC-000778",
+        "action": "no_contact",
+        "channel": null,
+        "earliest_contact_at": null,
+        "reason_codes": [
+          "UTILISATION_RISING"
+        ],
+        "risk": {
+          "account_id": "ACC-000778",
+          "as_of_month": "2026-09",
+          "p_roll_forward": 0.31,
+          "risk_band": "low",
+          "reasons": [
+            {
+              "code": "UTILISATION_RISING",
+              "weight": 0.12,
+              "text": {
+                "en": "Card usage has risen sharply compared with the credit limit.",
+                "ta": "கடன் வரம்புடன் ஒப்பிடும்போது அட்டைப் பயன்பாடு வேகமாக அதிகரித்துள்ளது.",
+                "hi": "क्रेडिट सीमा की तुलना में कार्ड का उपयोग तेज़ी से बढ़ा है।"
+              }
+            }
+          ],
+          "model_version": "early_warning-0.0.0-fixture"
+        },
+        "segment": {
+          "account_id": "ACC-000778",
+          "segment": "not_at_risk",
+          "confidence": 0.9,
+          "model_version": "segment-0.0.0-fixture"
+        },
+        "uplift": {
+          "account_id": "ACC-000778",
+          "uplift_score": -0.04,
+          "uplift_group": "sleeping_dog",
+          "recommended_treatment": "none",
+          "model_version": "uplift-0.0.0-fixture"
+        }
+      },
+      "priority": 0.12
+    }
+  ],
+  "next_cursor": null
+}

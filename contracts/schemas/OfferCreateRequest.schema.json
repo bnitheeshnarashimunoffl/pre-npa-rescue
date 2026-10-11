@@ -1,0 +1,22 @@
+{
+  "$id": "OfferCreateRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "option_id": {
+      "title": "Option Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "option_id"
+  ],
+  "title": "OfferCreateRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

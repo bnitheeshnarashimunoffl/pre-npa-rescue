@@ -1,0 +1,57 @@
+[
+  {
+    "option_id": "OPT-PRIYA-EMI6-WAIVER",
+    "type": "emi_conversion",
+    "monthly_amount_paise": 200000,
+    "tenure_months": 6,
+    "waiver_paise": 118000,
+    "settlement_amount_paise": null,
+    "policy_ref": "bank_policy.yaml#emi_conversion.v1",
+    "regulatory_refs": [
+      "RBI Credit Card Directions 2025",
+      "RBI RBC Directions 2026 para 454D"
+    ],
+    "disclosure_keys": [
+      "disclosure.emi_conversion.interest_breakdown",
+      "disclosure.fee_waiver.scope",
+      "disclosure.missed_instalment.consequence"
+    ],
+    "requires_human_approval": true,
+    "eligibility_reason": "Declared capacity of Rs 2,500/month covers a Rs 2,000 instalment; account is SMA-0, not NPA; late fees eligible for waiver under the charges policy."
+  },
+  {
+    "option_id": "OPT-PRIYA-FEE-WAIVER",
+    "type": "fee_waiver",
+    "monthly_amount_paise": null,
+    "tenure_months": null,
+    "waiver_paise": 118000,
+    "settlement_amount_paise": null,
+    "policy_ref": "bank_policy.yaml#fee_waiver.v1",
+    "regulatory_refs": [
+      "RBI Credit Card Directions 2025"
+    ],
+    "disclosure_keys": [
+      "disclosure.fee_waiver.scope"
+    ],
+    "requires_human_approval": true,
+    "eligibility_reason": "First hardship request in 12 months; late fees within waiver limit."
+  },
+  {
+    "option_id": "OPT-PRIYA-EMI12",
+    "type": "emi_conversion",
+    "monthly_amount_paise": 105000,
+    "tenure_months": 12,
+    "waiver_paise": null,
+    "settlement_amount_paise": null,
+    "policy_ref": "bank_policy.yaml#emi_conversion.v1",
+    "regulatory_refs": [
+      "RBI Credit Card Directions 2025"
+    ],
+    "disclosure_keys": [
+      "disclosure.emi_conversion.interest_breakdown",
+      "disclosure.missed_instalment.consequence"
+    ],
+    "requires_human_approval": true,
+    "eligibility_reason": "Lower instalment alternative within declared capacity; longer tenure costs more interest."
+  }
+]

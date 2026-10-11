@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "StrategyMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "collection_cost_paise": {
+          "description": "Amount in paise (1 rupee = 100 paise).",
+          "minimum": 0,
+          "title": "Collection Cost Paise",
+          "type": "integer"
+        },
+        "contacts_made": {
+          "minimum": 0,
+          "title": "Contacts Made",
+          "type": "integer"
+        },
+        "cure_rate": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Cure Rate",
+          "type": "number"
+        },
+        "npa_rate": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Npa Rate",
+          "type": "number"
+        },
+        "strategy": {
+          "examples": [
+            "call_everyone",
+            "pre_npa_rescue"
+          ],
+          "title": "Strategy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "strategy",
+        "npa_rate",
+        "cure_rate",
+        "collection_cost_paise",
+        "contacts_made"
+      ],
+      "title": "StrategyMetrics",
+      "type": "object"
+    }
+  },
+  "$id": "SimulationMetrics.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_of_month": {
+      "examples": [
+        "2026-09"
+      ],
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+      "title": "As Of Month",
+      "type": "string"
+    },
+    "baseline": {
+      "$ref": "#/$defs/StrategyMetrics"
+    },
+    "horizon_days": {
+      "minimum": 1,
+      "title": "Horizon Days",
+      "type": "integer"
+    },
+    "illustrative": {
+      "title": "Illustrative",
+      "type": "boolean"
+    },
+    "n_accounts": {
+      "minimum": 0,
+      "title": "N Accounts",
+      "type": "integer"
+    },
+    "npa_reduction_pct": {
+      "description": "Relative NPA-rate reduction vs baseline, %.",
+      "title": "Npa Reduction Pct",
+      "type": "number"
+    },
+    "ours": {
+      "$ref": "#/$defs/StrategyMetrics"
+    },
+    "source": {
+      "description": "Where the numbers come from, e.g. a report path.",
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "required": [
+    "as_of_month",
+    "n_accounts",
+    "horizon_days",
+    "baseline",
+    "ours",
+    "npa_reduction_pct",
+    "illustrative",
+    "source"
+  ],
+  "title": "SimulationMetrics",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

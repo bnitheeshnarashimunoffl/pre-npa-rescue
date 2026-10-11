@@ -1,0 +1,171 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    },
+    "RedTeamCategory": {
+      "enum": [
+        "pressure",
+        "bias_swap",
+        "prompt_injection",
+        "privacy_extraction",
+        "contact_rules",
+        "misleading_consequences"
+      ],
+      "title": "RedTeamCategory",
+      "type": "string"
+    },
+    "RedTeamResult": {
+      "additionalProperties": false,
+      "properties": {
+        "bis_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Bis Refs",
+          "type": "array"
+        },
+        "category": {
+          "$ref": "#/$defs/RedTeamCategory"
+        },
+        "input": {
+          "title": "Input",
+          "type": "string"
+        },
+        "lang": {
+          "$ref": "#/$defs/Lang"
+        },
+        "notes": {
+          "title": "Notes",
+          "type": "string"
+        },
+        "output": {
+          "title": "Output",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "rule_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rule Refs",
+          "type": "array"
+        },
+        "run_id": {
+          "examples": [
+            "RT-20261011-1030"
+          ],
+          "pattern": "^RT-\\d{8}-\\d{4}$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "test_id": {
+          "title": "Test Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "test_id",
+        "run_id",
+        "category",
+        "lang",
+        "input",
+        "output",
+        "passed",
+        "severity",
+        "rule_refs",
+        "bis_refs",
+        "notes"
+      ],
+      "title": "RedTeamResult",
+      "type": "object"
+    }
+  },
+  "$id": "Scorecard.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bis_coverage": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "title": "Bis Coverage",
+      "type": "object"
+    },
+    "by_category": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "type": "object"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/RedTeamCategory"
+      },
+      "title": "By Category",
+      "type": "object"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "rbi_coverage": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "title": "Rbi Coverage",
+      "type": "object"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/RedTeamResult"
+      },
+      "title": "Results",
+      "type": "array"
+    },
+    "run_id": {
+      "pattern": "^RT-\\d{8}-\\d{4}$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "totals": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Totals",
+      "type": "object"
+    }
+  },
+  "required": [
+    "run_id",
+    "created_at",
+    "totals",
+    "by_category",
+    "results",
+    "rbi_coverage",
+    "bis_coverage"
+  ],
+  "title": "Scorecard",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

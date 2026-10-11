@@ -1,0 +1,62 @@
+{
+  "$defs": {
+    "Role": {
+      "enum": [
+        "customer",
+        "collector",
+        "hardship_officer",
+        "admin",
+        "auditor"
+      ],
+      "title": "Role",
+      "type": "string"
+    }
+  },
+  "$id": "Callback.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "callback_id": {
+      "title": "Callback Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "role": {
+      "$ref": "#/$defs/Role"
+    },
+    "slot_end": {
+      "format": "date-time",
+      "title": "Slot End",
+      "type": "string"
+    },
+    "slot_start": {
+      "format": "date-time",
+      "title": "Slot Start",
+      "type": "string"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "callback_id",
+    "customer_id",
+    "role",
+    "slot_start",
+    "slot_end",
+    "summary",
+    "created_at"
+  ],
+  "title": "Callback",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

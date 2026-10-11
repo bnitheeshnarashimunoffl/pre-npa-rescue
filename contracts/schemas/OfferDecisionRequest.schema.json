@@ -1,0 +1,23 @@
+{
+  "$id": "OfferDecisionRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    }
+  },
+  "title": "OfferDecisionRequest",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

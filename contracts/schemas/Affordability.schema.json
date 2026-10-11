@@ -1,0 +1,74 @@
+{
+  "$id": "Affordability.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "declared_expenses_paise": {
+      "anyOf": [
+        {
+          "description": "Amount in paise (1 rupee = 100 paise).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Declared Expenses Paise"
+    },
+    "declared_income_paise": {
+      "anyOf": [
+        {
+          "description": "Amount in paise (1 rupee = 100 paise).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Declared Income Paise"
+    },
+    "dependants": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Dependants"
+    },
+    "max_monthly_payment_paise": {
+      "description": "0 means zero-capacity.",
+      "minimum": 0,
+      "title": "Max Monthly Payment Paise",
+      "type": "integer"
+    },
+    "source": {
+      "enum": [
+        "declared",
+        "estimated"
+      ],
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "declared_income_paise",
+    "declared_expenses_paise",
+    "dependants",
+    "max_monthly_payment_paise",
+    "source"
+  ],
+  "title": "Affordability",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "ErrorBody": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "examples": [
+            "NOT_FOUND"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ErrorBody",
+      "type": "object"
+    }
+  },
+  "$id": "ErrorResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Standard error envelope: ``{\"error\": {\"code\", \"message\", \"details\"}}``.",
+  "properties": {
+    "error": {
+      "$ref": "#/$defs/ErrorBody"
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "title": "ErrorResponse",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

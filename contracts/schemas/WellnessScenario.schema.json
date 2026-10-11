@@ -1,0 +1,39 @@
+{
+  "$id": "WellnessScenario.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "months_to_recover": {
+      "minimum": 0,
+      "title": "Months To Recover",
+      "type": "integer"
+    },
+    "name": {
+      "enum": [
+        "pay_plan",
+        "reach_npa"
+      ],
+      "title": "Name",
+      "type": "string"
+    },
+    "notes_key": {
+      "description": "i18n key of the explanation text.",
+      "title": "Notes Key",
+      "type": "string"
+    },
+    "score_band": {
+      "description": "Illustrative band label, not a real bureau score.",
+      "title": "Score Band",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "score_band",
+    "months_to_recover",
+    "notes_key"
+  ],
+  "title": "WellnessScenario",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

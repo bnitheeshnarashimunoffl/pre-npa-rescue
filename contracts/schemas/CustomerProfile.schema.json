@@ -1,0 +1,153 @@
+{
+  "$defs": {
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "CustomerProfile.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Profile minimised per role (RBI RBC Directions para 454O, DPDP Act 2023).\n\nNever contains protected attributes. Fields a role may not see are ``null``.",
+  "properties": {
+    "account_id": {
+      "title": "Account Id",
+      "type": "string"
+    },
+    "age": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Age"
+    },
+    "card_limit_paise": {
+      "anyOf": [
+        {
+          "description": "Amount in paise (1 rupee = 100 paise).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Card Limit Paise"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "City"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "email_masked": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Email Masked"
+    },
+    "full_name": {
+      "title": "Full Name",
+      "type": "string"
+    },
+    "has_card_insurance": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Has Card Insurance"
+    },
+    "insurance_cover_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Insurance Cover Type"
+    },
+    "language_pref": {
+      "$ref": "#/$defs/Lang"
+    },
+    "occupation_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Occupation Type"
+    },
+    "phone_masked": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Phone Masked"
+    },
+    "preferred_contact_window": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Preferred Contact Window"
+    }
+  },
+  "required": [
+    "customer_id",
+    "account_id",
+    "full_name",
+    "language_pref",
+    "age",
+    "city",
+    "occupation_type",
+    "card_limit_paise",
+    "has_card_insurance",
+    "insurance_cover_type",
+    "phone_masked",
+    "email_masked",
+    "preferred_contact_window"
+  ],
+  "title": "CustomerProfile",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

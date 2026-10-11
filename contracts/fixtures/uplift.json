@@ -1,0 +1,7 @@
+{
+  "account_id": "ACC-DEMO-PRIYA",
+  "uplift_score": 0.21,
+  "uplift_group": "persuadable",
+  "recommended_treatment": "relief_offer",
+  "model_version": "uplift-0.0.0-fixture"
+}

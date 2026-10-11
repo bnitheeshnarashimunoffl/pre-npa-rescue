@@ -1,0 +1,162 @@
+{
+  "$defs": {
+    "Actor": {
+      "enum": [
+        "bot",
+        "agent",
+        "hardship_officer",
+        "system",
+        "customer"
+      ],
+      "title": "Actor",
+      "type": "string"
+    },
+    "Channel": {
+      "enum": [
+        "chat",
+        "whatsapp_sim",
+        "sms",
+        "email",
+        "call",
+        "voice_sim"
+      ],
+      "title": "Channel",
+      "type": "string"
+    },
+    "ComplianceDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "title": "Allowed",
+          "type": "boolean"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "next_allowed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Allowed At"
+        },
+        "rule_ids": {
+          "examples": [
+            [
+              "RBI-454Y4-WINDOW"
+            ]
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Rule Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "allowed",
+        "rule_ids",
+        "next_allowed_at",
+        "explanation"
+      ],
+      "title": "ComplianceDecision",
+      "type": "object"
+    },
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ContactEvent.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "title": "Account Id",
+      "type": "string"
+    },
+    "actor": {
+      "$ref": "#/$defs/Actor"
+    },
+    "channel": {
+      "$ref": "#/$defs/Channel"
+    },
+    "compliance": {
+      "$ref": "#/$defs/ComplianceDecision"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "direction": {
+      "enum": [
+        "outbound",
+        "inbound"
+      ],
+      "title": "Direction",
+      "type": "string"
+    },
+    "event_id": {
+      "examples": [
+        "EVT-1b4e28ba-2fa1-11d2-883f-0016d3cca427"
+      ],
+      "title": "Event Id",
+      "type": "string"
+    },
+    "lang": {
+      "$ref": "#/$defs/Lang"
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Outcome"
+    },
+    "recorded_notice_given": {
+      "title": "Recorded Notice Given",
+      "type": "boolean"
+    },
+    "ts": {
+      "format": "date-time",
+      "title": "Ts",
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "customer_id",
+    "account_id",
+    "channel",
+    "direction",
+    "actor",
+    "ts",
+    "content",
+    "lang",
+    "recorded_notice_given",
+    "compliance",
+    "outcome"
+  ],
+  "title": "ContactEvent",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

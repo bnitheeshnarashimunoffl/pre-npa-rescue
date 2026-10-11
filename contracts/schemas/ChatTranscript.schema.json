@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "Actor": {
+      "enum": [
+        "bot",
+        "agent",
+        "hardship_officer",
+        "system",
+        "customer"
+      ],
+      "title": "Actor",
+      "type": "string"
+    },
+    "ChatTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "$ref": "#/$defs/Actor"
+        },
+        "flags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags",
+          "type": "array"
+        },
+        "lang": {
+          "$ref": "#/$defs/Lang"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "ts": {
+          "format": "date-time",
+          "title": "Ts",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actor",
+        "text",
+        "lang",
+        "ts",
+        "flags"
+      ],
+      "title": "ChatTurn",
+      "type": "object"
+    },
+    "Lang": {
+      "enum": [
+        "en",
+        "ta",
+        "hi"
+      ],
+      "title": "Lang",
+      "type": "string"
+    }
+  },
+  "$id": "ChatTranscript.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "turns": {
+      "items": {
+        "$ref": "#/$defs/ChatTurn"
+      },
+      "title": "Turns",
+      "type": "array"
+    }
+  },
+  "required": [
+    "session_id",
+    "customer_id",
+    "created_at",
+    "turns"
+  ],
+  "title": "ChatTranscript",
+  "type": "object",
+  "x-contract-version": "0.1.0"
+}

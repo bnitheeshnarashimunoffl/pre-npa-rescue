@@ -1,0 +1,6 @@
+{
+  "account_id": "ACC-DEMO-PRIYA",
+  "segment": "cant_pay",
+  "confidence": 0.77,
+  "model_version": "segment-0.0.0-fixture"
+}
