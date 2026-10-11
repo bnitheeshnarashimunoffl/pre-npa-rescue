@@ -108,12 +108,17 @@ gh repo edit bnitheeshnarashimunoffl/pre-npa-rescue \
 
 ### 3. Branch protection for `main`
 
+**Why no required approvals:** several workstreams push from the same GitHub account, and
+GitHub does not let an account approve its own PRs, so a required approval (or a required
+Code Owner review) would block those PRs forever. Instead, the **WS9 supervisor** (run by the
+owner) reviews and squash-merges PRs once CI passes. `CODEOWNERS` is still used to request
+reviews automatically; it just doesn't block merging.
+
 Settings → Branches → Add branch protection rule → Branch name pattern `main`:
 
 - [x] Require a pull request before merging
-  - [x] Require approvals: **1**
-  - [x] Dismiss stale pull request approvals when new commits are pushed
-  - [x] Require review from Code Owners
+  - Require approvals: **0**
+  - [ ] Require review from Code Owners — **off**
 - [x] Require status checks to pass before merging
   - Required check: **`ci-passed`** (it appears in the search box after CI has run once)
   - [ ] Require branches to be up to date before merging — leave **off** (eight agents
@@ -133,9 +138,9 @@ gh api -X PUT repos/bnitheeshnarashimunoffl/pre-npa-rescue/branches/main/protect
   "required_status_checks": { "strict": false, "contexts": ["ci-passed"] },
   "enforce_admins": false,
   "required_pull_request_reviews": {
-    "required_approving_review_count": 1,
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": true
+    "required_approving_review_count": 0,
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false
   },
   "restrictions": null,
   "required_linear_history": true,
@@ -156,22 +161,21 @@ Settings → Actions → General: allow GitHub Actions and the third-party actio
 
 `v0.1-mvp`, `v0.2-integrated`, `demo-freeze` are created by the team lead (A8.1).
 
-## CODEOWNERS placeholders (to fill in)
+## CODEOWNERS
 
-`.github/CODEOWNERS` already has the real handles for the team lead
-(`@bnitheeshnarashimunoffl`) and WS5 (`@GautamV-srg`). Replace these placeholders with real
-GitHub usernames, then open a PR (WS5 + team lead review):
-
-| Placeholder | Workstream | Folders |
+| Workstream | Owner | Folders |
 |---|---|---|
-| `@ws1-owner` | WS1 Data foundation | `/packages/datagen/`, `/data/` |
-| `@ws2-owner` | WS2 Models | `/packages/models/` |
-| `@ws3-owner` | WS3 Rules | `/packages/rules/` |
-| `@ws4-owner` | WS4 Chatbot | `/packages/chatbot/` |
-| `@ws6-owner` | WS6 Frontend | `/apps/web/` |
-| `@ws7-owner` | WS7 Red team & compliance | `/redteam/`, `/governance/` |
-| `@ws8-owner` | WS8 Pitch | `/docs/`, `/README.md` |
+| Team lead (default `*`) | `@bnitheeshnarashimunoffl` | everything not listed below |
+| WS1 Data foundation | `@GautamV-srg` | `/packages/datagen/`, `/data/` |
+| WS2 Models | `@GautamV-srg` | `/packages/models/` |
+| WS3 Rules | `@GautamV-srg` | `/packages/rules/` |
+| WS4 Chatbot | `@ws4-teammate` (**placeholder**) | `/packages/chatbot/` |
+| WS5 Backend & platform | `@GautamV-srg` | `/services/api/`, `/packages/contracts/`, `/contracts/`, `/.github/`, `/docs/setup.md` |
+| WS6 Frontend | `@ws6-teammate` (**placeholder**) | `/apps/web/` |
+| WS7 Red team & compliance | `@GautamV-srg` | `/redteam/`, `/governance/` |
+| WS8 Pitch | `@bnitheeshnarashimunoffl` | `/docs/`, `/README.md` |
 
-Until they are replaced, GitHub shows "unknown owner" warnings for those lines, and those
-folders have no code owner (any approving review from a writer counts). Each handle must belong
-to a collaborator with write access.
+Replace the two placeholders with the teammates' real GitHub usernames (each must be a
+collaborator with write access). Until then GitHub shows "unknown owner" warnings for those
+lines. Code Owner review is not required for merging (see the Owner checklist), so the
+placeholders block nothing.

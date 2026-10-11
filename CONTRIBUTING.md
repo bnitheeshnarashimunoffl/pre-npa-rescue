@@ -12,8 +12,9 @@ Never commit generated data, model artifacts, secrets, `.env`, `node_modules` or
 
 ## Branches
 
-- `main` is protected: PR required, CI (`ci-passed`) must pass, 1 approving review
-  (CODEOWNER or team lead), squash merge only, linear history.
+- `main` is protected: PR required, CI (`ci-passed`) must pass, squash merge only, linear
+  history. No approval is required (several workstreams share one GitHub account, which can't
+  approve its own PRs); the WS9 supervisor merges PRs once CI passes.
 - Branch name: `ws<N>/<type>/<task-id>-<short-desc>`, e.g. `ws2/feat/2.1-early-warning-model`.
   Types: `feat fix chore docs test refactor perf data`. Contract changes: `contracts/<short-desc>`.
 
