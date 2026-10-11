@@ -1,20 +1,20 @@
 # CODEOWNERS (owned by WS5, A5). Later rules override earlier ones.
-# Placeholders @ws1-owner ... @ws8-owner must be replaced with real GitHub usernames
-# (see docs/setup.md "CODEOWNERS placeholders").
+# Used to auto-request reviews; Code Owner review is NOT required to merge (docs/setup.md).
+# Placeholders @ws4-teammate and @ws6-teammate must be replaced with real GitHub usernames.
 
 *                       @bnitheeshnarashimunoffl
-/packages/datagen/      @ws1-owner
-/data/                  @ws1-owner
-/packages/models/       @ws2-owner
-/packages/rules/        @ws3-owner
-/packages/chatbot/      @ws4-owner
+/packages/datagen/      @GautamV-srg
+/data/                  @GautamV-srg
+/packages/models/       @GautamV-srg
+/packages/rules/        @GautamV-srg
+/packages/chatbot/      @ws4-teammate
 /services/api/          @GautamV-srg
 /packages/contracts/    @GautamV-srg @bnitheeshnarashimunoffl
 /contracts/             @GautamV-srg @bnitheeshnarashimunoffl
 /.github/               @GautamV-srg @bnitheeshnarashimunoffl
-/apps/web/              @ws6-owner
-/redteam/               @ws7-owner
-/governance/            @ws7-owner
-/docs/                  @ws8-owner
+/apps/web/              @ws6-teammate
+/redteam/               @GautamV-srg
+/governance/            @GautamV-srg
+/docs/                  @bnitheeshnarashimunoffl
 /docs/setup.md          @GautamV-srg
-/README.md              @ws8-owner
+/README.md              @bnitheeshnarashimunoffl
