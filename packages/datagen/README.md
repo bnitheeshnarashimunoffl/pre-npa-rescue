@@ -15,7 +15,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 
 | Step | Command | Status |
 |---|---|---|
-| Generate tables (1.1) | `uv run datagen generate` | not implemented yet |
+| Generate tables (1.1) | `uv run datagen generate` | not implemented yet (calibration ready) |
 | Demo personas (1.1 step 6) | — | after features (task 1.2) |
 | Features + labels (1.2) | `uv run datagen features` | not implemented yet |
 | Experiment (1.3) | `uv run datagen experiment` | not implemented yet |
@@ -27,6 +27,13 @@ probability is documented in [`data/README.md`](../../data/README.md).
 uv run datagen generate --n 10000 --seed 42 --out data/generated
 uv run datagen generate --no-transactions                          # large runs
 uv run datagen --help
+```
+
+Refreshing the calibration (needs network; never in CI):
+
+```bash
+uv run python data/scripts/download_public.py
+uv run python -m datagen.calibrate_uci
 ```
 
 Flags override environment variables; see `.env.example` (A11).
@@ -48,7 +55,7 @@ Flags override environment variables; see `.env.example` (A11).
 
 ## Module map
 
-`cli`
+`calibrate_uci` · `cli`
 
 ## Regulations and standards
 
