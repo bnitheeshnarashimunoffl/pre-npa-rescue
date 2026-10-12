@@ -47,7 +47,27 @@ uplift model that decides who is worth contacting at all. Implements
   (argmax) and after the rule, plus the share of rows the rule relabelled.
 - **API:** `train(...)`, `train_frames(...)`, `SegmentModel.score(df) -> list[SegmentResult]`,
   `.score_batch(features, as_of_month)`, `.score_frame(df)`, `.save()` / `.load()`.
-- **CLI:** `npa-models train --all` also writes `$MODEL_DIR/segment/`.
+- **CLI:** `npa-models train` also writes `$MODEL_DIR/segment/`.
+
+## Uplift (task 2.4, `uplift.py`)
+
+- **Data:** WS1's randomised `experiment.parquet` joined to features as of the experiment month.
+- **Learner:** T-learner with small LightGBM trees: a control model, an any-contact model
+  (`uplift_score` = difference) and one model per contact arm. X-learner (causalml) not included.
+- **Groups:** `persuadable` if uplift >= tau (0.05, `UPLIFT_TAU`), `sleeping_dog` if <= -tau,
+  else `sure_thing` when the no-contact cure probability >= 0.5, otherwise `lost_cause`.
+- **Treatment:** persuadables get the arm with the best `uplift * cure value - mean arm cost`
+  (cure value Rs 5,000, `UPLIFT_CURE_VALUE_PAISE`, an assumption); everyone else gets `none`.
+- **Evaluation:** 3-fold cross-fitting, so Qini/AUUC (scikit-uplift), agreement with the hidden
+  `true_uplift_group` and the policy simulation all use out-of-fold estimates.
+- **Policy simulation:** `simulate_strategies(oof, risk, potential)` compares call everyone,
+  risk targeting (same budget, agent calls), uplift targeting and the oracle through WS1's
+  `datagen.experiment.simulate_policy`; `["policy_simulation"]` has the shape of
+  `contracts/fixtures/simulation_metrics.json` (to be written to
+  `reports/policy_simulation.json` once WS1's data is merged).
+- **API:** `train(features_path, experiment_path)`, `train_frames(...) -> (model, oof)`,
+  `UpliftModel.score(df) -> list[UpliftResult]`, `.score_batch`, `.score_frame`, `.save`/`.load`.
+- **CLI:** `npa-models train --all` also writes `$MODEL_DIR/uplift/` (needs `experiment.parquet`).
 
 ## Public API (so far)
 
@@ -98,3 +118,4 @@ including the demo personas `CUST-DEMO-PRIYA` and `CUST-DEMO-RAVI`.
 | IS/ISO/IEC TS 4213 (classification performance) | `metrics.binary_metrics`: ROC-AUC, PR-AUC, Brier, KS + base rate |
 | IS/ISO/IEC 25059:2023 (explainability, controllability) | monotonic constraints in `early_warning.MONOTONE` |
 | RBI card NPA rule (min due unpaid > 90 days, 16 Jul 2015) | `reaches_npa_90d` head |
+| RBI RBC Directions para 454Z (no excessive contact) | uplift: sleeping dogs and sure things get no contact |
