@@ -401,6 +401,49 @@
       "title": "LateFeeSlabSpec",
       "type": "object"
     },
+    "NbaPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "hardship_boost": {
+          "anyOf": [
+            {
+              "maximum": 10.0,
+              "minimum": 1.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Hardship Boost"
+        },
+        "hardship_floor_weight": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Hardship Floor Weight"
+        },
+        "chat_invites_ignored_before_call": {
+          "minimum": 1,
+          "title": "Chat Invites Ignored Before Call",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "hardship_boost",
+        "hardship_floor_weight",
+        "chat_invites_ignored_before_call"
+      ],
+      "title": "NbaPolicy",
+      "type": "object"
+    },
     "OffersPolicy": {
       "additionalProperties": false,
       "properties": {
@@ -769,6 +812,9 @@
     "offers": {
       "$ref": "#/$defs/OffersPolicy"
     },
+    "nba": {
+      "$ref": "#/$defs/NbaPolicy"
+    },
     "options": {
       "$ref": "#/$defs/OptionsPolicy"
     },
@@ -785,6 +831,7 @@
     "charges",
     "affordability",
     "offers",
+    "nba",
     "options",
     "credit_bureau"
   ],

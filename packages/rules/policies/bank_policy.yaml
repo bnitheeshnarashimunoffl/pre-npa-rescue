@@ -52,6 +52,14 @@ affordability:
 offers:
   expiry_days: 7                          # bank policy assumption
 
+# Next-best-action and collector-queue weights (task 3.4). Bank policy assumptions.
+# Priority = expected benefit (p_roll_forward x max(uplift, 0) x outstanding), never "ease of
+# extraction"; collector incentives must not reward harsh practices (RBI RBC para 454Q).
+nba:
+  hardship_boost: "1.5"                   # multiplier for hardship cases
+  hardship_floor_weight: "0.1"            # hardship cases never drop below p x outstanding x this
+  chat_invites_ignored_before_call: 2     # after this many ignored chat invites, offer an agent call
+
 options:
   fee_waiver:
     enabled: true

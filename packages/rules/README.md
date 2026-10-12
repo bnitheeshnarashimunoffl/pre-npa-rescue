@@ -13,6 +13,7 @@ relief/affordability calculator, compliance guard and next-best-action. Implemen
 | Module | What | RBI / BIS |
 |---|---|---|
 | `policy_engine.py` | `PolicyEngine` (`PolicyProvider`): `relief_options`, `propose_offer`, `grievance_officer`, `reload` | Prudential Framework 2019, 2023 settlement framework, RBC 454D (zero-capacity engagement), 454AA; IS/ISO/IEC 38507 (human approval) |
+| `nba.py` | `NextBestActionService` (`NBAProvider`), `prioritise` (collector queue), `StaticRiskProvider` (fixture-backed `RiskProvider` until WS2 ships) | RBC 454Y(6), 454Q (no "ease of extraction" priority), 454Z (firm ≠ harsh) |
 | `compliance_guard.py` | `ComplianceGuard` (`ComplianceProvider`): `check_contact`, `check_text`, `required_footer`; lexicon in `policies/compliance_lexicon.yaml` | RBC 454Y(4), 454Y(6), 454Z, 454P (recording notice), 454AA (grievance footer) |
 | `policy_loader.py` | `load_policy(path)` → immutable `Policy`; JSON Schema + Pydantic + RBI cross-checks (an admin edit can never weaken an RBI number or drop a mandatory disclosure) | RBI 454Y(4) window, 454Y(6) flags, 2023 settlement framework (12-month cooling, ≤ 3-month window), Prudential Framework 2019 (NPA-downgrade disclosure), Credit Card Directions (bureau update ≤ 30 days) |
 | `disclosures.py` | Mandatory trade-off texts per option, en/ta/hi (ta/hi `needs_review`) | RBI 454Z(8): no misleading statements about consequences |
@@ -79,6 +80,27 @@ recording notice (454P) and the grievance officer's details with the Ombudsman r
 * Option ids are deterministic: `OPT-<account_id>-<KIND>[<tenure>][-WAIVER]`.
 * WS5 wiring: `PolicyEngine(load_policy(), accounts=lambda cid: AccountSnapshot.from_context(ctx.context(cid)))`;
   on `PUT /admin/policy` call `engine.reload(parse_policy(body))` (raises `PolicyError` → 422).
+
+## Next-best-action
+
+Rule table (first match wins; full table in `nba.py`): do-not-contact flag → `no_contact`;
+low risk + `not_at_risk` → `no_contact`; `sleeping_dog` → `no_contact` (statement message
+only); `forgot` / `sure_thing` → `reminder` (SMS); `cant_pay` with estimated capacity below
+the minimum EMI → `hardship_officer`; `cant_pay` + `persuadable` → `chat_invite` (relief options
+pre-computed when a `PolicyProvider` is injected); other `persuadable` → `chat_invite`, or
+`agent_call` after 2 ignored invites; `wont_pay` / `lost_cause` → `firm_process` (written
+notice + agent call within the rules; **firm means procedural, never harsh**: every message
+still passes `check_text`).
+
+`earliest_contact_at` comes from `check_contact` (now, or `next_allowed_at`). `reason_codes`
+are the model's reason codes, then the rule fired (`RULE_*`), then any `WAIT:<rule_id>`.
+
+**Collector queue priority** = expected benefit = `p_roll_forward × max(uplift_score, 0) ×
+outstanding`, scaled to 0..1 within the batch. Hardship cases get ×1.5 and a floor of
+`p_roll_forward × outstanding × 0.1` (bank policy assumptions in `nba:`), so they are never
+pushed to the bottom. `no_contact` is 0. The queue is **never** ordered by "ease of
+extraction", and nothing in it rewards contact volume: RBI RBC para 454Q requires that recovery
+targets and incentives do not encourage harsh practices.
 
 ## Demo personas (task 3.2 demo requirement)
 
