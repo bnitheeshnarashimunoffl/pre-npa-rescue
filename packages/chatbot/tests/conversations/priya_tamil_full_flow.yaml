@@ -1,0 +1,47 @@
+scenario: "Priya Full Demo Flow (Tamil)"
+description: "Complete hardship disclosure, affordability assessment, EMI + waiver offer presentation, disclosures, and acceptance in Tamil."
+customer_id: "CUST-DEMO-PRIYA"
+turns:
+  - user: "வணக்கம்"
+    expected_state: "CONSENT_NOTICE"
+    expected_lang: "ta"
+    expected_reply_contains:
+      - "Priya"
+      - "பதிவு செய்யப்படுகிறது"
+
+  - user: "தமிழ்"
+    expected_state: "HARDSHIP_DISCLOSURE"
+    expected_lang: "ta"
+    expected_reply_contains:
+      - "விருப்பமே"
+
+  - user: "மருத்துவ அவசரநிலை காரணமாக பணத்தட்டுப்பாடு ஏற்பட்டுள்ளது"
+    expected_state: "AFFORDABILITY"
+    expected_lang: "ta"
+    expected_flags:
+      - "hardship_classified_medical"
+    expected_reply_contains:
+      - "உடல்நலமும் நல்வாழ்வுமே"
+      - "மாத வருமானம்"
+
+  - user: "மாதம் 2000 ரூபாய் என்னால் செலுத்த முடியும்"
+    expected_state: "OPTIONS"
+    expected_lang: "ta"
+    expected_flags:
+      - "affordability_assessed"
+    expected_reply_contains:
+      - "திட்டம்"
+      - "2,000"
+      - "1,534"
+      - "ℹ️"
+
+  - user: "ஏற்றுக்கொள்கிறேன்"
+    expected_state: "ACCEPTED"
+    expected_lang: "ta"
+    expected_flags:
+      - "offer_accepted"
+      - "rbi_454aa_grievance_attached"
+    expected_reply_contains:
+      - "ஏற்றுக்கொண்டதற்கு நன்றி"
+      - "2,000"
+      - "@"

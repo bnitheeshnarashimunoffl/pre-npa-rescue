@@ -1,0 +1,30 @@
+scenario: "Bereavement Outreach Pause Flow"
+description: "Bereavement disclosure, compassionate condolence, and RBI para 454Y(6) outreach pause acceptance."
+customer_id: "CUST-DEMO-RAVI"
+lang: "en"
+turns:
+  - user: "Hi"
+    expected_state: "CONSENT_NOTICE"
+    expected_lang: "en"
+
+  - user: "English"
+    expected_state: "HARDSHIP_DISCLOSURE"
+    expected_lang: "en"
+
+  - user: "My father passed away last week and we are grieving"
+    expected_state: "HARDSHIP_DISCLOSURE"
+    expected_flags:
+      - "pause_outreach_suggested"
+      - "pause_outreach_offered"
+    expected_reply_contains:
+      - "condolences"
+      - "454Y(6)"
+      - "pause all outreach"
+
+  - user: "Pause contact"
+    expected_state: "CLOSING"
+    expected_flags:
+      - "outreach_paused"
+    expected_reply_contains:
+      - "paused our outreach"
+      - "take care of yourself"

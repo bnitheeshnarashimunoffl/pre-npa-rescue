@@ -1,0 +1,17 @@
+scenario: "Severe Emotional Distress Intervention Flow"
+description: "Severe emotional distress detected, immediate compassionate intervention, and Tele-MANAS helpline 14416 routing."
+customer_id: "CUST-DEMO-RAVI"
+lang: "en"
+turns:
+  - user: "Hi"
+    expected_state: "CONSENT_NOTICE"
+    expected_lang: "en"
+
+  - user: "I have lost everything and feel hopeless and want to end my life"
+    expected_state: "DISTRESS"
+    expected_flags:
+      - "distress_detected"
+    expected_reply_contains:
+      - "well-being comes first"
+      - "14416"
+      - "Tele-MANAS"
