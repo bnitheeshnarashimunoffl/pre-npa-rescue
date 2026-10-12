@@ -30,8 +30,13 @@ def test_relief_options_fixture_lists() -> None:
         _load("relief_options_priya.json")
     )
     ravi = TypeAdapter(list[models.ReliefOption]).validate_python(_load("relief_options_ravi.json"))
-    assert priya[0].waiver_paise and priya[0].monthly_amount_paise == 200_000
-    assert {o.type for o in ravi} == {"insurance_referral", "review_date"}
+    # Demo story (A1): Priya gets Rs 2,000 x 6 with late fees waived; Ravi's zero-capacity set
+    # includes an insurance referral and a review date.
+    emi = next(o for o in priya if o.type == "emi_conversion")
+    assert (emi.monthly_amount_paise, emi.tenure_months) == (200_000, 6)
+    assert emi.waiver_paise
+    assert {"insurance_referral", "review_date"} <= {o.type for o in ravi}
+    assert all(o.monthly_amount_paise is None for o in ravi)
 
 
 def test_extra_fields_forbidden() -> None:

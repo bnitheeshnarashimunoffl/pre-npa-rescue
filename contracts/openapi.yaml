@@ -1670,9 +1670,9 @@ components:
       scheme: bearer
       type: http
 info:
-  summary: REST contract v0.1.0 (api 0.1.0). Synthetic data only.
+  summary: REST contract v0.1.1 (api 0.1.0). Synthetic data only.
   title: Pre-NPA Rescue API
-  version: 0.1.0
+  version: 0.1.1
 openapi: 3.1.0
 paths:
   /api/v1/accounts/{account_id}/nba:

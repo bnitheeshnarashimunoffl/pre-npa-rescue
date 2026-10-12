@@ -2,11 +2,12 @@
   "account_id": "ACC-DEMO-PRIYA",
   "action": "chat_invite",
   "channel": "chat",
-  "earliest_contact_at": "2026-10-12T04:30:00Z",
+  "earliest_contact_at": "2026-10-12T05:30:00Z",
   "reason_codes": [
     "SALARY_STOPPED",
     "MIN_DUE_ONLY_STREAK",
-    "UTILISATION_RISING"
+    "UTILISATION_RISING",
+    "RULE_CANT_PAY_PERSUADABLE"
   ],
   "risk": {
     "account_id": "ACC-DEMO-PRIYA",

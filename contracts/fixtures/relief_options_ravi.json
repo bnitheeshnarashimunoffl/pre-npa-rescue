@@ -1,37 +1,71 @@
 [
   {
-    "option_id": "OPT-RAVI-INSURANCE",
+    "option_id": "OPT-ACC-DEMO-RAVI-INSURANCE",
     "type": "insurance_referral",
     "monthly_amount_paise": null,
     "tenure_months": null,
     "waiver_paise": null,
     "settlement_amount_paise": null,
-    "policy_ref": "bank_policy.yaml#insurance_referral.v1",
+    "policy_ref": "bank_policy.yaml#insurance.v1",
     "regulatory_refs": [
-      "RBI RBC Directions 2026 para 454D"
+      "RBI Credit Card Directions 2025 - insurance cover disclosure"
     ],
     "disclosure_keys": [
-      "disclosure.insurance_referral.claim_not_guaranteed"
+      "disc.insurance.claim_process"
     ],
     "requires_human_approval": false,
-    "eligibility_reason": "Card carries job-loss insurance cover; customer reports job loss."
+    "eligibility_reason": "Card carries job loss insurance cover; a claim may cover dues (insurer decides)."
   },
   {
-    "option_id": "OPT-RAVI-REVIEW-DATE",
+    "option_id": "OPT-ACC-DEMO-RAVI-FEE-WAIVER",
+    "type": "fee_waiver",
+    "monthly_amount_paise": null,
+    "tenure_months": null,
+    "waiver_paise": 153400,
+    "settlement_amount_paise": null,
+    "policy_ref": "bank_policy.yaml#fee_waiver.v1",
+    "regulatory_refs": [
+      "RBI Credit Card Directions 2025 - charges per board policy"
+    ],
+    "disclosure_keys": [
+      "disc.fee_waiver.stops_growth"
+    ],
+    "requires_human_approval": false,
+    "eligibility_reason": "Account is sma1; 0 waiver(s) in the last 12 months (limit 1); late charges Rs 1,534 within the Rs 5,000 cap."
+  },
+  {
+    "option_id": "OPT-ACC-DEMO-RAVI-RESTRUCTURE-REVIEW",
+    "type": "restructuring",
+    "monthly_amount_paise": null,
+    "tenure_months": null,
+    "waiver_paise": null,
+    "settlement_amount_paise": null,
+    "policy_ref": "bank_policy.yaml#restructuring.v1",
+    "regulatory_refs": [
+      "RBI Prudential Framework for Resolution of Stressed Assets, 7 Jun 2019"
+    ],
+    "disclosure_keys": [
+      "disc.restructuring.npa_downgrade",
+      "disc.restructuring.upgrade_after_performance"
+    ],
+    "requires_human_approval": true,
+    "eligibility_reason": "Account is sma1 and no instalment over up to 36 months fits current capacity; a hardship officer sets terms (up to 3 months' moratorium) under the board-approved policy."
+  },
+  {
+    "option_id": "OPT-ACC-DEMO-RAVI-REVIEW-DATE",
     "type": "review_date",
     "monthly_amount_paise": null,
     "tenure_months": null,
     "waiver_paise": null,
     "settlement_amount_paise": null,
-    "policy_ref": "bank_policy.yaml#review_date.v1",
+    "policy_ref": "bank_policy.yaml#distress_framework.v1",
     "regulatory_refs": [
-      "RBI RBC Directions 2026 para 454D"
+      "RBI RBC Directions para 454D (from 1 Jan 2027)"
     ],
     "disclosure_keys": [
-      "disclosure.review_date.no_payment_now",
-      "disclosure.review_date.dues_continue"
+      "disc.review.what_happens_next"
     ],
     "requires_human_approval": true,
-    "eligibility_reason": "Zero repayment capacity declared; documented engagement and an agreed review date with a hardship officer before any escalation."
+    "eligibility_reason": "Zero repayment capacity: documented engagement and an agreed review date (in 30, 45, 60 days) with a hardship officer before any escalation."
   }
 ]

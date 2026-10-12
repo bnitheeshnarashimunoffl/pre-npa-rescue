@@ -3,6 +3,39 @@
 Format: `## <version> — <YYYY-MM-DD>` then bullet points. Minor = additive, patch = docs/fixtures.
 Breaking changes are marked **BREAKING** and need the team lead's approval.
 
+## 0.1.1 — 2026-10-12
+
+Fixtures only (patch). No model, schema or endpoint change. Requested in #47.
+
+- Replaced the WS3-produced fixtures with real `npa_rules` outputs, generated with
+  `uv run python -m npa_rules.cli fixtures --out contracts/fixtures` from WS3's #88, which
+  carries the whole WS3 chain (#68 -> #42 -> #43 -> #44 -> #45 -> #46 -> #48 -> #51 -> #88).
+  The CLI reads the v0 `queue.json` for model outputs; output is deterministic. Files:
+  `relief_options_priya.json`, `relief_options_ravi.json`, `offer.json`, `nba.json`,
+  `queue.json`, `policy.json`.
+- **Disclosure keys are now `disc.*`** (e.g. `disc.restructuring.npa_downgrade`), not
+  `disclosure.*`. Texts: `npa_rules.disclosures.disclosure_text(key, lang)`.
+- **Option ids** are now `OPT-<account_id>-<KIND>`, e.g. `OPT-ACC-DEMO-PRIYA-EMI6-WAIVER`.
+- **Late charges waived: Rs 1,534** (Rs 1,300 + 18% GST; slab chosen on the amount outstanding
+  after the due date, per RBI, WS3 #88), was Rs 1,180: `waiver_paise` 118000 -> 153400 for
+  Priya and Ravi.
+- Priya: `fee_waiver` (Rs 1,534) and `emi_conversion` Rs 2,000 x 6 with late fees waived (on
+  the Rs 11,492 overdue amount). Both are auto-approved under the bank policy
+  (`requires_human_approval: false`), so `offer.json` is `approved` by `policy_engine`.
+- Ravi: `insurance_referral`, `fee_waiver`, `restructuring` (officer approval), `review_date`
+  (officer approval).
+- `queue.json`: priorities recomputed by `npa_rules.nba.prioritise`; **hardship-officer cases
+  form a top band, so Ravi is first (1.0) and Priya second (0.5)** (WS3 #51). Priya
+  `total_due_paise` 1318000 -> 11000000 (outstanding Rs 1,10,000); `ACC-001006` action
+  `agent_call` -> `chat_invite`.
+- `policy.json`: `policy` is now the real `bank_policy.yaml` shape (`npa_rules.policy_loader.Policy`,
+  schema `packages/rules/policies/bank_policy.schema.json`); version `2026.10-v1`; the `nba`
+  section has `hardship_first`.
+- `bot_reply_offer.json`: the embedded offer now matches `offer.json` (status `presented`) and
+  the Tamil text states the Rs 1,534 waiver.
+- `CONTRACT_VERSION` 0.1.0 -> 0.1.1 (schemas and `openapi.yaml` regenerated; only the version
+  stamp changed).
+
 ## 0.1.0 — 2026-10-12
 
 Initial contracts from the shared briefing (A7), created in the WS5 bootstrap.

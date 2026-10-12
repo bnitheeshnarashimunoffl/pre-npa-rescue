@@ -416,7 +416,7 @@ requires-dist = [{ name = "npa-contracts", editable = "packages/contracts" }]
 
 [[package]]
 name = "npa-contracts"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/contracts" }
 dependencies = [
     { name = "pydantic" },
