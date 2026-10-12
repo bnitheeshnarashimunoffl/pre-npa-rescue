@@ -1,0 +1,842 @@
+{
+  "$defs": {
+    "AffordabilityPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "affordability_ratio": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "maximum": 1.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Affordability Ratio"
+        },
+        "dependant_allowance_paise": {
+          "minimum": 0,
+          "title": "Dependant Allowance Paise",
+          "type": "integer"
+        },
+        "estimated_essentials_pct": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Estimated Essentials Pct"
+        }
+      },
+      "required": [
+        "affordability_ratio",
+        "dependant_allowance_paise",
+        "estimated_essentials_pct"
+      ],
+      "title": "AffordabilityPolicy",
+      "type": "object"
+    },
+    "Bucket": {
+      "description": "Delinquency bucket from days past due (see ``constants.BUCKET_THRESHOLDS``).\n\ndpd 0 -> current; 1-30 -> sma0; 31-60 -> sma1; 61-90 -> sma2; >90 -> npa.",
+      "enum": [
+        "current",
+        "sma0",
+        "sma1",
+        "sma2",
+        "npa"
+      ],
+      "title": "Bucket",
+      "type": "string"
+    },
+    "ChargesPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "late_fee_slabs": {
+          "items": {
+            "$ref": "#/$defs/LateFeeSlabSpec"
+          },
+          "minItems": 1,
+          "title": "Late Fee Slabs",
+          "type": "array"
+        },
+        "card_interest_rate_annual_pct": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Card Interest Rate Annual Pct"
+        },
+        "mad_principal_pct": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Mad Principal Pct"
+        },
+        "mad_floor_paise": {
+          "minimum": 0,
+          "title": "Mad Floor Paise",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "late_fee_slabs",
+        "card_interest_rate_annual_pct",
+        "mad_principal_pct",
+        "mad_floor_paise"
+      ],
+      "title": "ChargesPolicy",
+      "type": "object"
+    },
+    "ContactPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "window_local": {
+          "$ref": "#/$defs/ContactWindow"
+        },
+        "max_outbound_attempts_per_day": {
+          "minimum": 1,
+          "title": "Max Outbound Attempts Per Day",
+          "type": "integer"
+        },
+        "max_outbound_attempts_per_week": {
+          "minimum": 1,
+          "title": "Max Outbound Attempts Per Week",
+          "type": "integer"
+        },
+        "min_gap_minutes_between_attempts": {
+          "minimum": 0,
+          "title": "Min Gap Minutes Between Attempts",
+          "type": "integer"
+        },
+        "do_not_contact_flags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Do Not Contact Flags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "window_local",
+        "max_outbound_attempts_per_day",
+        "max_outbound_attempts_per_week",
+        "min_gap_minutes_between_attempts",
+        "do_not_contact_flags"
+      ],
+      "title": "ContactPolicy",
+      "type": "object"
+    },
+    "ContactWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "format": "time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "time",
+          "title": "End",
+          "type": "string"
+        },
+        "tz": {
+          "title": "Tz",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "tz"
+      ],
+      "title": "ContactWindow",
+      "type": "object"
+    },
+    "CreditBureauPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "notify_before_default_report": {
+          "title": "Notify Before Default Report",
+          "type": "boolean"
+        },
+        "update_after_settlement_days": {
+          "minimum": 1,
+          "title": "Update After Settlement Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "notify_before_default_report",
+        "update_after_settlement_days"
+      ],
+      "title": "CreditBureauPolicy",
+      "type": "object"
+    },
+    "EmiPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "requires_human_approval": {
+          "title": "Requires Human Approval",
+          "type": "boolean"
+        },
+        "policy_ref": {
+          "title": "Policy Ref",
+          "type": "string"
+        },
+        "regulatory_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulatory Refs",
+          "type": "array"
+        },
+        "disclosure_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disclosure Keys",
+          "type": "array"
+        },
+        "eligible_buckets": {
+          "default": [
+            "current",
+            "sma0",
+            "sma1",
+            "sma2",
+            "npa"
+          ],
+          "items": {
+            "$ref": "#/$defs/Bucket"
+          },
+          "title": "Eligible Buckets",
+          "type": "array"
+        },
+        "tenures_months": {
+          "items": {
+            "maximum": 120,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Tenures Months",
+          "type": "array"
+        },
+        "interest_rate_annual_pct": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Interest Rate Annual Pct"
+        },
+        "min_emi_paise": {
+          "minimum": 0,
+          "title": "Min Emi Paise",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "enabled",
+        "requires_human_approval",
+        "policy_ref",
+        "regulatory_refs",
+        "disclosure_keys",
+        "tenures_months",
+        "interest_rate_annual_pct",
+        "min_emi_paise"
+      ],
+      "title": "EmiPolicy",
+      "type": "object"
+    },
+    "FeeWaiverPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "requires_human_approval": {
+          "title": "Requires Human Approval",
+          "type": "boolean"
+        },
+        "policy_ref": {
+          "title": "Policy Ref",
+          "type": "string"
+        },
+        "regulatory_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulatory Refs",
+          "type": "array"
+        },
+        "disclosure_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disclosure Keys",
+          "type": "array"
+        },
+        "eligible_buckets": {
+          "default": [
+            "current",
+            "sma0",
+            "sma1",
+            "sma2",
+            "npa"
+          ],
+          "items": {
+            "$ref": "#/$defs/Bucket"
+          },
+          "title": "Eligible Buckets",
+          "type": "array"
+        },
+        "max_waiver_paise": {
+          "minimum": 0,
+          "title": "Max Waiver Paise",
+          "type": "integer"
+        },
+        "max_times_per_12m": {
+          "minimum": 0,
+          "title": "Max Times Per 12M",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "enabled",
+        "requires_human_approval",
+        "policy_ref",
+        "regulatory_refs",
+        "disclosure_keys",
+        "max_waiver_paise",
+        "max_times_per_12m"
+      ],
+      "title": "FeeWaiverPolicy",
+      "type": "object"
+    },
+    "GrievanceOfficer": {
+      "additionalProperties": false,
+      "description": "Grievance officer details from ``bank_policy.yaml`` (RBI RBC Directions para 454AA).",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "email": {
+          "title": "Email",
+          "type": "string"
+        },
+        "phone": {
+          "title": "Phone",
+          "type": "string"
+        },
+        "address": {
+          "title": "Address",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "phone",
+        "address"
+      ],
+      "title": "GrievanceOfficer",
+      "type": "object"
+    },
+    "LateFeeSlabSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "up_to_paise": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Up To Paise"
+        },
+        "fee_paise": {
+          "minimum": 0,
+          "title": "Fee Paise",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "up_to_paise",
+        "fee_paise"
+      ],
+      "title": "LateFeeSlabSpec",
+      "type": "object"
+    },
+    "NbaPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "hardship_boost": {
+          "anyOf": [
+            {
+              "maximum": 10.0,
+              "minimum": 1.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Hardship Boost"
+        },
+        "hardship_floor_weight": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Hardship Floor Weight"
+        },
+        "chat_invites_ignored_before_call": {
+          "minimum": 1,
+          "title": "Chat Invites Ignored Before Call",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "hardship_boost",
+        "hardship_floor_weight",
+        "chat_invites_ignored_before_call"
+      ],
+      "title": "NbaPolicy",
+      "type": "object"
+    },
+    "OffersPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "expiry_days": {
+          "maximum": 90,
+          "minimum": 1,
+          "title": "Expiry Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expiry_days"
+      ],
+      "title": "OffersPolicy",
+      "type": "object"
+    },
+    "OptionPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "requires_human_approval": {
+          "title": "Requires Human Approval",
+          "type": "boolean"
+        },
+        "policy_ref": {
+          "title": "Policy Ref",
+          "type": "string"
+        },
+        "regulatory_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulatory Refs",
+          "type": "array"
+        },
+        "disclosure_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disclosure Keys",
+          "type": "array"
+        },
+        "eligible_buckets": {
+          "default": [
+            "current",
+            "sma0",
+            "sma1",
+            "sma2",
+            "npa"
+          ],
+          "items": {
+            "$ref": "#/$defs/Bucket"
+          },
+          "title": "Eligible Buckets",
+          "type": "array"
+        }
+      },
+      "required": [
+        "enabled",
+        "requires_human_approval",
+        "policy_ref",
+        "regulatory_refs",
+        "disclosure_keys"
+      ],
+      "title": "OptionPolicy",
+      "type": "object"
+    },
+    "OptionsPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "fee_waiver": {
+          "$ref": "#/$defs/FeeWaiverPolicy"
+        },
+        "emi_conversion": {
+          "$ref": "#/$defs/EmiPolicy"
+        },
+        "restructuring": {
+          "$ref": "#/$defs/RestructuringPolicy"
+        },
+        "compromise_settlement": {
+          "$ref": "#/$defs/SettlementPolicy"
+        },
+        "insurance_referral": {
+          "$ref": "#/$defs/OptionPolicy"
+        },
+        "review_date": {
+          "$ref": "#/$defs/ReviewDatePolicy"
+        }
+      },
+      "required": [
+        "fee_waiver",
+        "emi_conversion",
+        "restructuring",
+        "compromise_settlement",
+        "insurance_referral",
+        "review_date"
+      ],
+      "title": "OptionsPolicy",
+      "type": "object"
+    },
+    "RestructuringPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "requires_human_approval": {
+          "title": "Requires Human Approval",
+          "type": "boolean"
+        },
+        "policy_ref": {
+          "title": "Policy Ref",
+          "type": "string"
+        },
+        "regulatory_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulatory Refs",
+          "type": "array"
+        },
+        "disclosure_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disclosure Keys",
+          "type": "array"
+        },
+        "eligible_buckets": {
+          "default": [
+            "current",
+            "sma0",
+            "sma1",
+            "sma2",
+            "npa"
+          ],
+          "items": {
+            "$ref": "#/$defs/Bucket"
+          },
+          "title": "Eligible Buckets",
+          "type": "array"
+        },
+        "max_tenure_months": {
+          "maximum": 120,
+          "minimum": 1,
+          "title": "Max Tenure Months",
+          "type": "integer"
+        },
+        "moratorium_months_max": {
+          "maximum": 24,
+          "minimum": 0,
+          "title": "Moratorium Months Max",
+          "type": "integer"
+        },
+        "interest_rate_annual_pct": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Interest Rate Annual Pct"
+        }
+      },
+      "required": [
+        "enabled",
+        "requires_human_approval",
+        "policy_ref",
+        "regulatory_refs",
+        "disclosure_keys",
+        "max_tenure_months",
+        "moratorium_months_max",
+        "interest_rate_annual_pct"
+      ],
+      "title": "RestructuringPolicy",
+      "type": "object"
+    },
+    "ReviewDatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "requires_human_approval": {
+          "title": "Requires Human Approval",
+          "type": "boolean"
+        },
+        "policy_ref": {
+          "title": "Policy Ref",
+          "type": "string"
+        },
+        "regulatory_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulatory Refs",
+          "type": "array"
+        },
+        "disclosure_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disclosure Keys",
+          "type": "array"
+        },
+        "eligible_buckets": {
+          "default": [
+            "current",
+            "sma0",
+            "sma1",
+            "sma2",
+            "npa"
+          ],
+          "items": {
+            "$ref": "#/$defs/Bucket"
+          },
+          "title": "Eligible Buckets",
+          "type": "array"
+        },
+        "review_after_days": {
+          "items": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Review After Days",
+          "type": "array"
+        }
+      },
+      "required": [
+        "enabled",
+        "requires_human_approval",
+        "policy_ref",
+        "regulatory_refs",
+        "disclosure_keys",
+        "review_after_days"
+      ],
+      "title": "ReviewDatePolicy",
+      "type": "object"
+    },
+    "SettlementPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "requires_human_approval": {
+          "title": "Requires Human Approval",
+          "type": "boolean"
+        },
+        "policy_ref": {
+          "title": "Policy Ref",
+          "type": "string"
+        },
+        "regulatory_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regulatory Refs",
+          "type": "array"
+        },
+        "disclosure_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disclosure Keys",
+          "type": "array"
+        },
+        "eligible_buckets": {
+          "default": [
+            "current",
+            "sma0",
+            "sma1",
+            "sma2",
+            "npa"
+          ],
+          "items": {
+            "$ref": "#/$defs/Bucket"
+          },
+          "title": "Eligible Buckets",
+          "type": "array"
+        },
+        "max_sacrifice_pct": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Max Sacrifice Pct"
+        },
+        "min_ageing_dpd": {
+          "minimum": 0,
+          "title": "Min Ageing Dpd",
+          "type": "integer"
+        },
+        "payment_window_months_max": {
+          "maximum": 120,
+          "minimum": 1,
+          "title": "Payment Window Months Max",
+          "type": "integer"
+        },
+        "cooling_period_months": {
+          "maximum": 120,
+          "minimum": 1,
+          "title": "Cooling Period Months",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "enabled",
+        "requires_human_approval",
+        "policy_ref",
+        "regulatory_refs",
+        "disclosure_keys",
+        "max_sacrifice_pct",
+        "min_ageing_dpd",
+        "payment_window_months_max",
+        "cooling_period_months"
+      ],
+      "title": "SettlementPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Immutable, validated bank policy (simulated board-approved policy).",
+  "properties": {
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "bank_name": {
+      "title": "Bank Name",
+      "type": "string"
+    },
+    "board_approval_ref": {
+      "title": "Board Approval Ref",
+      "type": "string"
+    },
+    "grievance_officer": {
+      "$ref": "#/$defs/GrievanceOfficer"
+    },
+    "contact": {
+      "$ref": "#/$defs/ContactPolicy"
+    },
+    "charges": {
+      "$ref": "#/$defs/ChargesPolicy"
+    },
+    "affordability": {
+      "$ref": "#/$defs/AffordabilityPolicy"
+    },
+    "offers": {
+      "$ref": "#/$defs/OffersPolicy"
+    },
+    "nba": {
+      "$ref": "#/$defs/NbaPolicy"
+    },
+    "options": {
+      "$ref": "#/$defs/OptionsPolicy"
+    },
+    "credit_bureau": {
+      "$ref": "#/$defs/CreditBureauPolicy"
+    }
+  },
+  "required": [
+    "version",
+    "bank_name",
+    "board_approval_ref",
+    "grievance_officer",
+    "contact",
+    "charges",
+    "affordability",
+    "offers",
+    "nba",
+    "options",
+    "credit_bureau"
+  ],
+  "title": "Demo Bank card collections and hardship policy (simulated)",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bank_policy.schema.json"
+}
