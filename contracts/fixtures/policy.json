@@ -1,60 +1,202 @@
 {
-  "version": "v1",
+  "version": "2026.10-v1",
   "effective_from": "2026-04-01",
-  "updated_at": "2026-10-01T04:30:00Z",
+  "updated_at": "2026-10-12T05:30:00Z",
   "updated_by": "admin1",
   "policy": {
-    "policy_id": "demo-bank-card-collections-policy",
+    "version": "2026.10-v1",
+    "bank_name": "Demo Bank Ltd (simulated)",
     "board_approval_ref": "BOARD-RES-2026-04 (simulated)",
-    "note": "Fixture shape only. WS3 owns packages/rules/policies/bank_policy.yaml.",
     "grievance_officer": {
-      "name": "Anjali Rao (fictional)",
-      "email": "grievance.officer@demo-bank.example",
-      "phone": "+91-44-0000-0000",
-      "address": "Grievance Redressal Cell, Demo Bank Ltd (fictional), 1 Example Road, Chennai 600001"
+      "name": "Grievance Redressal Officer",
+      "email": "gro@demobank.example",
+      "phone": "1800-000-0000",
+      "address": "Demo Bank Ltd, Chennai 600001"
     },
     "contact": {
-      "window_start": "08:00",
-      "window_end": "19:00",
-      "timezone": "Asia/Kolkata"
+      "window_local": {
+        "start": "08:00:00",
+        "end": "19:00:00",
+        "tz": "Asia/Kolkata"
+      },
+      "max_outbound_attempts_per_day": 2,
+      "max_outbound_attempts_per_week": 6,
+      "min_gap_minutes_between_attempts": 180,
+      "do_not_contact_flags": [
+        "bereavement",
+        "medical_emergency",
+        "customer_requested_pause"
+      ]
     },
-    "relief": {
+    "charges": {
+      "late_fee_slabs": [
+        {
+          "up_to_paise": 50000,
+          "fee_paise": 0
+        },
+        {
+          "up_to_paise": 500000,
+          "fee_paise": 50000
+        },
+        {
+          "up_to_paise": 1000000,
+          "fee_paise": 75000
+        },
+        {
+          "up_to_paise": 2500000,
+          "fee_paise": 100000
+        },
+        {
+          "up_to_paise": null,
+          "fee_paise": 130000
+        }
+      ],
+      "card_interest_rate_annual_pct": "42.0",
+      "mad_principal_pct": "5.0",
+      "mad_floor_paise": 20000
+    },
+    "affordability": {
+      "affordability_ratio": "0.3",
+      "dependant_allowance_paise": 300000,
+      "estimated_essentials_pct": "60"
+    },
+    "offers": {
+      "expiry_days": 7
+    },
+    "nba": {
+      "hardship_boost": "1.5",
+      "hardship_floor_weight": "0.1",
+      "chat_invites_ignored_before_call": 2
+    },
+    "options": {
       "fee_waiver": {
-        "version": "v1",
-        "max_waiver_paise": 300000,
-        "requires_human_approval": true
+        "enabled": true,
+        "requires_human_approval": false,
+        "policy_ref": "fee_waiver.v1",
+        "regulatory_refs": [
+          "RBI Credit Card Directions 2025 - charges per board policy"
+        ],
+        "disclosure_keys": [
+          "disc.fee_waiver.stops_growth"
+        ],
+        "eligible_buckets": [
+          "sma0",
+          "sma1",
+          "sma2"
+        ],
+        "max_waiver_paise": 500000,
+        "max_times_per_12m": 1
       },
       "emi_conversion": {
-        "version": "v1",
+        "enabled": true,
+        "requires_human_approval": false,
+        "policy_ref": "emi_conversion.v1",
+        "regulatory_refs": [
+          "RBI Credit Card Directions 2025 - EMI transparency"
+        ],
+        "disclosure_keys": [
+          "disc.emi.principal_interest_shown"
+        ],
+        "eligible_buckets": [
+          "current",
+          "sma0",
+          "sma1"
+        ],
         "tenures_months": [
           3,
           6,
           9,
           12
         ],
-        "requires_human_approval": true
+        "interest_rate_annual_pct": "15.0",
+        "min_emi_paise": 100000
       },
       "restructuring": {
-        "version": "v1",
-        "disclosures": [
-          "disclosure.restructuring.npa_downgrade"
-        ]
+        "enabled": true,
+        "requires_human_approval": true,
+        "policy_ref": "restructuring.v1",
+        "regulatory_refs": [
+          "RBI Prudential Framework for Resolution of Stressed Assets, 7 Jun 2019"
+        ],
+        "disclosure_keys": [
+          "disc.restructuring.npa_downgrade",
+          "disc.restructuring.upgrade_after_performance"
+        ],
+        "eligible_buckets": [
+          "sma1",
+          "sma2",
+          "npa"
+        ],
+        "max_tenure_months": 36,
+        "moratorium_months_max": 3,
+        "interest_rate_annual_pct": "12.0"
       },
       "compromise_settlement": {
-        "version": "v1",
-        "cooling_period_months": 12,
-        "disclosures": [
-          "disclosure.settlement.cooling_period"
-        ]
+        "enabled": true,
+        "requires_human_approval": true,
+        "policy_ref": "settlement.v1",
+        "regulatory_refs": [
+          "RBI Framework for Compromise Settlements and Technical Write-offs, 8 Jun 2023"
+        ],
+        "disclosure_keys": [
+          "disc.settlement.cooling_period",
+          "disc.settlement.over_3_months_is_restructuring",
+          "disc.settlement.bureau_reporting"
+        ],
+        "eligible_buckets": [
+          "sma2",
+          "npa"
+        ],
+        "max_sacrifice_pct": "40",
+        "min_ageing_dpd": 60,
+        "payment_window_months_max": 3,
+        "cooling_period_months": 12
       },
       "insurance_referral": {
-        "version": "v1",
-        "requires_human_approval": false
+        "enabled": true,
+        "requires_human_approval": false,
+        "policy_ref": "insurance.v1",
+        "regulatory_refs": [
+          "RBI Credit Card Directions 2025 - insurance cover disclosure"
+        ],
+        "disclosure_keys": [
+          "disc.insurance.claim_process"
+        ],
+        "eligible_buckets": [
+          "current",
+          "sma0",
+          "sma1",
+          "sma2",
+          "npa"
+        ]
       },
       "review_date": {
-        "version": "v1",
-        "requires_human_approval": true
+        "enabled": true,
+        "requires_human_approval": true,
+        "policy_ref": "distress_framework.v1",
+        "regulatory_refs": [
+          "RBI RBC Directions para 454D (from 1 Jan 2027)"
+        ],
+        "disclosure_keys": [
+          "disc.review.what_happens_next"
+        ],
+        "eligible_buckets": [
+          "current",
+          "sma0",
+          "sma1",
+          "sma2",
+          "npa"
+        ],
+        "review_after_days": [
+          30,
+          45,
+          60
+        ]
       }
+    },
+    "credit_bureau": {
+      "notify_before_default_report": true,
+      "update_after_settlement_days": 30
     }
   }
 }

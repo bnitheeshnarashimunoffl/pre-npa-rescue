@@ -3,28 +3,27 @@
   "customer_id": "CUST-DEMO-PRIYA",
   "account_id": "ACC-DEMO-PRIYA",
   "option": {
-    "option_id": "OPT-PRIYA-EMI6-WAIVER",
+    "option_id": "OPT-ACC-DEMO-PRIYA-EMI6-WAIVER",
     "type": "emi_conversion",
     "monthly_amount_paise": 200000,
     "tenure_months": 6,
     "waiver_paise": 118000,
     "settlement_amount_paise": null,
-    "policy_ref": "bank_policy.yaml#emi_conversion.v1",
+    "policy_ref": "bank_policy.yaml#emi_conversion.v1+fee_waiver.v1",
     "regulatory_refs": [
-      "RBI Credit Card Directions 2025",
-      "RBI RBC Directions 2026 para 454D"
+      "RBI Credit Card Directions 2025 - EMI transparency",
+      "RBI Credit Card Directions 2025 - charges per board policy"
     ],
     "disclosure_keys": [
-      "disclosure.emi_conversion.interest_breakdown",
-      "disclosure.fee_waiver.scope",
-      "disclosure.missed_instalment.consequence"
+      "disc.emi.principal_interest_shown",
+      "disc.fee_waiver.stops_growth"
     ],
-    "requires_human_approval": true,
-    "eligibility_reason": "Declared capacity of Rs 2,500/month covers a Rs 2,000 instalment; account is SMA-0, not NPA; late fees eligible for waiver under the charges policy."
+    "requires_human_approval": false,
+    "eligibility_reason": "Rs 2,000/month for 6 months covers the overdue amount (Rs 11,492, total interest Rs 507.98 at 15.0% p.a.); shortest tenure within the affordable Rs 2,400/month; late charges of Rs 1,180 waived."
   },
   "status": "approved",
   "proposed_by": "bot",
-  "approved_by": "officer1",
-  "created_at": "2026-10-11T05:42:00Z",
-  "expires_at": "2026-10-18T05:42:00Z"
+  "approved_by": "policy_engine",
+  "created_at": "2026-10-12T05:30:00Z",
+  "expires_at": "2026-10-19T05:30:00Z"
 }

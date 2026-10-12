@@ -40,7 +40,7 @@ def test_account_routes_echo_id(client: TestClient) -> None:
 
 def test_relief_options(client: TestClient) -> None:
     ravi = client.get("/api/v1/customers/CUST-DEMO-RAVI/relief-options").json()
-    assert {o["type"] for o in ravi} == {"insurance_referral", "review_date"}
+    assert {"insurance_referral", "review_date"} <= {o["type"] for o in ravi}
     missing = client.get("/api/v1/customers/CUST-NOPE/relief-options")
     assert missing.status_code == 404
     assert ErrorResponse.model_validate(missing.json()).error.code == "NOT_FOUND"

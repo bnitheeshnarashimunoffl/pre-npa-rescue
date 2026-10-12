@@ -3,6 +3,32 @@
 Format: `## <version> — <YYYY-MM-DD>` then bullet points. Minor = additive, patch = docs/fixtures.
 Breaking changes are marked **BREAKING** and need the team lead's approval.
 
+## 0.1.1 — 2026-10-12
+
+Fixtures only (patch). No model, schema or endpoint change. Requested in #47.
+
+- Replaced the WS3-produced fixtures with real `npa_rules` outputs, generated with
+  `uv run python -m npa_rules.cli fixtures --out contracts/fixtures` from WS3's #48 (the CLI
+  reads the v0 `queue.json` for model outputs; output is deterministic):
+  `relief_options_priya.json`, `relief_options_ravi.json`, `offer.json`, `nba.json`,
+  `queue.json`, `policy.json`.
+- **Disclosure keys are now `disc.*`** (e.g. `disc.restructuring.npa_downgrade`), not
+  `disclosure.*`. Texts: `npa_rules.disclosures.disclosure_text(key, lang)`.
+- **Option ids** are now `OPT-<account_id>-<KIND>`, e.g. `OPT-ACC-DEMO-PRIYA-EMI6-WAIVER`.
+- Priya: `fee_waiver` (Rs 1,180) and `emi_conversion` Rs 2,000 x 6 with late fees waived.
+  Both are auto-approved under the bank policy (`requires_human_approval: false`), so
+  `offer.json` is `approved` with `approved_by: "policy_engine"`.
+- Ravi: `insurance_referral`, `fee_waiver`, `restructuring` (officer approval), `review_date`
+  (officer approval).
+- `queue.json`: Priya `total_due_paise` 1318000 -> 11000000 (outstanding Rs 1,10,000);
+  priorities recomputed by `npa_rules.nba.prioritise`; `ACC-001006` action `agent_call` ->
+  `chat_invite`. Ravi is now 5th by priority (`hardship_officer`).
+- `policy.json`: `policy` is now the real `bank_policy.yaml` shape (`npa_rules.policy_loader.Policy`,
+  schema `packages/rules/policies/bank_policy.schema.json`); version `2026.10-v1`.
+- `bot_reply_offer.json`: the embedded offer now matches `offer.json` (status `presented`).
+- `CONTRACT_VERSION` 0.1.0 -> 0.1.1 (schemas and `openapi.yaml` regenerated; only the version
+  stamp changed).
+
 ## 0.1.0 — 2026-10-12
 
 Initial contracts from the shared briefing (A7), created in the WS5 bootstrap.
