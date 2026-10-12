@@ -31,6 +31,24 @@ uplift model that decides who is worth contacting at all. Implements
   `.score_frame(df)` (vectorised), `.save()` / `.load()`.
 - **CLI:** `uv run npa-models train --all` → `$MODEL_DIR/early_warning/`.
 
+## Segmentation (task 2.3, `segment.py`)
+
+- **Target:** `segment_truth` (`forgot`, `cant_pay`, `wont_pay`, `not_at_risk`); multiclass
+  LightGBM with `class_weight="balanced"` on the same allowlisted features.
+- **Conservative rule:** if `wont_pay` is the top class but its probability is < 0.5
+  (`WONT_PAY_MIN_CONFIDENCE`), output the lower-harm `cant_pay` and set `low_confidence`. A wrong
+  "won't pay" sends a struggling customer down the firm route, so we prefer the less harmful
+  error (RBI RBC Directions para 454D fair treatment; IS/ISO/IEC TR 24027). The briefing's wording
+  applies the 0.5 to the `cant_pay` probability, which would make `wont_pay` unreachable, so the
+  threshold is on the `wont_pay` probability instead.
+- `low_confidence` and the per-class probabilities are in `SegmentModel.score_frame`;
+  `SegmentResult` (contract) has no field for the flag.
+- **Metrics:** confusion matrix, macro-F1 and per-class recall on validation and test, both raw
+  (argmax) and after the rule, plus the share of rows the rule relabelled.
+- **API:** `train(...)`, `train_frames(...)`, `SegmentModel.score(df) -> list[SegmentResult]`,
+  `.score_batch(features, as_of_month)`, `.score_frame(df)`, `.save()` / `.load()`.
+- **CLI:** `npa-models train --all` also writes `$MODEL_DIR/segment/`.
+
 ## Public API (so far)
 
 | Name | Module | Purpose |
