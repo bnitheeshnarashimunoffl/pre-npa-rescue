@@ -62,5 +62,9 @@
   "complaint_cat_wrong_charges": "Incorrect Charges / Penalties",
   "complaint_cat_privacy": "Privacy & Data Protection (DPDP)",
   "complaint_cat_service": "Customer Service Grievance",
-  "complaint_cat_other": "General Account Grievance"
+  "complaint_cat_other": "General Account Grievance",
+  "guardrail_injection_refusal": "I cannot follow that request. I am here specifically to assist you with account relief options with care and respect.",
+  "guardrail_privacy_refusal": "Under the DPDP Act 2023 and bank privacy guidelines, I cannot access or discuss any other customer's account details.",
+  "guardrail_out_of_policy_refusal": "Under board-approved bank policy, we cannot write off your entire balance to zero. We can, however, offer structured options such as fee waivers and affordable EMI plans to help you manage.",
+  "guardrail_number_mismatch_fallback": "I want to make sure I give you exact figures. Let me connect you with an officer to review your verified account details."
 }

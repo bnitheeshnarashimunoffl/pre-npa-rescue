@@ -19,6 +19,7 @@ from npa_chat.flows import (
     present_relief_options,
     present_zero_capacity_options,
 )
+from npa_chat.guardrails import check_input_guardrails, verify_output_guardrails
 from npa_chat.i18n import get_string
 from npa_chat.language import detect_language_switch_request, resolve_language
 from npa_chat.nlu import NLU, Intent
@@ -166,6 +167,12 @@ class ChatEngine:
             reply_text = f"{ack_line}\n\n{next_line}"
             state.transition_to(ChatState.HARDSHIP_DISCLOSURE)
 
+        elif not (guard_res := check_input_guardrails(req.text, customer_id, state.lang)).allowed:
+            for f in guard_res.flags:
+                flags_to_add.append(f)
+                state.add_flag(f)
+            reply_text = guard_res.refusal_text or get_string("fallback_safe", state.lang)
+
         else:
             # Parse customer message via NLU
             nlu_res = self.nlu.parse(req.text, current_lang=state.lang)
@@ -310,11 +317,17 @@ class ChatEngine:
                 # Default safe conversational fallback
                 reply_text = get_string("fallback_safe", state.lang)
 
-        # 6. Apply compliance check to outgoing text (RBI para 454Z)
+        # 6. Apply output guardrails: numbers & respectful tone (Task 4.6, RBI para 454Z)
+        out_guard_res = verify_output_guardrails(
+            reply_text=reply_text,
+            state=state,
+            compliance_provider=self.compliance_provider,
+            customer_context=ctx,
+        )
+        reply_text = out_guard_res.verified_text
+        for f in out_guard_res.flags:
+            state.add_flag(f)
         compliance_check = self.compliance_provider.check_text(reply_text, state.lang)
-        if not compliance_check.allowed:
-            reply_text = get_string("fallback_safe", state.lang)
-            state.add_flag("output_blocked")
 
         for flag in flags_to_add:
             state.add_flag(flag)

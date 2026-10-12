@@ -14,6 +14,12 @@ from npa_chat.flows import (
     present_relief_options,
     present_zero_capacity_options,
 )
+from npa_chat.guardrails import (
+    InputGuardrailResult,
+    OutputGuardrailResult,
+    check_input_guardrails,
+    verify_output_guardrails,
+)
 from npa_chat.i18n import get_bundle, get_string
 from npa_chat.language import detect_language_switch_request, detect_script, resolve_language
 from npa_chat.llm_client import AnthropicLLMClient, MockLLMClient, get_llm_client
@@ -30,12 +36,15 @@ __all__ = [
     "ChatState",
     "ConversationState",
     "InMemorySessionStore",
+    "InputGuardrailResult",
     "Intent",
     "MockLLMClient",
     "NLUResult",
+    "OutputGuardrailResult",
     "SessionStore",
     "__version__",
     "build_engine",
+    "check_input_guardrails",
     "classify_complaint_category",
     "classify_hardship",
     "detect_distress",
@@ -55,4 +64,5 @@ __all__ = [
     "present_relief_options",
     "present_zero_capacity_options",
     "resolve_language",
+    "verify_output_guardrails",
 ]
