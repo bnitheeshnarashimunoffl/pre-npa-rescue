@@ -13,6 +13,7 @@ relief/affordability calculator, compliance guard and next-best-action. Implemen
 | Module | What | RBI / BIS |
 |---|---|---|
 | `policy_engine.py` | `PolicyEngine` (`PolicyProvider`): `relief_options`, `propose_offer`, `grievance_officer`, `reload` | Prudential Framework 2019, 2023 settlement framework, RBC 454D (zero-capacity engagement), 454AA; IS/ISO/IEC 38507 (human approval) |
+| `compliance_guard.py` | `ComplianceGuard` (`ComplianceProvider`): `check_contact`, `check_text`, `required_footer`; lexicon in `policies/compliance_lexicon.yaml` | RBC 454Y(4), 454Y(6), 454Z, 454P (recording notice), 454AA (grievance footer) |
 | `policy_loader.py` | `load_policy(path)` → immutable `Policy`; JSON Schema + Pydantic + RBI cross-checks (an admin edit can never weaken an RBI number or drop a mandatory disclosure) | RBI 454Y(4) window, 454Y(6) flags, 2023 settlement framework (12-month cooling, ≤ 3-month window), Prudential Framework 2019 (NPA-downgrade disclosure), Credit Card Directions (bureau update ≤ 30 days) |
 | `disclosures.py` | Mandatory trade-off texts per option, en/ta/hi (ta/hi `needs_review`) | RBI 454Z(8): no misleading statements about consequences |
 | `relief_calc.py` | `estimate_affordability`, `size_emi` (shortest tenure with EMI ≤ affordable), `emi_schedule` (principal/interest split), `size_waiver`, `size_settlement`; `AccountSnapshot` input | RBI Credit Card Directions 2025 (EMI transparency); 2023 settlement framework |
@@ -36,6 +37,29 @@ offer expiry 7 days, fee-waiver cap and frequency, EMI tenures/rate/minimum, res
 tenure/moratorium/rate, settlement sacrifice % and ageing, review intervals. RBI numbers
 (08:00–19:00 IST, 12-month cooling, 3-month settlement window, 30-day bureau update) are
 checked against `npa_contracts.constants` on every load.
+
+## Compliance rule IDs (stable; WS7 maps them to the scorecard)
+
+| Rule ID | Meaning | Source |
+|---|---|---|
+| `RBI-454Y4-WINDOW` | Outbound contact only 08:00–19:00 Asia/Kolkata (evaluated in IST whatever the input tz) | RBI RBC Directions para 454Y(4) |
+| `RBI-454Y4-PREF` | Customer asked not to be contacted at this time (`avoid_contact_windows`) | para 454Y(4) |
+| `RBI-454Y6-OCCASION` | Bereavement, medical emergency or customer-requested pause flag active; no `next_allowed_at` until an officer clears it | para 454Y(6) |
+| `RBI-454Z4-EXCESSIVE` | More than 2 attempts/day, 6/rolling 7 days, or less than 180 min since the last attempt (**bank policy assumptions**) | para 454Z (excessive calling) |
+| `RBI-454Z-ABUSIVE` | Abusive or insulting words | para 454Z |
+| `RBI-454Z-THREAT` | Threats: legal action, police, visits to home/office/family, "final warning" | para 454Z |
+| `RBI-454Z-MISLEADING` | False consequences: jail, family liable, property seizure, "never get a loan" | para 454Z(8) |
+| `RBI-454Z-THIRD-PARTY` | Telling employer, colleagues, neighbours or relatives | para 454Z, 454O |
+| `RBI-454Z-SHAMING` | Defaulter lists, social-media exposure, shaming | para 454Z |
+| `INBOUND-ALLOWED` | Customer-initiated contact (or the bot's replies in it): allowed at any hour | para 454Y(4) restricts outbound recovery contact only |
+
+`check_contact` returns `next_allowed_at`: the earliest time every contact rule passes
+(window, quiet times, caps and gap combined). `check_text` applies every language's patterns
+(en, hi, ta, plus romanised Hinglish/Tanglish), so code-mixed text is caught. An optional
+`llm_judge(text, lang) -> list[rule_id]` hook is injected and off by default. Our own
+disclosures and footer are tested to pass the filter. `required_footer(lang)` returns the
+recording notice (454P) and the grievance officer's details with the Ombudsman route after
+30 days (454AA).
 
 ## Policy engine behaviour
 

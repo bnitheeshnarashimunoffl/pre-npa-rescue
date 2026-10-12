@@ -1,0 +1,66 @@
+# Harsh-practice lexicon for npa_rules.compliance_guard.check_text (RBI RBC Directions para 454Z).
+#
+# Each rule has a stable rule_id (WS7 maps these to the scorecard) and regex patterns per
+# language. Patterns are matched case-insensitively against Unicode-NFC text, and EVERY
+# language's patterns are checked whatever the message language (code-mixed "Hinglish" or
+# "Tanglish" messages are common). `xx` holds romanised Hindi/Tamil patterns.
+#
+# Extend by adding patterns or rules; keep the rule_ids stable. Our own disclosures
+# (npa_rules.disclosures) must always pass: a test enforces it.
+
+version: "2026.10-v1"
+rules:
+  - rule_id: RBI-454Z-ABUSIVE
+    description: Abusive or insulting language about the borrower
+    patterns:
+      en: ['\b(idiot|stupid|liar|cheat(er)?|fraud(ster)?|thief|useless|shameless|loser|scum)\b']
+      hi: ['(बेवकूफ|मूर्ख|धोखेबाज़?|चोर|झूठा|बेशर्म|नालायक)']
+      ta: ['(முட்டாள்|ஏமாற்றுக்காரன்|ஏமாற்றுக்காரர்|திருடன்|பொய்யன்|வெட்கங்கெட்ட)']
+      xx: ['\b(chor|dhokebaaz|besharam|nalayak|bewakoof|muttal|thirudan)\b']
+  - rule_id: RBI-454Z-THREAT
+    description: Threats or intimidation (legal action, police, visits, "last warning")
+    patterns:
+      en:
+        - '\b(legal action|police|arrest(ed)?|warrant|criminal case|fir)\b'
+        - '\bwe (will|shall|are going to) (come|visit|send (someone|people|agents?))\b'
+        - '\b(visit|come to) your (home|house|office|workplace|family)\b'
+        - '\b(last|final) warning\b'
+        - '\bor else\b'
+        - '\byou will (regret|suffer)\b'
+      hi: ['(पुलिस|गिरफ्तार|गिरफ़्तार|कानूनी कार्रवाई|क़ानूनी कार्रवाई|आख़िरी चेतावनी|आखिरी चेतावनी|घर आएंगे|दफ़्तर आएंगे|दफ्तर आएंगे)']
+      ta: ['(காவல்துறை|போலீஸ்|கைது|சட்ட நடவடிக்கை|கடைசி எச்சரிக்கை|வீட்டுக்கு வருவோம்|அலுவலகத்துக்கு வருவோம்)']
+      xx: ['\b(police|giraftar|kanooni karyavahi|aakhri chetavani|ghar aayenge|veetukku varuvom)\b']
+  - rule_id: RBI-454Z-MISLEADING
+    description: False or misleading statements about the debt or the consequences of non-payment
+    patterns:
+      en:
+        - '\b(go|sent|send you) to (jail|prison)\b'
+        - '\bjail\b'
+        - '\byour (family|relatives|children|spouse|wife|husband|parents) (will|must|have to|has to) (pay|be liable)'
+        - '\b(seize|confiscate|auction) your (house|home|property|salary|land)\b'
+        - '\b(blacklisted|banned) (for life|forever|permanently)\b'
+        - '\bnever (get|be given) (a|any) (loan|credit)( again)?\b'
+        - '\byour (salary|wages) will be (stopped|frozen|attached)\b'
+      hi: ['(जेल|कारावास|परिवार को भरना|परिवार को चुकाना|संपत्ति ज़ब्त|संपत्ति जब्त|कभी लोन नहीं)']
+      ta: ['(சிறை|குடும்பம் செலுத்த வேண்டும்|சொத்து பறிமுதல்|ஒருபோதும் கடன் கிடைக்காது)']
+      xx: ['\b(jail|sirai|parivaar ko bharna)\b']
+  - rule_id: RBI-454Z-THIRD-PARTY
+    description: Disclosing the debt to, or contacting, relatives, employer, colleagues or neighbours
+    patterns:
+      en:
+        - '\b(tell|inform|call|contact|message|notify) your (employer|boss|manager|colleagues?|co-?workers?|neighbou?rs?|relatives?|friends?|family)\b'
+        - '\byour (employer|boss|manager|colleagues?|neighbou?rs?|relatives?) will (be told|be informed|know|find out)\b'
+      hi: ['(आपके|तुम्हारे) (बॉस|मालिक|सहकर्मियों|पड़ोसियों|रिश्तेदारों) को (बताएंगे|बता देंगे|फ़ोन करेंगे|फोन करेंगे)']
+      ta: ['உங்கள் (முதலாளி|மேலாளர்|சக ஊழியர்கள்|அண்டை வீட்டார்|உறவினர்கள்)(க்கு|இடம்) (சொல்வோம்|தெரிவிப்போம்)']
+      xx: ['\b(boss|rishtedaron|padosiyon) ko (batayenge|bata denge)\b']
+  - rule_id: RBI-454Z-SHAMING
+    description: Public shaming, defaulter lists, social media exposure
+    patterns:
+      en:
+        - '\b(defaulters?) list\b'
+        - '\b(post|publish|share|put) (it |this |your (name|photo|details) )?(on|to) (social media|facebook|whatsapp groups?|instagram|twitter|x)\b'
+        - '\beveryone will know\b'
+        - '\b(shame on you|ashamed of yourself|disgrace)\b'
+      hi: ['(डिफॉल्टर सूची|सोशल मीडिया पर डाल|सबको पता चल|शर्म करो|शर्म आनी चाहिए)']
+      ta: ['(கடன் தவறியோர் பட்டியல்|சமூக ஊடகத்தில் வெளியிடுவோம்|எல்லோருக்கும் தெரியும்|வெட்கமாக இல்லையா)']
+      xx: ['\b(sharam karo|social media pe daal|sabko pata chal)\b']
