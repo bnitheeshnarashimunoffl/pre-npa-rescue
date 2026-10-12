@@ -32,6 +32,20 @@ SAMPLE_ACCOUNTS = 200
 SAMPLE_MONTHS = 10  # 200 accounts x 10 consecutive labelled months = 2,000 rows
 SAMPLE_LAST_MONTH = "2026-06"  # pinned, so the committed samples stay byte-identical
 SAMPLE_STREAM = 20
+PROTECTED_SAMPLE = "protected_attributes_sample.parquet"
+# Age bands for fairness checks (age is not a model feature; bands keep the sample coarse).
+AGE_BANDS = ((21, 30, "21-30"), (31, 40, "31-40"), (41, 50, "41-50"), (51, 65, "51-65"))
+PROTECTED_SAMPLE_SCHEMA = pa.schema(
+    [
+        pa.field("customer_id", pa.string(), nullable=False),
+        pa.field("gender", pa.string(), nullable=False),
+        pa.field("religion", pa.string(), nullable=False),
+        pa.field("caste_category", pa.string(), nullable=False),
+        pa.field("state", pa.string(), nullable=False),
+        pa.field("region", pa.string(), nullable=False),
+        pa.field("age_band", pa.string(), nullable=False),
+    ]
+)
 FEATURE_CHUNK_ACCOUNTS = 100_000  # accounts per features chunk (~3 GB peak per chunk)
 
 
@@ -91,6 +105,31 @@ def read_chunk(
 def sample_months(labels: pd.DataFrame) -> list[str]:
     """The 10 labelled months ending ``SAMPLE_LAST_MONTH``."""
     return sorted(m for m in labels["month"].unique() if m <= SAMPLE_LAST_MONTH)[-SAMPLE_MONTHS:]
+
+
+def age_band(age: pd.Series) -> pd.Series:
+    """``21-30`` / ``31-40`` / ``41-50`` / ``51-65``."""
+    out = pd.Series(index=age.index, dtype=object)
+    for lo, hi, label in AGE_BANDS:
+        out[(age >= lo) & (age <= hi)] = label
+    if out.isna().any():
+        raise ValueError("age outside 21-65")
+    return out
+
+
+def protected_sample(
+    features_sample: pd.DataFrame, protected: pd.DataFrame, customers: pd.DataFrame
+) -> pd.DataFrame:
+    """Protected attributes plus age band for the customers in the features sample.
+
+    Evaluation and bias tests only (WS2 task 2.5, WS7): a separate file keyed by
+    ``customer_id``, never joined into the features file (A3, IS/ISO/IEC TR 24027:2021).
+    """
+    ids = np.sort(features_sample["customer_id"].unique())
+    p = protected.set_index("customer_id").loc[ids].reset_index()
+    ages = customers.set_index("customer_id").loc[ids, "age"].reset_index(drop=True)
+    p["age_band"] = age_band(ages).to_numpy()
+    return p[[f.name for f in PROTECTED_SAMPLE_SCHEMA]]
 
 
 def make_samples(
@@ -184,7 +223,10 @@ def run_features(cfg: DatagenConfig) -> None:
             f, samples_dir / "features_sample.parquet", arrow_schema(table_spec("features"))
         )
         write_parquet(lb, samples_dir / "labels_sample.parquet", arrow_schema(table_spec("labels")))
-        logger.info("samples rows=%d dir=%s", len(f), samples_dir)
+        protected = pd.read_parquet(cfg.data_dir / "protected_attributes.parquet")
+        ps = protected_sample(f, protected, inputs["customers"])
+        write_parquet(ps, samples_dir / PROTECTED_SAMPLE, PROTECTED_SAMPLE_SCHEMA)
+        logger.info("samples rows=%d customers=%d dir=%s", len(f), len(ps), samples_dir)
 
 
 def add_persona_features(

@@ -79,3 +79,45 @@ def test_chunked_features_equal_single_pass(
     pd.testing.assert_frame_equal(pd.read_parquet(chunked_dir / "labels.parquet"), single_l)
     sample = pd.read_parquet(tmp_path / "features_sample.parquet")
     assert len(sample) == 2_000
+
+
+def test_protected_sample_is_separate_and_keyed(
+    small_written: Path, small_cfg: DatagenConfig, tmp_path: Path
+) -> None:
+    """WS2 fairness (task 2.5): protected attributes ship in their own file, never in features."""
+    from datagen.pipeline import PROTECTED_SAMPLE
+
+    run_features(small_cfg.model_copy(update={"samples_dir": tmp_path}))
+    feats = pd.read_parquet(tmp_path / "features_sample.parquet")
+    prot = pd.read_parquet(tmp_path / PROTECTED_SAMPLE)
+    assert list(prot.columns) == [
+        "customer_id",
+        "gender",
+        "religion",
+        "caste_category",
+        "state",
+        "region",
+        "age_band",
+    ]
+    assert prot["customer_id"].is_unique
+    assert set(prot["customer_id"]) == set(feats["customer_id"])
+    assert set(prot.columns) & set(feats.columns) == {"customer_id"}  # never in features
+    assert set(prot["age_band"]) <= {"21-30", "31-40", "41-50", "51-65"}
+
+
+def test_age_band() -> None:
+    from datagen.pipeline import age_band
+
+    bands = age_band(pd.Series([21, 30, 31, 40, 41, 50, 51, 65]))
+    assert bands.tolist() == [
+        "21-30",
+        "21-30",
+        "31-40",
+        "31-40",
+        "41-50",
+        "41-50",
+        "51-65",
+        "51-65",
+    ]
+    with pytest.raises(ValueError):
+        age_band(pd.Series([20]))
