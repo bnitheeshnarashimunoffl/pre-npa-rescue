@@ -253,3 +253,62 @@ def test_engine_bereavement_pause_flow() -> None:
     )
     assert r4.state == ChatState.CLOSING.value
     assert "outreach_paused" in r4.flags
+
+
+def test_engine_ravi_zero_capacity_full_demo_flow() -> None:
+    engine, _, _ = _create_engine()
+
+    # Turn 1: Greeting
+    r1 = engine.handle(
+        session_id="SESS-RAVI-DEMO",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="Hi"),
+    )
+    assert r1.state == ChatState.CONSENT_NOTICE.value
+    assert "Ravi" in r1.text
+
+    # Turn 2: Select English
+    r2 = engine.handle(
+        session_id="SESS-RAVI-DEMO",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="English"),
+    )
+    assert r2.state == ChatState.HARDSHIP_DISCLOSURE.value
+
+    # Turn 3: Disclose job loss
+    r3 = engine.handle(
+        session_id="SESS-RAVI-DEMO",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="I lost my job 3 months ago and have zero income"),
+    )
+    assert r3.state == ChatState.AFFORDABILITY.value
+    assert "hardship_classified_job_loss" in r3.flags
+
+    # Turn 4: Cannot pay even ₹500 -> Zero Capacity Entry
+    r4 = engine.handle(
+        session_id="SESS-RAVI-DEMO",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="I can't pay even 500 rupees right now, I have zero money"),
+    )
+    assert r4.state == ChatState.ZERO_CAPACITY.value
+    # 1. Stops the ask
+    assert "will not ask you for payments right now" in r4.text
+    # 2. Mentions insurance cover from context
+    assert "insurance" in r4.text.lower()
+    assert "insurance_cover_referred" in r4.flags
+    # 3. Disclosures present
+    assert "ℹ️" in r4.text
+    # 4. Offers 11:00 AM slot in quick replies
+    assert any("11:00" in qr.label for qr in r4.quick_replies)
+
+    # Turn 5: Ravi books 11:00 AM slot
+    r5 = engine.handle(
+        session_id="SESS-RAVI-DEMO",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="Please book the 11:00 AM slot with the hardship officer"),
+    )
+    assert r5.state == ChatState.HANDOFF.value
+    assert "callback_booked" in r5.flags
+    assert "rbi_454aa_grievance_attached" in r5.flags
+    assert "11:00 AM" in r5.text
+    assert "@" in r5.text  # Grievance officer details in footer

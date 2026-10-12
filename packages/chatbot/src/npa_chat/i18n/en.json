@@ -44,5 +44,14 @@
   "offer_accepted_confirm": "Thank you for accepting. Your relief plan ({plan_summary}) has been confirmed. Your next instalment of {amount} is due on {due_date}.",
   "offer_rejected_response": "We understand this plan may not feel right for you. Would you like to review alternative options or speak directly with our hardship team?",
   "why_contacted_intro": "Here is why we reached out regarding your account:",
-  "why_contacted_outro": "Our goal is to assist you early before late fees build up or credit score is affected."
+  "why_contacted_outro": "Our goal is to assist you early before late fees build up or credit score is affected.",
+  "offer_item_insurance_referral": "Option {index}: Credit card insurance claim referral.",
+  "offer_item_review_date": "Option {index}: Documented engagement and agreed hardship review date.",
+  "zero_capacity_stop_ask": "We hear you, and we will not ask you for payments right now. Your well-being comes first, and we will not pressure you.",
+  "insurance_cover_referral": "Your credit card carries {cover_type} insurance cover. We can submit an insurance claim referral on your behalf to assist with your account.",
+  "zero_capacity_options_intro": "Here are the relief steps approved under bank policy for zero repayment capacity:",
+  "callback_slot_prompt": "To ensure you tell your story only once and agree on a realistic review date, please choose a convenient time for a hardship officer callback:",
+  "callback_booked_confirm": "Your callback with a hardship officer has been booked for {time} on {date} (Ref: {callback_id}). We will call you directly at this time so you only need to tell your story once.",
+  "zero_capacity_btn_insurance": "Submit Insurance Referral",
+  "zero_capacity_btn_callback": "Book Officer Callback"
 }

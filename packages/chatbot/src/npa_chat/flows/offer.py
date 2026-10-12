@@ -87,6 +87,32 @@ _DISCLOSURES: Final[dict[str, dict[Lang, str]]] = {
             "से पहले कम से कम 12 महीने की कूलिंग अवधि होगी।"
         ),
     },
+    "insurance_referral.claim_not_guaranteed": {
+        Lang.EN: (
+            "Insurance claims are assessed by the underwriter per policy terms and require "
+            "supporting documentation; claim approval is not guaranteed."
+        ),
+        Lang.TA: (
+            "காப்பீட்டுக் கோரிக்கைகள் பாலிசி விதிமுறைகளின்படி மதிப்பீடு செய்யப்படுகின்றன; "
+            "இழப்பீட்டுத் தொகை ஒப்புதல் உறுதிப்படுத்தப்படவில்லை."
+        ),
+        Lang.HI: (
+            "बीमा दावों का मूल्यांकन पॉलिसी शर्तों के अनुसार किया जाता है; दावे की स्वीकृति की गारंटी नहीं है।"
+        ),
+    },
+    "review_date.no_payment_now": {
+        Lang.EN: "No immediate payment is demanded today while under hardship review.",
+        Lang.TA: "கடினமான சூழல் மறுஆய்வின் போது இன்று உடனடி கட்டணம் எதுவும் கோரப்படாது.",
+        Lang.HI: "कठिनाई समीक्षा के दौरान आज किसी तत्काल भुगतान की मांग नहीं की जाती है।",
+    },
+    "review_date.dues_continue": {
+        Lang.EN: (
+            "Contractual interest continues to accrue under the credit card agreement until a "
+            "formal relief plan is approved."
+        ),
+        Lang.TA: ("முறையான நிவாரணத் திட்டம் அங்கீகரிக்கப்படும் வரை ஒப்பந்த வட்டி தொடர்ந்து கணக்கிடப்படும்."),
+        Lang.HI: ("औपचारिक राहत योजना स्वीकृत होने तक क्रेडिट कार्ड समझौते के तहत ब्याज लगना जारी रहेगा।"),
+    },
 }
 
 
@@ -133,6 +159,10 @@ def format_option_summary(option: ReliefOption, lang: Lang, index: int = 1) -> s
     elif option.type in (ReliefType.FEE_WAIVER, "fee_waiver"):
         waiver_str = format_inr(option.waiver_paise) if option.waiver_paise else ""
         summary = get_string("offer_item_fee_waiver", lang, index=index, waiver=waiver_str)
+    elif option.type in ("insurance_referral", "INSURANCE_REFERRAL"):
+        summary = get_string("offer_item_insurance_referral", lang, index=index)
+    elif option.type in ("review_date", "REVIEW_DATE"):
+        summary = get_string("offer_item_review_date", lang, index=index)
     else:
         # Fallback for restructuring or settlement
         summary = f"Plan {index}: {option.type} ({option.eligibility_reason})"

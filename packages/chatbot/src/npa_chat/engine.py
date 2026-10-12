@@ -9,11 +9,14 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
+from npa_chat.distress import detect_distress, handle_distress
 from npa_chat.flows import (
     handle_affordability_turn,
     handle_hardship_turn,
     handle_offer_turn,
+    handle_zero_capacity_turn,
     present_relief_options,
+    present_zero_capacity_options,
 )
 from npa_chat.i18n import get_string
 from npa_chat.language import detect_language_switch_request, resolve_language
@@ -167,15 +170,16 @@ class ChatEngine:
             nlu_res = self.nlu.parse(req.text, current_lang=state.lang)
 
             # Global Interrupt: Severe Distress (Task 4.4 / distress.py integration)
-            if nlu_res.intent == Intent.DISTRESS or nlu_res.distress_score >= 0.8:
-                state.add_flag("distress_detected")
-                state.transition_to(ChatState.DISTRESS)
-                distress_msg = get_string("distress_response", state.lang)
-                helpline_msg = get_string("tele_manas_notice", state.lang)
-                reply_text = f"{distress_msg}\n\n{helpline_msg}"
-                quick_replies = [
-                    QuickReply(id="speak_officer", label=get_string("lang_en", state.lang))
-                ]
+            if (
+                detect_distress(req.text, nlu_res.distress_score)
+                or nlu_res.intent == Intent.DISTRESS
+            ):
+                distress_res = handle_distress(state)
+                reply_text = distress_res.reply_text
+                quick_replies = distress_res.quick_replies
+                state.transition_to(distress_res.next_state)
+                for f in distress_res.flags:
+                    state.add_flag(f)
 
             # Global Interrupt: Complaint Capture (Task 4.5 / IS 10002)
             elif nlu_res.intent == Intent.COMPLAIN:
@@ -240,10 +244,17 @@ class ChatEngine:
                     presented_offers = offers_list
                 elif aff_res.next_state == ChatState.ZERO_CAPACITY:
                     state.transition_to(ChatState.ZERO_CAPACITY)
-                    reply_text = (
-                        "We understand you currently have no surplus capacity to make payments. "
-                        "We will not ask you for payments right now."
+                    zc_res = present_zero_capacity_options(
+                        state=state,
+                        customer_context=ctx,
+                        policy_provider=self.policy_provider,
+                        callback_scheduler=self.callback_scheduler,
                     )
+                    reply_text = zc_res.reply_text
+                    quick_replies = zc_res.quick_replies
+                    presented_offers = state.presented_offers
+                    for f in zc_res.flags:
+                        state.add_flag(f)
                 else:
                     reply_text = aff_res.reply_text
                     quick_replies = aff_res.quick_replies
@@ -262,6 +273,22 @@ class ChatEngine:
                 state.transition_to(offer_res.next_state)
                 presented_offers = offer_res.offers
                 for f in offer_res.flags:
+                    state.add_flag(f)
+
+            # Zero-capacity & callback turn (Task 4.4)
+            elif state.current_state == ChatState.ZERO_CAPACITY:
+                zc_turn_res = handle_zero_capacity_turn(
+                    state=state,
+                    text=req.text,
+                    nlu_result=nlu_res,
+                    customer_context=ctx,
+                    policy_provider=self.policy_provider,
+                    callback_scheduler=self.callback_scheduler,
+                )
+                reply_text = zc_turn_res.reply_text
+                quick_replies = zc_turn_res.quick_replies
+                state.transition_to(zc_turn_res.next_state)
+                for f in zc_turn_res.flags:
                     state.add_flag(f)
 
             else:

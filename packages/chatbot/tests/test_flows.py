@@ -1,5 +1,6 @@
 """Tests for hardship disclosure, bereavement pause, and affordability flows (Task 4.2)."""
 
+from npa_chat.distress import detect_distress, handle_distress
 from npa_chat.flows import (
     classify_hardship,
     estimate_affordability,
@@ -7,7 +8,9 @@ from npa_chat.flows import (
     handle_affordability_turn,
     handle_hardship_turn,
     handle_offer_turn,
+    handle_zero_capacity_turn,
     present_relief_options,
+    present_zero_capacity_options,
     render_disclosure,
 )
 from npa_chat.flows.affordability import extract_dependants
@@ -24,7 +27,12 @@ from npa_chat.state import ChatState, ConversationState
 from npa_contracts.enums import Lang, OfferStatus, ReliefType
 from npa_contracts.models import Affordability, ReliefOption
 
-from .fakes import FakePolicyProvider, FakeRiskProvider
+from .fakes import (
+    FakeCallbackScheduler,
+    FakeCustomerContextProvider,
+    FakePolicyProvider,
+    FakeRiskProvider,
+)
 
 
 def test_classify_hardship_multilingual() -> None:
@@ -309,3 +317,87 @@ def test_handle_offer_turn_why_contacted() -> None:
     # Check risk reasons are provided in Tamil or translated
     assert len(res.reply_text) > 50
     assert any(qr.id == "accept_offer" for qr in res.quick_replies)
+
+
+def test_detect_distress_rules() -> None:
+    # High distress score
+    assert detect_distress("I am feeling down", distress_score=0.85) is True
+
+    # Multilingual triggers
+    assert detect_distress("I want to end my life, feel hopeless") is True
+    assert detect_distress("எனக்கு வாழ பிடிக்கவில்லை, தற்கொலை எண்ணம்") is True
+    assert detect_distress("मैं अपनी जान देना चाहता हूँ") is True
+
+    # Normal text
+    assert detect_distress("Can you explain the options?", distress_score=0.1) is False
+
+
+def test_handle_distress_flow() -> None:
+    state = ConversationState(session_id="SESS-DIST", customer_id="CUST-DEMO-RAVI", lang=Lang.EN)
+    res = handle_distress(state)
+
+    assert res.next_state == ChatState.DISTRESS
+    assert "distress_detected" in res.flags
+    # Tele-MANAS helpline 14416
+    assert "14416" in res.reply_text
+    assert "well-being comes first" in res.reply_text.lower()
+
+
+def test_present_zero_capacity_options_insurance_and_slots() -> None:
+    policy_provider = FakePolicyProvider()
+    callback_scheduler = FakeCallbackScheduler()
+    ctx_provider = FakeCustomerContextProvider()
+    ravi_ctx = ctx_provider.context("CUST-DEMO-RAVI")
+
+    state = ConversationState(session_id="SESS-ZC", customer_id="CUST-DEMO-RAVI", lang=Lang.EN)
+    state.transition_to(ChatState.ZERO_CAPACITY)
+
+    res = present_zero_capacity_options(
+        state=state,
+        customer_context=ravi_ctx,
+        policy_provider=policy_provider,
+        callback_scheduler=callback_scheduler,
+    )
+
+    # 1. Stops the ask
+    assert "will not ask you for payments right now" in res.reply_text
+
+    # 2. Mentions insurance cover first (Ravi demo feature)
+    assert "job_loss" in res.reply_text or "insurance" in res.reply_text.lower()
+    assert "insurance_cover_referred" in res.flags
+
+    # 3. Disclosures rendered truthfully
+    assert "ℹ️" in res.reply_text
+
+    # 4. Offers available callback slots (including 11:00 AM)
+    slot_labels = [qr.label for qr in res.quick_replies]
+    assert any("11:00" in lbl for lbl in slot_labels)
+
+
+def test_handle_zero_capacity_turn_booking() -> None:
+    policy_provider = FakePolicyProvider()
+    callback_scheduler = FakeCallbackScheduler()
+    ctx_provider = FakeCustomerContextProvider()
+    ravi_ctx = ctx_provider.context("CUST-DEMO-RAVI")
+
+    state = ConversationState(session_id="SESS-ZC-BOOK", customer_id="CUST-DEMO-RAVI", lang=Lang.EN)
+    state.transition_to(ChatState.ZERO_CAPACITY)
+    state.hardship_type = "job_loss"
+
+    # Customer picks 11:00 AM slot
+    res = handle_zero_capacity_turn(
+        state=state,
+        text="Please book the 11:00 AM slot",
+        nlu_result=None,
+        customer_context=ravi_ctx,
+        policy_provider=policy_provider,
+        callback_scheduler=callback_scheduler,
+    )
+
+    assert res.next_state == ChatState.HANDOFF
+    assert "callback_booked" in res.flags
+    assert "rbi_454aa_grievance_attached" in res.flags
+    assert state.booked_callback_id is not None
+    # Confirmation details
+    assert "11:00 AM" in res.reply_text
+    assert "@" in res.reply_text  # Grievance officer email in footer
