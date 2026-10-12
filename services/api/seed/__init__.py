@@ -16,8 +16,10 @@ from typing import Any, Literal
 
 import yaml
 from sqlalchemy import Connection, Engine, delete, func, select, text
+from sqlalchemy.orm import Session
 
-from app.orm import Base, Customer, PolicyVersion, User, table_of
+from app.audit import audit
+from app.orm import AuditLog, Base, Customer, PolicyVersion, User, table_of
 from app.security import DEFAULT_BCRYPT_ROUNDS, hash_password
 from npa_contracts.enums import Role
 from seed.errors import SeedError
@@ -50,12 +52,14 @@ class SeedReport:
 
 
 def reset_database(conn: Connection) -> None:
-    """Delete every row (schema stays). Postgres: one TRUNCATE ... CASCADE."""
-    tables = [t.name for t in Base.metadata.sorted_tables]
+    """Delete every row (schema stays), except ``audit_log``: it is append-only (task 5.4) and
+    survives resets; the reset itself is audited. Postgres: one TRUNCATE ... CASCADE."""
+    tables = [t for t in Base.metadata.sorted_tables if t.name != AuditLog.__tablename__]
     if conn.dialect.name == "postgresql":
-        conn.execute(text(f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE"))
+        names = ", ".join(t.name for t in tables)
+        conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
     else:
-        for table in reversed(Base.metadata.sorted_tables):
+        for table in reversed(tables):
             conn.execute(delete(table))
 
 
@@ -147,5 +151,13 @@ def seed_database(
         policy_source = seed_policy(conn, policy_path, contracts_dir)
         report.counts["policy_versions"] = 1
         log.info("policy source=%s", policy_source)
+        with Session(bind=conn) as session:
+            audit(
+                session,
+                "seed.loaded",
+                "seed",
+                "database",
+                {"source": chosen, "reset": reset, "counts": dict(report.counts)},
+            )
     report.seconds = round(time.perf_counter() - started, 2)
     return report

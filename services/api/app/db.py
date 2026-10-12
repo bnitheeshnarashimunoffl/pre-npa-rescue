@@ -12,11 +12,19 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
 
+CONNECT_TIMEOUT_SECONDS = 5  # fail fast (503) instead of hanging when Postgres is unreachable
+
 
 def make_engine(url: str) -> Engine:
     if url.startswith("sqlite"):
         return create_engine(url)
-    return create_engine(url, pool_pre_ping=True, pool_size=5, max_overflow=10)
+    return create_engine(
+        url,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+        connect_args={"connect_timeout": CONNECT_TIMEOUT_SECONDS},
+    )
 
 
 @lru_cache
