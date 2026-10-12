@@ -12,6 +12,7 @@ relief/affordability calculator, compliance guard and next-best-action. Implemen
 
 | Module | What | RBI / BIS |
 |---|---|---|
+| `policy_engine.py` | `PolicyEngine` (`PolicyProvider`): `relief_options`, `propose_offer`, `grievance_officer`, `reload` | Prudential Framework 2019, 2023 settlement framework, RBC 454D (zero-capacity engagement), 454AA; IS/ISO/IEC 38507 (human approval) |
 | `policy_loader.py` | `load_policy(path)` → immutable `Policy`; JSON Schema + Pydantic + RBI cross-checks (an admin edit can never weaken an RBI number or drop a mandatory disclosure) | RBI 454Y(4) window, 454Y(6) flags, 2023 settlement framework (12-month cooling, ≤ 3-month window), Prudential Framework 2019 (NPA-downgrade disclosure), Credit Card Directions (bureau update ≤ 30 days) |
 | `disclosures.py` | Mandatory trade-off texts per option, en/ta/hi (ta/hi `needs_review`) | RBI 454Z(8): no misleading statements about consequences |
 | `relief_calc.py` | `estimate_affordability`, `size_emi` (shortest tenure with EMI ≤ affordable), `emi_schedule` (principal/interest split), `size_waiver`, `size_settlement`; `AccountSnapshot` input | RBI Credit Card Directions 2025 (EMI transparency); 2023 settlement framework |
@@ -35,6 +36,25 @@ offer expiry 7 days, fee-waiver cap and frequency, EMI tenures/rate/minimum, res
 tenure/moratorium/rate, settlement sacrifice % and ageing, review intervals. RBI numbers
 (08:00–19:00 IST, 12-month cooling, 3-month settlement window, 30-day bureau update) are
 checked against `npa_contracts.constants` on every load.
+
+## Policy engine behaviour
+
+* Options are returned **only** when enabled in the policy and the account's bucket is
+  eligible. Order: insurance referral → fee waiver → EMI → restructuring → settlement →
+  review date (least harmful first).
+* EMI: the full balance if it fits, otherwise the overdue amount (plus charges unless
+  waived). When a fee waiver is eligible the EMI option also carries the waiver (`-WAIVER`
+  suffix, both disclosures, `policy_ref` `emi_conversion.v1+fee_waiver.v1`).
+* Zero capacity: never an EMI. Restructuring/settlement come back with
+  `monthly_amount_paise = null` and `requires_human_approval = true`, plus a `review_date`.
+* Restructuring and settlement **always** need human approval (enforced by the loader too).
+* `propose_offer` only accepts an `option_id` returned by the last `relief_options` call for
+  that customer (`UnknownOptionError` otherwise), so nothing invented can become an offer.
+  Status `approved` (by `policy_engine`) when no human approval is needed, else `proposed`.
+  Expiry: `offers.expiry_days` (7, bank policy assumption).
+* Option ids are deterministic: `OPT-<account_id>-<KIND>[<tenure>][-WAIVER]`.
+* WS5 wiring: `PolicyEngine(load_policy(), accounts=lambda cid: AccountSnapshot.from_context(ctx.context(cid)))`;
+  on `PUT /admin/policy` call `engine.reload(parse_policy(body))` (raises `PolicyError` → 422).
 
 ## Demo personas (task 3.2 demo requirement)
 
