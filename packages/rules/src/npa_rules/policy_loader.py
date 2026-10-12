@@ -132,6 +132,12 @@ class OffersPolicy(_Frozen):
     expiry_days: Annotated[int, Field(ge=1, le=90)]
 
 
+class NbaPolicy(_Frozen):
+    hardship_boost: Annotated[Decimal, Field(ge=1, le=10)]
+    hardship_floor_weight: Annotated[Decimal, Field(ge=0, le=1)]
+    chat_invites_ignored_before_call: Annotated[int, Field(ge=1)]
+
+
 class OptionPolicy(_Frozen):
     enabled: bool
     requires_human_approval: bool
@@ -194,6 +200,7 @@ class Policy(_Frozen):
     charges: ChargesPolicy
     affordability: AffordabilityPolicy
     offers: OffersPolicy
+    nba: NbaPolicy
     options: OptionsPolicy
     credit_bureau: CreditBureauPolicy
 
