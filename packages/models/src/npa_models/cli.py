@@ -2,8 +2,8 @@
 
 ``train`` fits the early-warning (2.1) and segmentation (2.3) models; ``train --all`` also fits
 the uplift model (2.4), which needs WS1's ``experiment.parquet``. ``evaluate`` writes the model
-cards, ``metrics.json`` and the policy reports (2.5). Commands not built yet exit with
-:data:`EXIT_NOT_IMPLEMENTED`.
+cards, ``metrics.json`` and the policy reports (2.5). ``score`` writes ``scores.parquet`` for one
+month (#38), which WS5 seeds into the ``scores`` table.
 """
 
 import argparse
@@ -15,11 +15,11 @@ import pandas as pd
 
 from npa_models import early_warning, evaluate, fairness, segment, uplift
 from npa_models.config import ModelSettings
+from npa_models.provider import ModelProvider
 from npa_models.registry import ModelBundle, save_bundle
 
 EXIT_OK = 0
 EXIT_ERROR = 1
-EXIT_NOT_IMPLEMENTED = 3
 
 log = logging.getLogger("npa_models.cli")
 
@@ -39,6 +39,7 @@ def _parser(settings: ModelSettings) -> argparse.ArgumentParser:
     score = sub.add_parser("score", help="batch-score one month to scores.parquet")
     score.add_argument("--as-of", default=settings.as_of_month, help="YYYY-MM")
     score.add_argument("--out", type=Path, default=settings.data_dir / "scores.parquet")
+    score.add_argument("--features", type=Path, default=settings.data_dir / "features.parquet")
 
     ev = sub.add_parser("evaluate", help="write model cards and metrics to reports/")
     ev.add_argument("--features", type=Path, default=settings.data_dir / "features.parquet")
@@ -68,6 +69,22 @@ def _train(args: argparse.Namespace, settings: ModelSettings) -> int:
         _save(trainer(args.features, args.labels, settings), settings)
     if args.all:
         _save(uplift.train(args.features, args.experiment, settings), settings)
+    return EXIT_OK
+
+
+def _score(args: argparse.Namespace, settings: ModelSettings) -> int:
+    if not args.features.is_file():
+        log.error("missing input file=%s hint='run datagen all first'", args.features)
+        return EXIT_ERROR
+    try:
+        provider = ModelProvider.from_settings(settings, pd.read_parquet(args.features))
+        provider.write_scores(args.as_of, args.out)
+    except FileNotFoundError as exc:
+        log.error("%s", exc)
+        return EXIT_ERROR
+    except ValueError as exc:
+        log.error("cannot score month=%s error=%s", args.as_of, exc)
+        return EXIT_ERROR
     return EXIT_OK
 
 
@@ -118,5 +135,4 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _train(args, settings)
     if args.command == "evaluate":
         return _evaluate(args, settings)
-    log.error("command=%s status=not_implemented seed=%d", args.command, settings.seed)
-    return EXIT_NOT_IMPLEMENTED
+    return _score(args, settings)

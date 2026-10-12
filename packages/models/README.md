@@ -10,7 +10,7 @@ uplift model that decides who is worth contacting at all. Implements
 **Tasks:** 2.1 early-warning · 2.2 explanations · 2.3 segmentation · 2.4 uplift · 2.5 evaluation report
 
 > Status: tasks 2.1 (early warning), 2.2 (reason codes), 2.3 (segmentation), 2.4 (uplift) and
-> 2.5 (evaluation report). Next: `RiskProvider` + `npa-models score` (`scores.parquet`).
+> 2.5 (evaluation report), plus the `RiskProvider` and `npa-models score` (`scores.parquet`).
 
 ## Early-warning model (task 2.1, `early_warning.py`)
 
@@ -110,6 +110,35 @@ uplift model that decides who is worth contacting at all. Implements
   exactly `SimulationMetrics` (ours vs call everyone).
 - **Persona checks:** Priya and Ravi high risk; Priya persuadable (`metrics.json["personas"]`).
 
+## RiskProvider and `scores.parquet` (`provider.py`)
+
+- `ModelProvider` implements `npa_contracts.providers.RiskProvider`: `risk`, `segment`, `uplift`
+  and `score_batch` return the contract objects. `ModelProvider.from_settings()` loads the three
+  bundles from `MODEL_DIR` and `features.parquet` from `DATA_DIR`.
+- A month is scored in one vectorised batch on first use (or up front with `.warm(month)`);
+  single lookups after that are dictionary lookups (well under 50 ms). Unknown accounts raise
+  `UnknownAccountError` (a `KeyError`); unknown months raise `ValueError`.
+- `uv run npa-models score --as-of 2026-09 --out $DATA_DIR/scores.parquet` writes one row per
+  account with exactly the #38 columns, which WS5's seed loads into the `scores` table:
+
+| Column | Type | From |
+|---|---|---|
+| `account_id`, `as_of_month` | string | |
+| `p_roll_forward` | float64 | `RiskScore.p_roll_forward` (calibrated) |
+| `risk_band` | string | `RiskBand` |
+| `reasons` | string (JSON) | list of `ReasonCode` (top 3, en/ta/hi) |
+| `risk_model_version` | string | |
+| `segment` | string | `Segment` (after the conservative rule) |
+| `segment_confidence` | float64 | 0..1 |
+| `segment_model_version` | string | |
+| `uplift_score` | float64 | |
+| `uplift_group` | string | `UpliftGroup` |
+| `recommended_treatment` | string | `Treatment` |
+| `uplift_model_version` | string | |
+
+  Every column is filled (WS5's table is NOT NULL), so `score` needs all three models
+  (`train --all`).
+
 ## Public API (so far)
 
 | Name | Module | Purpose |
@@ -124,8 +153,9 @@ uplift model that decides who is worth contacting at all. Implements
 ## How to run
 
 ```bash
-uv run npa-models --help            # train | score | evaluate (score is a stub)
+uv run npa-models --help            # train | score | evaluate
 uv run npa-models train --all       # needs $DATA_DIR/features.parquet + labels.parquet
+uv run npa-models score --as-of 2026-09   # writes $DATA_DIR/scores.parquet (#38)
 uv run npa-models evaluate          # needs trained models + protected attributes; writes reports/
 uv run pytest packages/models
 uv run python -m mypy packages/models

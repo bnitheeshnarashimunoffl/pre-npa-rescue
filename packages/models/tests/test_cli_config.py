@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from npa_models.cli import EXIT_ERROR, EXIT_NOT_IMPLEMENTED, EXIT_OK, main
+from npa_models.cli import EXIT_ERROR, EXIT_OK, main
 from npa_models.config import ModelSettings
 
 
@@ -23,10 +23,6 @@ def test_settings_read_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     s = ModelSettings(_env_file=None)  # type: ignore[call-arg]
     assert s.seed == 7
     assert s.model_dir == tmp_path
-
-
-def test_cli_score_is_stubbed() -> None:
-    assert main(["score", "--as-of", "2026-09"]) == EXIT_NOT_IMPLEMENTED
 
 
 def test_cli_train_writes_artifacts(
