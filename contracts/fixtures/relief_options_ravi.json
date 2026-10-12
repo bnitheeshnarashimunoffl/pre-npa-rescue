@@ -21,7 +21,7 @@
     "type": "fee_waiver",
     "monthly_amount_paise": null,
     "tenure_months": null,
-    "waiver_paise": 118000,
+    "waiver_paise": 153400,
     "settlement_amount_paise": null,
     "policy_ref": "bank_policy.yaml#fee_waiver.v1",
     "regulatory_refs": [
@@ -31,7 +31,7 @@
       "disc.fee_waiver.stops_growth"
     ],
     "requires_human_approval": false,
-    "eligibility_reason": "Account is sma1; 0 waiver(s) in the last 12 months (limit 1); late charges Rs 1,180 within the Rs 5,000 cap."
+    "eligibility_reason": "Account is sma1; 0 waiver(s) in the last 12 months (limit 1); late charges Rs 1,534 within the Rs 5,000 cap."
   },
   {
     "option_id": "OPT-ACC-DEMO-RAVI-RESTRUCTURE-REVIEW",

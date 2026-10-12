@@ -7,7 +7,7 @@
     "type": "emi_conversion",
     "monthly_amount_paise": 200000,
     "tenure_months": 6,
-    "waiver_paise": 118000,
+    "waiver_paise": 153400,
     "settlement_amount_paise": null,
     "policy_ref": "bank_policy.yaml#emi_conversion.v1+fee_waiver.v1",
     "regulatory_refs": [
@@ -19,7 +19,7 @@
       "disc.fee_waiver.stops_growth"
     ],
     "requires_human_approval": false,
-    "eligibility_reason": "Rs 2,000/month for 6 months covers the overdue amount (Rs 11,492, total interest Rs 507.98 at 15.0% p.a.); shortest tenure within the affordable Rs 2,400/month; late charges of Rs 1,180 waived."
+    "eligibility_reason": "Rs 2,000/month for 6 months covers the overdue amount (Rs 11,492, total interest Rs 507.98 at 15.0% p.a.); shortest tenure within the affordable Rs 2,400/month; late charges of Rs 1,534 waived."
   },
   "status": "approved",
   "proposed_by": "bot",

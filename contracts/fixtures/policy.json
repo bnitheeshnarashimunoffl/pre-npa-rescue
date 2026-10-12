@@ -64,8 +64,7 @@
       "expiry_days": 7
     },
     "nba": {
-      "hardship_boost": "1.5",
-      "hardship_floor_weight": "0.1",
+      "hardship_first": true,
       "chat_invites_ignored_before_call": 2
     },
     "options": {
