@@ -1,9 +1,14 @@
 [project]
 name = "npa-rules"
-version = "0.0.1"
+version = "0.1.0"
 description = "Policy engine, relief calculator, compliance guard and next-best-action."
 requires-python = ">=3.11,<3.12"
-dependencies = ["npa-contracts"]
+dependencies = [
+    "jsonschema>=4.22",
+    "npa-contracts",
+    "pyyaml>=6",
+    "tzdata>=2024.1",
+]
 
 [build-system]
 requires = ["hatchling"]
