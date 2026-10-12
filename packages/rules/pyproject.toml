@@ -7,6 +7,7 @@ dependencies = [
     "jsonschema>=4.22",
     "npa-contracts",
     "pyyaml>=6",
+    "tzdata>=2024.1",
 ]
 
 [build-system]
