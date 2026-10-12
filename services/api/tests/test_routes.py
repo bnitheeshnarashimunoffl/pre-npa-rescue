@@ -97,7 +97,8 @@ def test_queue_pagination_and_filters(client: TestClient) -> None:
         cursor = page.next_cursor
         if cursor is None:
             break
-    assert len(seen) == len(set(seen)) == 10 and seen[0] == "ACC-DEMO-PRIYA"
+    assert len(seen) == len(set(seen)) == 10
+    assert set(seen[:2]) == {"ACC-DEMO-PRIYA", "ACC-DEMO-RAVI"}  # demo customers lead
     sma1 = client.get(f"{API}/collector/queue", params={"bucket": "sma1"}, headers=COLLECTOR)
     assert {i["bucket"] for i in sma1.json()["items"]} == {"sma1"}
     bad = client.get(f"{API}/collector/queue", params={"cursor": "junk!"}, headers=COLLECTOR)
