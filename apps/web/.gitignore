@@ -1,0 +1,21 @@
+# Next.js build
+.next/
+out/
+build/
+dist/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts
+
+# Test outputs
+coverage/
+test-results/
+playwright-report/
+
+# Local env files
+.env*.local
