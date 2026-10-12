@@ -1,6 +1,10 @@
-"""Synthetic data generator, feature pipeline and experiment simulator.
+"""Synthetic data generator, feature pipeline and experiment simulator (WS1).
 
-Owner: WS1 (Data foundation). Bootstrap stub created by WS5; the owner replaces it.
+Public API: :class:`DatagenConfig`. Run the pipeline with ``uv run datagen --help``.
 """
 
-__version__ = "0.0.1"
+from datagen.config import DatagenConfig
+
+__all__ = ["DatagenConfig", "__version__"]
+
+__version__ = "0.1.0"
