@@ -42,6 +42,7 @@ class _Account:
     occupation: str
     dependants: int
     shock_t: int | None  # month index when hardship starts (hidden truth)
+    shock_len: int  # months until recovery (like WS1's recovers_month)
     habit: str  # "normal" | "forgetful" | "strategic"
 
 
@@ -49,7 +50,7 @@ def _accounts(n: int, rng: np.random.Generator) -> list[_Account]:
     out = []
     for i in range(1, n + 1):
         habit = rng.choice(["normal", "forgetful", "strategic"], p=[0.84, 0.08, 0.08])
-        shock = int(rng.integers(0, len(MONTHS))) if rng.random() < 0.25 else None
+        shock = int(rng.integers(0, len(MONTHS))) if rng.random() < 0.15 else None
         out.append(
             _Account(
                 account_id=f"ACC-{i:06d}",
@@ -57,18 +58,19 @@ def _accounts(n: int, rng: np.random.Generator) -> list[_Account]:
                 occupation=str(rng.choice(OCCUPATIONS, p=[0.55, 0.2, 0.15, 0.05, 0.05])),
                 dependants=int(rng.integers(0, 4)),
                 shock_t=shock,
+                shock_len=int(rng.integers(4, 11)),
                 habit=str(habit),
             )
         )
     last = len(MONTHS) - 1
     # Priya: salary stopped ~3 months ago, paying only the minimum (A1).
-    out.append(_Account("ACC-DEMO-PRIYA", "CUST-DEMO-PRIYA", "salaried", 1, last - 2, "normal"))
+    out.append(_Account("ACC-DEMO-PRIYA", "CUST-DEMO-PRIYA", "salaried", 1, last - 2, 99, "normal"))
     # Ravi: lost his job earlier, sole earner with dependants, already past due.
-    out.append(_Account("ACC-DEMO-RAVI", "CUST-DEMO-RAVI", "salaried", 3, last - 5, "normal"))
+    out.append(_Account("ACC-DEMO-RAVI", "CUST-DEMO-RAVI", "salaried", 3, last - 5, 99, "normal"))
     return out
 
 
-def make_fake_data(n_accounts: int = 200, seed: int = DEFAULT_SEED) -> FakeData:
+def make_fake_data(n_accounts: int = 1000, seed: int = DEFAULT_SEED) -> FakeData:
     """Return a deterministic monthly panel of ``n_accounts`` (+2 personas) over 24 months."""
     rng = np.random.default_rng(seed)
     feats: list[dict[str, object]] = []
@@ -78,7 +80,8 @@ def make_fake_data(n_accounts: int = 200, seed: int = DEFAULT_SEED) -> FakeData:
         base_util = float(rng.uniform(0.05, 0.6))
         tenure0 = int(rng.integers(6, 120))
         for t, month in enumerate(MONTHS):
-            k = t - acc.shock_t + 1 if acc.shock_t is not None and t >= acc.shock_t else 0
+            in_shock = acc.shock_t is not None and acc.shock_t <= t < acc.shock_t + acc.shock_len
+            k = t - acc.shock_t + 1 if in_shock and acc.shock_t is not None else 0
             salaried = acc.occupation == "salaried"
             salary_missing = min(k, 3) if salaried else 0
             streak = min(k, 6) if k else int(acc.habit == "strategic") * int(rng.integers(0, 4))
