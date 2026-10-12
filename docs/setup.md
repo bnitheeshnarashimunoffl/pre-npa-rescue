@@ -141,11 +141,20 @@ Schedule it daily: a cron entry (`0 2 * * * cd /app && python -m app.retention`)
 job running the same command, or a scheduled GitHub Actions workflow with `DATABASE_URL` from
 secrets (set up in task 5.5). `--days` can lengthen retention but never shorten it below 180.
 
-## API (bootstrap state)
+## API (task 5.1)
 
-`make api` starts the stub API. Every A7.4 route exists; most serve `contracts/fixtures/`, the
-rest return `501 NOT_IMPLEMENTED` in the standard error envelope until tasks 5.1–5.4 land. The
-`/health` endpoint reports package versions and which providers are real vs fixture.
+`make api` (or the `uv run uvicorn ...` command above) serves every A7.4 route against
+`DATABASE_URL`; run `make seed` first. `GET /api/v1/health` reports `status` (`degraded` if the
+database is unreachable) and, per provider, whether it is `real` or a `fixture` fallback.
+
+- Until WS2/WS3/WS4 are merged and wired (phase-2 integration PR), risk/segment/uplift come from
+  the seeded `scores` table, NBA and the queue from the `nba` table, relief options from WS3's
+  fixtures (demo customers only), the compliance check is the 08:00-19:00 IST window only, and
+  chat replays the Priya/Ravi fixture replies.
+- Responses served from a sample fixture (scorecard before any red-team run, simulation metrics
+  before WS2's report, policy before seeding) carry the header `X-Data-Source: fixture`.
+- `POST /redteam/runs` returns `501 REDTEAM_UNAVAILABLE` until WS7's harness is installed; it
+  never fabricates results.
 
 ## Environment variables
 

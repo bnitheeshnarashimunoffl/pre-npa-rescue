@@ -7,6 +7,7 @@ is down. Connections are opened lazily on first use.
 from collections.abc import Iterator
 from functools import lru_cache
 
+from fastapi import Request
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -37,7 +38,8 @@ def get_sessionmaker() -> sessionmaker[Session]:
     return sessionmaker(bind=get_engine(), expire_on_commit=False)
 
 
-def get_session() -> Iterator[Session]:
-    """FastAPI dependency: one session per request, committed by the caller."""
-    with get_sessionmaker()() as session:
+def get_session(request: Request) -> Iterator[Session]:
+    """FastAPI dependency: one session per request from the app's own session factory
+    (``create_app(engine=...)``), committed by the caller."""
+    with request.app.state.sessionmaker() as session:
         yield session

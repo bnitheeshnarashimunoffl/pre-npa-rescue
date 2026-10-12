@@ -153,15 +153,14 @@ def audit_offer_transition(
     to_status: str,
     actor: str,
     approved_by: str | None = None,
+    *,
+    note: str | None = None,
 ) -> AuditLog:
     """Offer state change with its approver (IS/ISO/IEC 38507:2022 human oversight)."""
-    return audit(
-        session,
-        "offer.status_changed",
-        actor,
-        f"offer:{offer_id}",
-        {"from": from_status, "to": to_status, "approved_by": approved_by},
-    )
+    details: dict[str, Any] = {"from": from_status, "to": to_status, "approved_by": approved_by}
+    if note:
+        details["note"] = note
+    return audit(session, "offer.status_changed", actor, f"offer:{offer_id}", details)
 
 
 def audit_policy_change(
