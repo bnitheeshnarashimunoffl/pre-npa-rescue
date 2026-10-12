@@ -50,6 +50,7 @@ checked against `npa_contracts.constants` on every load.
 | `RBI-454Z-ABUSIVE` | Abusive or insulting words | para 454Z |
 | `RBI-454Z-THREAT` | Threats: legal action, police, visits to home/office/family, "final warning" | para 454Z |
 | `RBI-454Z-MISLEADING` | False consequences: jail, family liable, property seizure, "never get a loan" | para 454Z(8) |
+| `RBI-454Z-MINIMISATION` | False reassurance: "won't affect your credit score", "interest is frozen", a payment holiday, "nothing is reported to the bureau", "settlement has no downside" | para 454Z(8) |
 | `RBI-454Z-THIRD-PARTY` | Telling employer, colleagues, neighbours or relatives | para 454Z, 454O |
 | `RBI-454Z-SHAMING` | Defaulter lists, social-media exposure, shaming | para 454Z |
 | `INBOUND-ALLOWED` | Customer-initiated contact (or the bot's replies in it): allowed at any hour | para 454Y(4) restricts outbound recovery contact only |
@@ -62,7 +63,13 @@ denial "you will not go to jail" passes, so the bot can answer "will I go to jai
 English skips a phrase directly preceded by "not", "never" or "n't". Negation in another
 clause doesn't count: "If you don't pay, you will go to jail" is still blocked. Hindi and
 Tamil list only affirmative verb forms ("जेल जाएंगे", "சிறைக்குச் செல்வீர்கள்"), because the
-negation sits between the noun and the verb. An optional
+negation sits between the noun and the verb. `RBI-454Z-MINIMISATION` covers the opposite
+error, playing consequences down. Its statements are themselves negative ("this won't affect
+your credit score"), so it is guarded differently. It skips a statement introduced by
+"promise / guarantee / say (that)" in English or "कि" in Hindi, or followed by "என்று" in
+Tamil. So "I can't promise there will be no impact on your credit score" passes. The bank
+policy has no payment holiday, interest keeps running, and settlements are reported as
+"settled". Lexicon version `2026.10-v4`. An optional
 `llm_judge(text, lang) -> list[rule_id]` hook is injected and off by default. Our own
 disclosures and footer are tested to pass the filter. `required_footer(lang)` returns the
 recording notice (454P) and the grievance officer's details with the Ombudsman route after

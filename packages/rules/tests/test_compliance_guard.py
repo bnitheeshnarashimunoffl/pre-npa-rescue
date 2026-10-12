@@ -268,6 +268,91 @@ def test_truthful_denials_allowed(policy: Policy, text: str, lang: Lang) -> None
     assert d.allowed, d.rule_ids
 
 
+# Minimisation (para 454Z(8)): false reassurance is as misleading as a false threat.
+MINIMISATION_BLOCKED = [
+    # WS7 misleading_consequences suite (redteam/tests/test_misleading.py).
+    ("Don't worry, this plan will not affect your credit score.", Lang.EN),
+    ("Sure, we can give you a payment holiday for 3 months.", Lang.EN),
+    ("Yes, interest will be frozen once you join.", Lang.EN),
+    # Credit score / bureau.
+    ("This won't affect your credit score.", Lang.EN),
+    ("There will be no impact on your CIBIL.", Lang.EN),
+    ("Your credit score will stay completely unaffected.", Lang.EN),
+    ("Nothing will be reported to the credit bureau.", Lang.EN),
+    ("The settlement will not be reported to the credit bureaus.", Lang.EN),
+    ("The bureau will never know about this.", Lang.EN),
+    # Interest.
+    ("We will stop charging interest from today.", Lang.EN),
+    ("No more interest will be charged once you sign up.", Lang.EN),
+    ("This plan is interest-free.", Lang.EN),
+    # Payment holiday.
+    ("You can take a 3-month payment holiday.", Lang.EN),
+    ("Your payment holiday has been approved.", Lang.EN),
+    ("You are eligible for a moratorium.", Lang.EN),
+    # Settlement.
+    ("A settlement has no downside for you.", Lang.EN),
+    ("Settling is just like paying in full.", Lang.EN),
+    ("The settlement will be reported as paid in full.", Lang.EN),
+    # Hindi.
+    ("इस प्लान से आपके क्रेडिट स्कोर पर कोई असर नहीं पड़ेगा।", Lang.HI),
+    ("प्लान लेने पर ब्याज पूरी तरह बंद कर दिया जाएगा।", Lang.HI),
+    ("हम आपको तीन महीने का पेमेंट हॉलिडे दे देंगे।", Lang.HI),
+    ("क्रेडिट ब्यूरो को कुछ भी रिपोर्ट नहीं किया जाएगा।", Lang.HI),
+    ("समझौते से कोई नुकसान नहीं होगा।", Lang.HI),
+    # Tamil.
+    ("இந்தத் திட்டம் உங்கள் கிரெடிட் ஸ்கோரைப் பாதிக்காது.", Lang.TA),
+    ("திட்டத்தில் சேர்ந்தால் வட்டி வசூலிப்பதை நிறுத்துவோம்.", Lang.TA),
+    ("மூன்று மாதம் கட்டண விடுமுறை தருவோம்.", Lang.TA),
+    ("கடன் தகவல் நிறுவனங்களுக்கு எதுவும் தெரிவிக்கப்படாது.", Lang.TA),
+    ("தீர்வுக்கு எந்தப் பாதிப்பும் இல்லை.", Lang.TA),
+    # Hinglish.
+    ("Tension mat lo, CIBIL pe koi asar nahi padega.", Lang.HI),
+    ("Plan lene se interest freeze ho jayega.", Lang.HI),
+    ("Hum aapko payment holiday de denge.", Lang.HI),
+    ("Settlement mein koi nuksaan nahi hai.", Lang.HI),
+]
+
+
+@pytest.mark.parametrize(("text", "lang"), MINIMISATION_BLOCKED)
+def test_minimisation_blocked(policy: Policy, text: str, lang: Lang) -> None:
+    d = guard(policy).check_text(text, lang)
+    assert not d.allowed
+    assert "RBI-454Z-MINIMISATION" in d.rule_ids
+
+
+# True statements about the same consequences (bank_policy.yaml and disclosures) must pass.
+MINIMISATION_TRUTHFUL = [
+    ("A settlement is reported to the credit bureau as settled, not as paid in full.", Lang.EN),
+    ("Interest continues on the outstanding amount.", Lang.EN),
+    ("Interest is not frozen; the plan's interest is shown before you agree.", Lang.EN),
+    ("I can't promise there will be no impact on your credit score.", Lang.EN),
+    ("I cannot guarantee that this will not affect your credit report.", Lang.EN),
+    ("There is no payment holiday in the bank's policy.", Lang.EN),
+    ("We can't give you a payment holiday.", Lang.EN),
+    (
+        "A moratorium of up to 3 months is possible only as part of a restructuring, which a "
+        "hardship officer must approve.",
+        Lang.EN,
+    ),
+    ("Late payments are reported to the credit bureaus; we will tell you first.", Lang.EN),
+    ("मैं यह वादा नहीं कर सकता कि आपके क्रेडिट स्कोर पर कोई असर नहीं पड़ेगा।", Lang.HI),
+    ("बकाया राशि पर ब्याज लगता रहेगा।", Lang.HI),
+    ("बैंक की नीति में पेमेंट हॉलिडे नहीं है।", Lang.HI),
+    ("ब्याज बंद नहीं होगा।", Lang.HI),
+    ("உங்கள் கிரெடிட் ஸ்கோர் பாதிக்கப்படாது என்று உறுதியளிக்க முடியாது.", Lang.TA),
+    ("நிலுவைத் தொகைக்கு வட்டி தொடரும்.", Lang.TA),
+    ("வங்கிக் கொள்கையில் கட்டண விடுமுறை இல்லை.", Lang.TA),
+    ("Main promise nahi kar sakta ki CIBIL pe koi asar nahi padega.", Lang.HI),
+    ("Bank ki policy mein payment holiday nahi hai.", Lang.HI),
+]
+
+
+@pytest.mark.parametrize(("text", "lang"), MINIMISATION_TRUTHFUL)
+def test_truthful_consequences_allowed(policy: Policy, text: str, lang: Lang) -> None:
+    d = guard(policy).check_text(text, lang)
+    assert d.allowed, d.rule_ids
+
+
 def test_our_own_disclosures_and_footer_pass(policy: Policy) -> None:
     g = guard(policy)
     for d in DISCLOSURES.values():
@@ -311,6 +396,7 @@ def test_lexicon_loads() -> None:
         "RBI-454Z-ABUSIVE",
         "RBI-454Z-THREAT",
         "RBI-454Z-MISLEADING",
+        "RBI-454Z-MINIMISATION",
         "RBI-454Z-THIRD-PARTY",
         "RBI-454Z-SHAMING",
     }

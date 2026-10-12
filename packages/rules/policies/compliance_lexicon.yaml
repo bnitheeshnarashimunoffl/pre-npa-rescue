@@ -20,7 +20,7 @@
 # (npa_rules.disclosures) and the truthful denials in tests/test_compliance_guard.py must
 # always pass: tests enforce both directions.
 
-version: "2026.10-v2"
+version: "2026.10-v4"
 rules:
   - rule_id: RBI-454Z-ABUSIVE
     description: Abusive or insulting language about the borrower
@@ -66,6 +66,54 @@ rules:
       hi: ['(जेल (जाएंगे|जाएँगे|जाओगे|जाओगी|भेज देंगे|भेजेंगे|हो जाएगी|होगी)|परिवार को (यह |ये |इसे )?(भरना|चुकाना) (पड़ेगा|होगा)|संपत्ति (ज़ब्त|जब्त) (करेंगे|कर लेंगे|होगी|हो जाएगी)|कभी (लोन|कर्ज़|कर्ज) नहीं मिलेगा|सिबिल हमेशा के लिए खराब)']
       ta: ['(சிறைக்குச் செல்வீர்கள்|சிறைக்குப் போவீர்கள்|சிறைக்கு அனுப்புவோம்|சிறை தண்டனை கிடைக்கும்|குடும்பம் (இதைச் |இதைக் )?(செலுத்த|கட்ட) வேண்டும்|சொத்தை பறிமுதல் செய்வோம்|சொத்து பறிமுதல் செய்யப்படும்|ஒருபோதும் கடன் கிடைக்காது)']
       xx: ['\b(jail (jaoge|jaayenge|jaoge|bhej denge)|parivaar ko bharna padega|siraikku anuppuvom|siraikku poveenga)\b']
+
+  - rule_id: RBI-454Z-MINIMISATION
+    description: False reassurance about the consequences (no credit impact, interest frozen, payment holiday, nothing reported, settlement has no downside)
+    # Para 454Z(8) cuts both ways: playing consequences down is as misleading as playing
+    # them up. bank_policy.yaml has no payment holiday (a moratorium exists only inside
+    # restructuring, with officer approval), interest keeps running (EMI 15%, card 42%), and a
+    # settlement is reported to the bureaus as "settled" (disc.settlement.bureau_reporting).
+    # These statements are themselves negative ("won't affect"), so the guards differ from the
+    # other rules: English skips them when introduced by "promise / guarantee / say (that)",
+    # Hindi when introduced by "कि" (that), and Tamil when followed by "என்று" (that),
+    # so "I can't promise there will be no impact on your credit score" stays allowed.
+    patterns:
+      en:
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )(?<!say that )\b(it|this|that|the plan|this plan|the offer|this offer|the emi|a settlement|the settlement|this settlement|settling|joining|accepting (it|this|the plan|this plan|the offer))( will not| won[''’]t| would not| wouldn[''’]t| does not| doesn[''’]t| is not going to| isn[''’]t going to| will never| never) (affect|impact|harm|hurt|damage|touch|show (up )?on|be reported to|go on) your (cibil|credit (score|report|history|record|rating))\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )(?<!say that )\b(it|this|that|there|the plan|this plan|the offer|this offer|a settlement|the settlement|settling)( will| would|[''’]ll)? (be|have|has|is|cause)( absolutely)? (no|zero) (impact|effect|damage|change) (at all )?(on|to) your (cibil|credit (score|report|history|record|rating))\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )(?<!say that )\byour (cibil|credit (score|report|history|record|rating))( will| would|[''’]ll)? (stay|remain|be) (completely |totally |fully |100% )?(unaffected|unchanged|the same|safe|untouched|clean)\b'
+        - '\binterest (is|will be|would be|[''’]ll be|gets|has been|can be)( completely| fully| totally)? (frozen|stopped|paused|suspended|halted|waived)\b'
+        - '\b(we|i|the bank)( will|[''’]ll| can| shall| are going to| have)( completely| fully)? (freeze|stop|pause|suspend|waive|frozen|stopped|waived) (charging (you )?)?(all |the |your |any )?(further )?interest\b'
+        - '\bno (more |further )?interest (will be |is |gets )?(charged|applied|added)\b'
+        - '\b(this|the) (plan|emi|offer|settlement) is (completely |totally )?(interest[- ]free|at (0|zero) ?% interest)\b'
+        - '\b(you can|you will|you[''’]ll|we can|we will|we[''’]ll|i can|i will|i[''’]ll|the bank (can|will))( get| have| take| give you| offer you| grant you| approve)( a| an)?( \d+[- ]months?| (one|two|three|six)[- ]months?)? (payment holiday|moratorium|break from (your )?payments)\b'
+        - '\b(payment holiday|moratorium) (is|has been|will be|[''’]s) (approved|granted|available|possible|arranged)\b'
+        - '\byou( are|[''’]re) (eligible|approved) for a (payment holiday|moratorium)\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )\bnothing (will|would|is going to|gets?) (be )?(reported|sent|shared|go(es)?) (to|with) (the |any )?(credit )?(bureaus?|cibil)\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )\b(it|this|that|this plan|the plan|the settlement|a settlement|this settlement|your (account|settlement|default|delay|late payments?))( will not| won[''’]t| would not| wouldn[''’]t| is not| isn[''’]t| does not| doesn[''’]t| will never| never)( be)? (reported|shown|appear|show up|go) (to|on|in|with) (the |any |your )?(credit )?(bureaus?|cibil|credit report)\b'
+        - '\b(the )?(credit )?(bureaus?|cibil)( will not| won[''’]t| will never| would never| never) (know|find out|hear|be (told|informed|notified))\b'
+        - '\b(a |the |this )?(settlement|settling)( has| have| comes with| carries| will have)? (no|zero) (downside|downsides|consequences?|drawbacks?|negative (effects?|impact)|catch|impact)\b'
+        - '\b(a |the |this )?(settlement|settling)( is| will be|[''’]s) (completely |totally )?(risk[- ]free|harmless|the same as paying in full|just like paying in full|like paying in full)\b'
+        - '\b(a |the |this )?(settlement|settled account)( is| will be) (reported|shown|marked) as (paid in full|fully paid|closed normally)\b'
+      hi:
+        - '(?<!कि )(?<!कि आपके )(?<!कि आपकी )(?<!कि आपका )(सिबिल|क्रेडिट स्कोर|क्रेडिट रिपोर्ट|क्रेडिट हिस्ट्री)( स्कोर)? पर (कोई|बिल्कुल|बिलकुल|ज़रा|जरा)( भी)? (असर|प्रभाव|फ़र्क|फर्क) नहीं (पड़ेगा|होगा|पड़ता)'
+        - '(?<!कि )(?<!कि आपके )(?<!कि आपकी )(?<!कि आपका )(सिबिल|क्रेडिट स्कोर)( स्कोर)? (खराब|ख़राब) नहीं होगा'
+        - 'ब्याज( लेना| लगना| वसूलना)? (पूरी तरह )?(फ्रीज़|फ्रीज|रोक|बंद|माफ़|माफ)( कर)? (दिया जाएगा|किया जाएगा|दिया|देंगे|हो जाएगा|रहेगा|हो गया है)'
+        - '(पेमेंट हॉलिडे|पेमेंट होलीडे|भुगतान अवकाश|भुगतान से छुट्टी|मोरेटोरियम) (दे देंगे|देंगे|दे सकते हैं|दे रहे हैं|मिल जाएगा|मिलेगा|मिल सकता है|मंज़ूर|मंजूर)'
+        - '(?<!कि )(क्रेडिट ब्यूरो|सिबिल|ब्यूरो) (को|में) (कुछ भी |कुछ )?(रिपोर्ट|सूचना|जानकारी) नहीं (जाएगी|जाएगा|दी जाएगी|भेजी जाएगी|किया जाएगा|होगी|होगा)'
+        - '(?<!कि )(समझौते|सेटलमेंट)( का| से| में)? (कोई|कोई भी) (नुकसान|नुक़सान|बुरा असर|नकारात्मक असर|असर) नहीं'
+      ta:
+        - '(சிபில|கிரெடிட் ஸ்கோர|கடன் மதிப்பெண)\S*(\s+ஸ்கோர\S*)?\s+(பாதிக்கப்படாது|பாதிக்காது|மாறாது|(எந்த(ப்)?\s+)?பாதிப்பும்\s+(இருக்காது|இல்லை|வராது|ஏற்படாது))(?!\s*என்று)'
+        - 'வட்டி\S*\s+(முழுவதுமாக\s+)?(வசூலிப்பதை\s+|விதிப்பதை\s+)?(நிறுத்தப்படும்|நிறுத்துவோம்|முடக்கப்படும்|ரத்து செய்யப்படும்|தள்ளுபடி செய்யப்படும்|வசூலிக்கப்படாது|விதிக்கப்படாது)(?!\s*என்று)'
+        - '(கட்டண விடுமுறை|பணம் செலுத்தும் விடுமுறை|மொரட்டோரிய)\S*\s+(தருவோம்|தரப்படும்|கிடைக்கும்|அளிப்போம்|வழங்குவோம்|வழங்கப்படும்|தர முடியும்)(?!\s*என்று)'
+        - '(கடன் தகவல் நிறுவன|கிரெடிட் பீரோ|சிபில)\S*\s+(எதுவும்\s+)?(தெரிவிக்கப்படாது|தெரிவிக்க மாட்டோம்|அனுப்பப்படாது|பதிவாகாது)(?!\s*என்று)'
+        - '(தீர்வு|செட்டில்மென்ட்)\S*\s+(எந்த(ப்)?\s+)?(பாதிப்பும்|இழப்பும்|பிரச்சினையும்|குறையும்)\s+(இல்லை|இருக்காது|வராது)(?!\s*என்று)'
+      xx:
+        - '(?<!ki )\b(cibil|credit score)( pe| par)? (koi |bilkul |zara )?(bhi )?(asar|farak|fark|effect) nahi (padega|hoga)\b'
+        - '\binterest (freeze|band|maaf|ruk) (ho jayega|ho jaega|kar denge|kar diya jayega)\b'
+        - '\b(payment holiday|moratorium) (de denge|mil jayega|milega|de sakte hain)\b'
+        - '(?<!ki )\b(bureau|cibil) (ko|mein|me) kuch (bhi )?(report )?nahi (jayega|jaega|bhejenge)\b'
+        - '(?<!ki )\bsettlement (mein|me|se|ka) koi (nuksaan|nuksan|downside|asar) nahi\b'
 
   - rule_id: RBI-454Z-THIRD-PARTY
     description: Disclosing the debt to, or contacting, relatives, employer, colleagues or neighbours
