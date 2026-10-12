@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status
 
 from app.fixtures import load_fixture
-from app.routers._common import PROTECTED, roles
+from app.routers._common import PROTECTED, access
 from npa_contracts.api import ComplaintCreateRequest, ComplaintUpdateRequest
 from npa_contracts.models import Complaint
 
@@ -16,7 +16,7 @@ def _fixture() -> Complaint:
     "",
     response_model=Complaint,
     status_code=status.HTTP_201_CREATED,
-    openapi_extra=roles("customer", "hardship_officer", "admin"),
+    **access("customer", "hardship_officer", "admin"),
 )
 def open_complaint(body: ComplaintCreateRequest) -> Complaint:
     """Open a complaint with docket number and 30-day SLA (IS/ISO 10002:2018)."""
@@ -26,14 +26,12 @@ def open_complaint(body: ComplaintCreateRequest) -> Complaint:
 @router.get(
     "/{docket_no}",
     response_model=Complaint,
-    openapi_extra=roles("customer", "hardship_officer", "admin", "auditor"),
+    **access("customer", "hardship_officer", "admin", "auditor"),
 )
 def get_complaint(docket_no: str) -> Complaint:
     return _fixture().model_copy(update={"docket_no": docket_no})
 
 
-@router.patch(
-    "/{docket_no}", response_model=Complaint, openapi_extra=roles("hardship_officer", "admin")
-)
+@router.patch("/{docket_no}", response_model=Complaint, **access("hardship_officer", "admin"))
 def update_complaint(docket_no: str, body: ComplaintUpdateRequest) -> Complaint:
     return _fixture().model_copy(update={"docket_no": docket_no})

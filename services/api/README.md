@@ -19,4 +19,8 @@ uv run uvicorn app.main:app --reload --port 8000 --app-dir services/api
 collector-queue keyset pagination in `app/queries.py`. `protected_attributes` is never read by
 a router (enforced by a test). Commands: see `docs/setup.md` → Database.
 
+**Auth (5.3):** JWT HS256 + bcrypt in `app/security.py`; every route's `x-roles` are both
+documented and enforced via `routers/_common.access(...)`; 404 instead of 403; rate limits in
+`app/ratelimit.py`; per-role profile minimisation in `app/minimise.py`.
+
 **Tasks:** 5.1 API layer · 5.2 database & data model · 5.3 auth & roles · 5.4 audit logging · 5.5 deployment
