@@ -155,8 +155,13 @@ database is unreachable) and, per provider, whether it is `real` or a `fixture` 
   chat replays the Priya/Ravi fixture replies.
 - Responses served from a sample fixture (scorecard before any red-team run, simulation metrics
   before WS2's report, policy before seeding) carry the header `X-Data-Source: fixture`.
-- `POST /redteam/runs` returns `501 REDTEAM_UNAVAILABLE` until WS7's harness is installed; it
-  never fabricates results.
+- Red team: `POST /redteam/runs` (admin, auditor) starts WS7's
+  `npa_redteam.harness.run(api_base_url, token, ..., now=...)` as a background task and returns
+  `202` with the run id (`RT-YYYYMMDD-HHMM` in IST, the same id the harness uses). Poll
+  `GET /redteam/runs/{run_id}` until `status` is `completed` (with the scorecard) or `failed`.
+  `REDTEAM_MODE=library` (default) attacks the providers in-process; `api` attacks this API over
+  HTTP with the caller's token once WS7 ships API mode. One run per minute (`409` otherwise);
+  `501 REDTEAM_UNAVAILABLE` if the harness is not installed. It never fabricates results.
 
 ## Environment variables
 

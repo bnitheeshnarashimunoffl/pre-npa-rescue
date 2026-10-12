@@ -15,6 +15,7 @@ dependencies = [
     "bcrypt>=4.1,<5",
     "pyyaml>=6",
     "pyjwt>=2.8,<3",
+    "npa-redteam",
 ]
 
 [build-system]
@@ -23,3 +24,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app", "seed"]
+
+[tool.uv.sources]
+npa-redteam = { workspace = true }

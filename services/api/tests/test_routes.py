@@ -1,6 +1,7 @@
 """Task 5.1: every A7.4 route against a migrated + seeded database (fixtures source), plus the
 Priya and Ravi demo flows end to end. Role denial for every route is in test_auth.py."""
 
+import sys
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -405,7 +406,8 @@ def test_policy_get_and_put(client: TestClient, engine: Engine) -> None:
         assert change.details["new_version"] == "v99"
 
 
-def test_redteam_without_harness(client: TestClient) -> None:
+def test_redteam_without_harness(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "npa_redteam.harness", None)  # WS7 package absent
     start = client.post(f"{API}/redteam/runs", headers=ADMIN)
     assert start.status_code == 501 and start.json()["error"]["code"] == "REDTEAM_UNAVAILABLE"
     latest = client.get(f"{API}/redteam/scorecard/latest", headers=AUDITOR)

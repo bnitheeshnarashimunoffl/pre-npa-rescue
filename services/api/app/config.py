@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,6 +20,8 @@ class Settings(BaseSettings):
     contracts_dir: Path = REPO_ROOT / "contracts"
     reports_dir: Path = REPO_ROOT / "packages" / "models" / "reports"  # WS2 committed reports
     api_base_url: str = "http://localhost:8000/api/v1"  # used by the red-team harness
+    # WS7 harness mode: "library" (in-process providers) or "api" (this API over HTTP)
+    redteam_mode: Literal["library", "api"] = "library"
     alembic_config: Path = REPO_ROOT / "services" / "api" / "alembic.ini"
     database_url: str = "postgresql+psycopg://npa:npa@localhost:5432/npa"
     # Dev default only; >= 32 bytes for HS256 (RFC 7518). Set a random secret anywhere shared.
