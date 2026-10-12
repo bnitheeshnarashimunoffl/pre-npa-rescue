@@ -8,13 +8,18 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
+from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.db import make_engine
+from app.db import get_session, make_engine
+from app.main import create_app
 from app.ratelimit import RateLimits
 from app.security import Principal, create_access_token
 from npa_contracts.enums import Role
+from seed import seed_database
 
 API_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = API_DIR.parents[1]
@@ -70,3 +75,25 @@ def bearer_for(
     principal = Principal(username or f"test-{role}-{customer_id}", Role(role), customer_id)
     token, _ = create_access_token(principal, get_settings())
     return {"Authorization": f"Bearer {token}"}
+
+
+# --- app wired to a migrated + seeded DB -------------------------------------------------------
+@pytest.fixture
+def app_db(engine: Engine, tmp_path: Path) -> Iterator[tuple[FastAPI, TestClient]]:
+    """App wired to a freshly migrated + seeded DB (fixtures source, demo users)."""
+    seed_database(
+        engine,
+        data_dir=tmp_path,
+        contracts_dir=CONTRACTS_DIR,
+        policy_path=tmp_path / "none.yaml",
+        as_of_month="2026-09",
+        bcrypt_rounds=4,
+    )
+    app = create_app()
+
+    def _session() -> Iterator[Session]:
+        with Session(engine) as s:
+            yield s
+
+    app.dependency_overrides[get_session] = _session
+    yield app, TestClient(app)

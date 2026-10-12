@@ -3,6 +3,17 @@
 Format: `## <version> — <YYYY-MM-DD>` then bullet points. Minor = additive, patch = docs/fixtures.
 Breaking changes are marked **BREAKING** and need the team lead's approval.
 
+## 0.2.0 — 2026-10-12
+
+Additive (minor). Task 5.4, required by the WS5 briefing ("Add a `GET /admin/audit/verify`
+endpoint").
+
+- New endpoint `GET /api/v1/admin/audit/verify` (roles `admin`, `auditor`): recomputes the
+  hash-chained audit log and returns `AuditChainStatus`.
+- New model `npa_contracts.api.AuditChainStatus`
+  (`ok`, `rows_checked`, `first_bad_id`, `reason`, `checked_at`) and its JSON Schema.
+- No existing field, model or endpoint changed.
+
 ## 0.1.0 — 2026-10-12
 
 Initial contracts from the shared briefing (A7), created in the WS5 bootstrap.
