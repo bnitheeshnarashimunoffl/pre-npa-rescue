@@ -5,7 +5,6 @@ import logging
 import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
 import jwt
@@ -30,36 +29,24 @@ from app.security import (
 )
 from npa_contracts.api import CustomerProfile
 from npa_contracts.enums import Role
-from seed import seed_database
-from tests.conftest import CONTRACTS_DIR, bearer_for
+from tests.conftest import bearer_for
 
 ROLES = [r.value for r in Role]
 
 
-@pytest.fixture
-def app_db(engine: Engine, tmp_path: Path) -> Iterator[tuple[FastAPI, TestClient]]:
-    """App wired to a freshly migrated + seeded DB (fixtures source, demo users)."""
-    seed_database(
-        engine,
-        data_dir=tmp_path,
-        contracts_dir=CONTRACTS_DIR,
-        policy_path=tmp_path / "none.yaml",
-        as_of_month="2026-09",
-        bcrypt_rounds=4,
-    )
+@pytest.fixture(scope="module")
+def client() -> TestClient:
+    """App with no real database: sessions use an empty in-memory SQLite (routes that need
+    tables answer 503), so tests never wait on network connections."""
     app = create_app()
+    memory = make_engine("sqlite://")
 
     def _session() -> Iterator[Session]:
-        with Session(engine) as s:
+        with Session(memory) as s:
             yield s
 
     app.dependency_overrides[get_session] = _session
-    yield app, TestClient(app)
-
-
-@pytest.fixture(scope="module")
-def client() -> TestClient:
-    return TestClient(create_app())
+    return TestClient(app)
 
 
 def _login(client: TestClient, username: str, password: str = "demo") -> Any:

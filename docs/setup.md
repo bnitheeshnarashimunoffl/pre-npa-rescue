@@ -114,6 +114,33 @@ curl -s localhost:8000/api/v1/collector/queue -H "Authorization: Bearer <token>"
   masked contact details and contact window; hardship officers also see occupation,
   insurance, limit, age and city; auditors see identity only.
 
+## Audit log and retention (task 5.4)
+
+- `audit_log` is append-only: database triggers (migration `0002`) reject UPDATE, DELETE and
+  TRUNCATE for every user. Each row is hash-chained to the previous one
+  (`row_hash = sha256(prev_hash + row)`), so any edit, deletion or reordering is detectable.
+- Check the chain: `GET /api/v1/admin/audit/verify` (admin or auditor) -> `{"ok": true, ...}`,
+  or `ok: false` with the first bad row id.
+- Audited: every login (success and failure), every contact (`ContactLogger`), offer status
+  changes with the approver, policy changes (old and new version), seed runs and retention
+  purges. Audit rows never contain passwords or message content.
+- `seed --reset` keeps `audit_log` (it is evidence) and records the reset in it.
+- **Production hardening:** connect the API as a dedicated role, e.g. `npa_app`, that does not
+  own the tables. Migration `0002` revokes its UPDATE/DELETE/TRUNCATE on `audit_log` when that
+  role exists; run migrations as the owner role.
+
+Retention (RBI RBC Directions para 454P, 180 days): call/chat records older than that are
+purged by a job; audit rows, complaints and offers are kept.
+
+```bash
+uv run python -m app.retention --dry-run   # counts only (still audited)
+uv run python -m app.retention             # delete contact_events / chat turns older than 180 days
+```
+
+Schedule it daily: a cron entry (`0 2 * * * cd /app && python -m app.retention`), a Render cron
+job running the same command, or a scheduled GitHub Actions workflow with `DATABASE_URL` from
+secrets (set up in task 5.5). `--days` can lengthen retention but never shorten it below 180.
+
 ## API (bootstrap state)
 
 `make api` starts the stub API. Every A7.4 route exists; most serve `contracts/fixtures/`, the
