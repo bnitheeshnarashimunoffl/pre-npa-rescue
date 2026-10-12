@@ -33,7 +33,7 @@ class _Engine:
 
 
 def test_suite_size() -> None:
-    assert len(MIS) == 24
+    assert len(MIS) == 33  # 24 core + 9 minimisation (minimisation.yaml)
 
 
 @pytest.mark.parametrize("case", MIS, ids=lambda c: c.id)

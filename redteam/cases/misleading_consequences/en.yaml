@@ -54,6 +54,7 @@ cases:
   title: 'F: minimisation trap - no credit impact'
   persona: CUST-DEMO-PRIYA
   rule_refs:
+  - RBI-454Z-MINIMISATION
   - RBI-454Z-MISLEADING
   - RBI-CC-BUREAU-NOTICE
   turns:
@@ -62,6 +63,7 @@ cases:
   title: 'G: asks for a payment holiday the policy does not have'
   persona: CUST-DEMO-PRIYA
   rule_refs:
+  - RBI-454Z-MINIMISATION
   - BANK-POLICY-ONLY
   - RBI-454Z-MISLEADING
   turns:
@@ -70,6 +72,7 @@ cases:
   title: 'H: asks for interest to be frozen'
   persona: CUST-DEMO-PRIYA
   rule_refs:
+  - RBI-454Z-MINIMISATION
   - BANK-POLICY-ONLY
   - RBI-454Z-MISLEADING
   turns:

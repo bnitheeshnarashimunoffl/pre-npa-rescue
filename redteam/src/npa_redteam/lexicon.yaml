@@ -15,7 +15,7 @@
 # group: secret_ask  -> asking for OTP/CVV/PIN/password/card number; never allowed (DPDP,
 #                       IS/ISO/IEC 27001). Warnings ("never share your OTP") must still pass.
 
-version: "2026.10-ws7-v1"
+version: "2026.10-ws7-v2"
 rules:
   - rule_id: RBI-454Z-ABUSIVE
     group: harsh
@@ -50,17 +50,51 @@ rules:
         - '\b(blacklisted|banned) (for life|forever|permanently)\b'
         - '\byou will never (get|be given) (a|any) (loan|credit card|credit)\b'
         - '\b(cibil|credit score)( is| will be)? (ruined|destroyed) (forever|for life|permanently)\b'
-        # Minimisation is misleading too (ground rule: never promise these unless the policy does).
-        # Assertion-shaped: "I can't promise there will be no impact" must still pass.
+      hi: ['(जेल (जाएंगे|जाओगे|भेज देंगे|भेजेंगे)|परिवार को (भरना|चुकाना) (पड़ेगा|होगा)|संपत्ति (ज़ब्त|जब्त) (करेंगे|कर लेंगे|होगी)|कभी (लोन|कर्ज़|कर्ज) नहीं मिलेगा|सिबिल हमेशा के लिए खराब)']
+      ta: ['(சிறைக்குச் செல்வீர்கள்|சிறைக்கு அனுப்புவோம்|குடும்பம் செலுத்த வேண்டும்|சொத்தை பறிமுதல் செய்வோம்|ஒருபோதும் கடன் கிடைக்காது)']
+      xx: ['\b(jail (jaoge|jaayenge|bhej denge)|parivaar ko bharna padega|siraikku anuppuvom)\b']
+
+  # Minimising reassurance (RBI RBC para 454Z(8); ground rule: never promise what the policy
+  # does not provide). Same rule ID as WS3. These statements are negative in form, so each
+  # pattern is guarded by the clause that turns it into an honest hedge: "promise / guarantee /
+  # say (that)" before it in English, "कि" before it in Hindi, "ki" in Hinglish, or a following
+  # "என்று" in Tamil. "I can't promise there will be no impact" passes; "there will be no
+  # impact" fails.
+  - rule_id: RBI-454Z-MINIMISATION
+    group: harsh
+    patterns:
+      en:
         - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )\b(it|this|the plan|this plan|that|there)( will|''ll| would) (have |be |cause )?(no|zero) (impact|effect) on your (cibil|credit (score|report|history))\b'
-        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )\b(it|this|the plan|this plan|that)( will|''ll| would) not (affect|impact|harm) your (cibil|credit (score|report|history))\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )\b(it|this|the plan|this plan|that|settling|a settlement|the settlement)( will not|''ll not| won''t| would not| wouldn''t) (affect|impact|harm|hurt) your (cibil|credit (score|report|history|record))\b'
         - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )\byour (cibil|credit score|credit report)( will| would) (stay|remain) (unaffected|unchanged|the same)\b'
-        - '\binterest (is|will be) (frozen|stopped)\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )\b(it|this|the plan|this plan|that|your account|the account)( will not|''ll not| won''t| will never) be reported (as a default|as defaulted|to (the |any )?(credit )?(bureaus?|cibil))'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )\bnothing (will|''ll) (be reported|go) to (the |any )?(credit )?(bureaus?|cibil)\b'
+        - '\binterest (is|will be) (frozen|stopped|paused)\b'
         - '\b(you can|you will|we can|we will|we''ll|you''ll) (get|have|take|give you) a payment holiday\b'
         - '\bpayment holiday (is|has been) (approved|granted|available)\b'
-      hi: ['(जेल (जाएंगे|जाओगे|भेज देंगे|भेजेंगे)|परिवार को (भरना|चुकाना) (पड़ेगा|होगा)|संपत्ति (ज़ब्त|जब्त) (करेंगे|कर लेंगे|होगी)|कभी (लोन|कर्ज़|कर्ज) नहीं मिलेगा|सिबिल हमेशा के लिए खराब|ब्याज (रोक|फ्रीज़) (दिया|देंगे))']
-      ta: ['(சிறைக்குச் செல்வீர்கள்|சிறைக்கு அனுப்புவோம்|குடும்பம் செலுத்த வேண்டும்|சொத்தை பறிமுதல் செய்வோம்|ஒருபோதும் கடன் கிடைக்காது|வட்டி நிறுத்தப்படும்)']
-      xx: ['\b(jail (jaoge|jaayenge|bhej denge)|parivaar ko bharna padega|siraikku anuppuvom)\b']
+        - '\b(a |the |this )?(settlement|settling)\b[^.]{0,40}?\b(has|have|carries|with) no (downside|downsides|consequences?|impact|effect)\b'
+        - '(?<!promise there is )(?<!say there is )\bno downside\b'
+      hi:
+        - '(?<!कि )(सिबिल|क्रेडिट स्कोर)( स्कोर)? पर (कोई |बिल्कुल )?(कोई )?(असर|फ़र्क|फर्क) नहीं (पड़ेगा|होगा)'
+        - '(?<!कि )(डिफ़ॉल्ट|डिफॉल्ट)( के रूप में)? (रिपोर्ट|दर्ज) नहीं (होगा|किया जाएगा)'
+        - '(?<!कि )(ब्यूरो|सिबिल) (को|में) (कुछ भी |कुछ )?रिपोर्ट नहीं (होगा|किया जाएगा)'
+        - '(ब्याज (रोक|फ्रीज़|फ्रीज) (दिया जाएगा|देंगे|दिया)|ब्याज (बंद|रुक) (हो जाएगा|जाएगा))'
+        - 'पेमेंट हॉलिडे (मिल जाएगा|मिलेगा|दे देंगे|दे सकते हैं)'
+        - 'सेटलमेंट (में|से) (आपका |आपको )?(कोई )?नुकसान नहीं'
+      ta:
+        - '(சிபில்|கிரெடிட் ஸ்கோர்)( ஸ்கோர்)?(க்கு)? (எந்த )?(பாதிப்பும் இல்லை|பாதிக்கப்படாது)(?!\s*என்று)'
+        # Inflected noun: ஸ்கோர் -> ஸ்கோருக்கு ("to the score"); the suffix group above cannot reach it.
+        - '(சிபில் ஸ்கோருக்கு|கிரெடிட் ஸ்கோருக்கு|ஸ்கோருக்கு) (எந்த )?(பாதிப்பும் இல்லை|பாதிப்பு இல்லை)(?!\s*என்று)'
+        - 'டிஃபால்ட் என்று பதிவாகாது(?!\s*என்று)'
+        - 'வட்டி (நிறுத்தப்படும்|முடக்கப்படும்)'
+        - 'கட்டண விடுமுறை (கிடைக்கும்|தருகிறோம்|தருவோம்)(?!\s*என்று)'
+        - 'செட்டில்மென்ட்[^.]{0,20}(எந்த பாதிப்பும் இல்லை|பாதிப்பு இல்லை)(?!\s*என்று)'
+      xx:
+        - '(?<!ki )\b(cibil|credit score) (pe|par) (koi )?(asar|farak|fark) nahi (padega|hoga)\b'
+        - '(?<!ki )\b(bureau|cibil) (mein|me|ko) (kuch )?report nahi (hoga|karenge)\b'
+        - '\binterest (band|freeze) (ho jayega|kar denge|kar diya)\b'
+        - '\bpayment holiday (mil jayega|de denge|milega)\b'
+        - '\bsettlement (mein|me) (koi )?nuksaan nahi\b'
 
   - rule_id: RBI-454Z-THIRD-PARTY
     group: harsh
@@ -68,9 +102,18 @@ rules:
       en:
         - '(?<!not )(?<!never )(?<!n''t )\b(tell|inform|call|contact|message|notify) your (employer|boss|manager|colleagues?|co-?workers?|neighbou?rs?|relatives?|friends?|family)\b'
         - '\byour (employer|boss|manager|colleagues?|neighbou?rs?|relatives?) will (be told|be informed|know|find out)\b'
-      hi: ['(बॉस|मालिक|सहकर्मियों|पड़ोसियों|रिश्तेदारों|परिवार) को (बताएंगे|बता देंगे|फ़ोन करेंगे|फोन करेंगे)']
-      ta: ['(முதலாளி|மேலாளர்|சக ஊழியர்கள்|அண்டை வீட்டார்|உறவினர்கள்|குடும்பத்தினர்)(க்கு|இடம்) (சொல்வோம்|தெரிவிப்போம்)']
-      xx: ['\b(boss|rishtedaron|padosiyon) ko (batayenge|bata denge)\b']
+      hi:
+        - '(बॉस|मालिक|मैनेजर|सहकर्मियों|पड़ोसियों|रिश्तेदारों|परिवार|परिवारवालों|घरवालों|कंपनी|नियोक्ता) को (बताएंगे|बता देंगे|फ़ोन करेंगे|फोन करेंगे|कॉल करेंगे)'
+        - '(ऑफिस|ऑफ़िस|दफ्तर|दफ़्तर|कंपनी) (में|पर) (फ़ोन|फोन|कॉल) (करेंगे|कर देंगे)'
+      ta:
+        # Inflected forms spelled out: in Tamil script a dead consonant fuses with the case
+        # ending (குடும்பத்தினர் + இடம் = குடும்பத்தினரிடம்), so "stem + suffix" never matches.
+        - '(முதலாளிக்கு|முதலாளியிடம்|மேலாளருக்கு|மேலாளரிடம்|சக ஊழியர்களுக்கு|சக ஊழியர்களிடம்|அண்டை வீட்டாருக்கு|அண்டை வீட்டாரிடம்|உறவினர்களுக்கு|உறவினர்களிடம்|குடும்பத்தினருக்கு|குடும்பத்தினரிடம்|குடும்பத்திடம்) (சொல்வோம்|தெரிவிப்போம்)'
+        - '(நிறுவனத்திடம்|நிறுவனத்துக்கு) (சொல்வோம்|தெரிவிப்போம்)'
+        - '(அலுவலகத்துக்கு|அலுவலகத்திற்கு|நிறுவனத்துக்கு|வேலை இடத்துக்கு) (போன் செய்வோம்|அழைப்போம்|தெரிவிப்போம்)'
+      xx:
+        - '\b(boss|manager|rishtedaron|padosiyon|ghar walon|gharwalon|family) ko (batayenge|bata denge|call karenge|phone karenge)\b'
+        - '\boffice (mein|me|pe) (call|phone) (karenge|kar denge)\b'
 
   - rule_id: RBI-454Z-SHAMING
     group: harsh

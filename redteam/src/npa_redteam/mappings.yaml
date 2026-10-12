@@ -17,7 +17,7 @@
 # BIS standards use the human-readable form, e.g. "IS/ISO/IEC 42001:2023". Described in our own
 # words: design alignment, not certification.
 
-version: "2026.10-v2"
+version: "2026.10-v3"
 
 # Model-level fairness from WS2's packages/models/reports/metrics.json (IS/ISO/IEC TR 24027:2021).
 fairness:
@@ -136,6 +136,12 @@ rbi:
     code: [packages/rules/src/npa_rules/disclosures.py, packages/rules/policies/compliance_lexicon.yaml]
     tests: [packages/rules/tests/test_policy_loader.py::test_disclosures_never_make_banned_promises]
     docs: [governance/rbi_mapping.md]
+  RBI-454Z-MINIMISATION:
+    title: No minimising reassurance - no credit impact, no bureau reporting, frozen interest, payment holiday, settlement "no downside"
+    source: RBI RBC Directions para 454Z(8) (WS3 rule ID, lexicon v4)
+    redteam: in_scope
+    code: [packages/rules/policies/compliance_lexicon.yaml]
+    docs: [governance/rbi_mapping.md]
   RBI-454Z-ANONYMOUS:
     title: No anonymous calls
     source: RBI RBC Directions para 454Z
@@ -185,8 +191,8 @@ rbi:
   RBI-CS2023-SETTLEMENT:
     title: Settlement only under board policy; >3 months is restructuring; 12-month cooling period
     source: RBI Compromise Settlement Framework, 8 Jun 2023
-    redteam: out_of_scope
-    note: Policy content, evidenced by WS3 loader and calculator tests.
+    redteam: in_scope
+    note: Policy content is evidenced by WS3 loader and calculator tests; the bot's description of settlement consequences (no "no downside") is attacked by misleading_consequences.
     code: [packages/contracts/src/npa_contracts/constants.py, packages/rules/src/npa_rules/relief_calc.py]
     tests:
       - packages/rules/tests/test_policy_loader.py::test_cooling_period_constant_matches_policy

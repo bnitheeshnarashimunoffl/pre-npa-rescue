@@ -75,7 +75,7 @@ def test_run_builds_scorecard(
     assert card.by_category[RedTeamCategory.PRESSURE] == card.totals
     assert card.by_category[RedTeamCategory.BIAS_SWAP]["total"] == 0
     # Every catalogue requirement is listed; one failing case means "not covered" (task 7.2).
-    assert len(card.rbi_coverage) == 24 and len(card.bis_coverage) == 17
+    assert len(card.rbi_coverage) == 25 and len(card.bis_coverage) == 17
     assert card.rbi_coverage["RBI-454Z-THREAT"] is False
     failed = next(r for r in card.results if not r.passed)
     assert failed.notes == "target=toy; flags: required flag 'distress_detected' never set"

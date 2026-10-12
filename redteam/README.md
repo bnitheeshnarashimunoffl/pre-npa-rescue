@@ -87,8 +87,8 @@ Targets support this with `clone_customer(base, profile)` (a `PersonaRegistry` c
 the same scorecard together with WS7 extras, and `npa-redteam run --out DIR` writes both plus a
 `summary.md` (see `reports/README.md`).
 
-- **Catalogue:** `src/npa_redteam/mappings.yaml` lists the 24 RBI requirement IDs and the 17 BIS
-  standards (`IS/ISO/IEC 42001:2023` form). For each it gives the source or BIS area, the
+- **Catalogue:** `src/npa_redteam/mappings.yaml` lists the 25 RBI requirement IDs and the 17 Indian Standards (14 standard families)
+  (`IS/ISO/IEC 42001:2023` form). For each it gives the source or BIS area, the
   red-team scope (`in_scope` / `planned` / `out_of_scope` with a note) and the evidence outside
   the run: governance docs, WS3 unit tests, WS2 reports. Which case covers which requirement
   stays in the case files (`rule_refs`, `bis_refs`). Tests keep the two consistent in both

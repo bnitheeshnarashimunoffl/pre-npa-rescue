@@ -191,7 +191,7 @@ CITED_BIS = {b for c in CASES for b in c.bis_refs}
 
 def test_catalogue_matches_governance_lists() -> None:
     maps = default_mappings()
-    assert len(maps.rbi) == 24 and len(maps.bis) == 17
+    assert len(maps.rbi) == 25 and len(maps.bis) == 17
     assert all(" " in std and std.startswith("IS") for std in maps.bis)  # human-readable form
 
 
