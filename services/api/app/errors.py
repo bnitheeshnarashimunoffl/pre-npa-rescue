@@ -43,6 +43,15 @@ def not_found(resource: str, resource_id: str) -> NoReturn:
     raise ApiError(404, "NOT_FOUND", f"{resource} not found.", {"id": resource_id})
 
 
+def conflict(message: str, details: dict[str, Any] | None = None) -> NoReturn:
+    """409: the request is valid but the resource's current state does not allow it."""
+    raise ApiError(409, "CONFLICT", message, details)
+
+
+def bad_request(code: str, message: str, details: dict[str, Any] | None = None) -> NoReturn:
+    raise ApiError(400, code, message, details)
+
+
 def _envelope(
     status_code: int,
     code: str,

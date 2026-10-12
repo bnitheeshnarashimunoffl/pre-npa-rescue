@@ -38,14 +38,7 @@ ROLES = [r.value for r in Role]
 def client() -> TestClient:
     """App with no real database: sessions use an empty in-memory SQLite (routes that need
     tables answer 503), so tests never wait on network connections."""
-    app = create_app()
-    memory = make_engine("sqlite://")
-
-    def _session() -> Iterator[Session]:
-        with Session(memory) as s:
-            yield s
-
-    app.dependency_overrides[get_session] = _session
+    app = create_app(engine=make_engine("sqlite://"))
     return TestClient(app)
 
 
@@ -218,7 +211,8 @@ def test_every_operation_is_covered() -> None:
 
 
 # --- customer scope -----------------------------------------------------------------------------
-def test_customer_sees_only_self(client: TestClient) -> None:
+def test_customer_sees_only_self(app_db: tuple[FastAPI, TestClient]) -> None:
+    _, client = app_db
     priya = bearer_for("customer", "CUST-DEMO-PRIYA")
     own = client.get("/api/v1/customers/CUST-DEMO-PRIYA/relief-options", headers=priya)
     other = client.get("/api/v1/customers/CUST-DEMO-RAVI/relief-options", headers=priya)
@@ -230,7 +224,8 @@ def test_customer_sees_only_self(client: TestClient) -> None:
     assert profile.status_code == 404
 
 
-def test_officer_can_see_any_customer(client: TestClient) -> None:
+def test_officer_can_see_any_customer(app_db: tuple[FastAPI, TestClient]) -> None:
+    _, client = app_db
     res = client.get(
         "/api/v1/customers/CUST-DEMO-RAVI/relief-options", headers=bearer_for("hardship_officer")
     )
@@ -238,7 +233,8 @@ def test_officer_can_see_any_customer(client: TestClient) -> None:
 
 
 # --- chat rate limit ----------------------------------------------------------------------------
-def test_chat_rate_limited_per_user(client: TestClient) -> None:
+def test_chat_rate_limited_per_user(app_db: tuple[FastAPI, TestClient]) -> None:
+    _, client = app_db
     priya, ravi = (
         bearer_for("customer", "CUST-DEMO-PRIYA"),
         bearer_for("customer", "CUST-DEMO-RAVI"),
@@ -246,9 +242,9 @@ def test_chat_rate_limited_per_user(client: TestClient) -> None:
     limit = get_settings().chat_rate_per_minute
     url = "/api/v1/chat/sessions/S/messages"
     codes = [client.post(url, json={"text": "hi"}, headers=priya).status_code for _ in range(limit)]
-    assert set(codes) == {200}
+    assert 429 not in codes  # the limiter runs before the handler (unknown session -> 404)
     assert client.post(url, json={"text": "hi"}, headers=priya).status_code == 429
-    assert client.post(url, json={"text": "hi"}, headers=ravi).status_code == 200
+    assert client.post(url, json={"text": "hi"}, headers=ravi).status_code != 429
 
 
 def test_token_bucket_refills() -> None:
