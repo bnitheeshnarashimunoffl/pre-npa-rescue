@@ -15,7 +15,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 
 | Step | Command | Status |
 |---|---|---|
-| Generate tables (1.1) | `uv run datagen generate` | customers, protected attributes, statements (normal behaviour) |
+| Generate tables (1.1) | `uv run datagen generate` | customers, protected attributes, statements, salary, shocks, transactions |
 | Demo personas (1.1 step 6) | — | after features (task 1.2) |
 | Features + labels (1.2) | `uv run datagen features` | not implemented yet |
 | Experiment (1.3) | `uv run datagen experiment` | not implemented yet |
@@ -26,6 +26,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 ```bash
 uv run datagen generate --n 10000 --seed 42 --out data/generated   # ~17 s with transactions
 uv run datagen generate --no-transactions                          # large runs
+uv run python data/scripts/sanity_report.py                        # NPA rate, leading indicators
 uv run datagen --help
 ```
 
@@ -65,7 +66,7 @@ Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_
 
 ## Module map
 
-`calibrate_uci` · `customers` · `protected` · `behaviour` · `statements` · `dues` · `validate` · `cli`
+`calibrate_uci` · `customers` · `protected` · `behaviour` · `shocks` · `statements` · `dues` · `salary` · `transactions` · `validate` · `sanity` · `cli`
 
 ## Regulations and standards
 

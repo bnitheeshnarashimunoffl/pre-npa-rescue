@@ -57,7 +57,9 @@ row counts stay in the JSON.
 **Scaling to Indian levels.** UCI is a stressed portfolio (22% default). Normal customers'
 monthly probability of slipping from current into delinquency is UCI's duly → late rate
 (6.1%) × `ENTRY_SCALE` 0.12 ≈ 0.7% a month. Most NPAs come from hardship shocks and won't-pay
-customers. The resulting NPA rate is reported once shocks land (next PR).
+customers. Result at `2026-09` (10,000 customers, seed 42): **NPA 3.56%** (3.6–3.9% at 20,000
+customers across seeds 42, 7, 123), SMA-0 4.1%, SMA-1 1.1%,
+SMA-2 0.7% (target 3–6%).
 
 The demographic UCI columns (sex, education, marriage, age) are never read.
 
@@ -108,9 +110,36 @@ separate column, it is derivable.
 **DPD at the statement date.** With a 15-day due period, one missed payment shows DPD ≈ 15
 (SMA-0) at the next statement, two ≈ 45 (SMA-1), three ≈ 76 (SMA-2), four ≈ 106 (NPA).
 
+## Behaviour and shocks (hidden ground truth)
+
+| Type | Share | Behaviour |
+|---|---|---|
+| normal | 82% | UCI repayment ratios (persistent per customer), UCI cure/stay/roll |
+| shocked | 12% | job loss 45%, medical 25%, business loss 20%, bereavement 10% (retirees/students: job loss → medical). Severity ~ Beta(2,2). Shock month 3rd–24th month of the window |
+| forgetful | 4% | pays in full; 20% of months 1–14 days late, 4% skips a cycle then catches up |
+| won't pay | 2% | income intact; discretionary ×1.4–2.0 and travel ×1.5 from 2 months before the start; minimum only for 2 months, then 85% nothing / 15% token |
+
+**Shock timeline (the leading indicators).** From the shock month: salary credits stop (job loss)
+or drop (severe medical: unpaid leave ×(1−severity) for 3 months; severe bereavement: one month
+at 50%); discretionary spend × (1 − 0.7·sev), travel × (1 − 0.9·sev), essentials held (medical:
+× (1 + 0.8·sev) for 3 months); cash advances of 10–40% of normal spend; payments drop to the
+minimum. **Missed payments start 1–3 months later** (lead = 3 − ⌊3·sev⌋). Then: severity ≥ ⅔ →
+90% nothing; ⅓–⅔ → minimum 25% / oldest due only 20% / partial 25% / nothing 30%; < ⅓ →
+minimum 80%. 35% recover after 3–9 months and then catch up (50% a month pay all overdue).
+Random payroll delays (0.3% of salary months) keep a missing credit from being proof of hardship.
+
+`data/scripts/sanity_report.py` on the seed-42, 10,000-customer run (shocked accounts, ratio to
+their own level 4–6 months before the first missed payment; `t+0` = first miss):
+
+| month | discretionary | essentials | cash advance | payments |
+|---|---|---|---|---|
+| t−3 | 0.87 | 0.96 | 2.92 | 0.80 |
+| t−2 | 0.76 | 0.97 | 4.91 | 0.69 |
+| t−1 | 0.60 | 0.97 | 7.19 | 0.59 |
+| t+0 | 0.47 | 0.74 | 4.78 | 0.06 |
+
 ## Still to come
 
-- **Shocks, behaviour types, salary and transactions** (task 1.1).
 - **Features, labels and samples** (task 1.2).
 - **Demo persona numbers** (task 1.1 step 6, agreed with WS3).
 - **Experiment probabilities and contact costs** (task 1.3).
