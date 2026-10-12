@@ -39,7 +39,9 @@ Run from the repo root. These work in PowerShell, bash and zsh.
 | `make api` | `uv run uvicorn app.main:app --reload --port 8000 --app-dir services/api` → http://localhost:8000/docs |
 | `make data` | `uv run datagen all` (once WS1 ships task 1.1) |
 | `make train` | `uv run npa-models train --all` then `uv run npa-models score` (once WS2 ships) |
-| `make seed` | `uv run --directory services/api python -m seed` (task 5.2) |
+| `make dev-db` | `uv run --with pgserver python scripts/dev_postgres.py` (local Postgres 16, no Docker) |
+| `make migrate` | `uv run python -m alembic -c services/api/alembic.ini upgrade head` |
+| `make seed` | migrate, then `uv run python -m seed` (add `--reset` to replace existing rows) |
 | `make web` | `pnpm -C apps/web dev` (once WS6 ships) |
 | `make redteam` | `uv run npa-redteam run` (once WS7 ships) |
 | `make demo` | `docker compose up -d --build` then seed (task 5.5) |
@@ -61,6 +63,36 @@ uv run python scripts/check_contracts.py      # if you touched contracts/ or fix
 
 If you changed `packages/contracts` or any API route, regenerate and commit the contracts
 (`make contracts`). Generated files are deterministic: the same on every OS.
+
+## Database (task 5.2)
+
+Postgres 16. Without Docker, run a local one in its own terminal:
+
+```bash
+uv run --with pgserver python scripts/dev_postgres.py   # prints DATABASE_URL; Ctrl+C stops it
+```
+
+Then, with `DATABASE_URL` set (PowerShell: `$env:DATABASE_URL = '...'`):
+
+```bash
+uv run python -m alembic -c services/api/alembic.ini upgrade head   # create/upgrade the schema
+uv run python -m seed            # WS1 Parquet if $DATA_DIR has it, else the 10 fixture accounts
+uv run python -m seed --reset    # wipe all rows and seed again
+```
+
+- Seeding uses `COPY` on Postgres. A synthetic 5 lakh customers × 24 months (12M statement
+  rows) seeded in ~4 minutes on a laptop.
+- WS2 scores are read from `$DATA_DIR/scores.parquet`, then `$MODEL_DIR/scores.parquet`.
+- Demo users (password `demo`): `priya`, `ravi` (customers), `collector1`, `officer1`
+  (hardship officer), `admin1`, `auditor1`.
+- New migration after changing `services/api/app/orm.py`:
+  `uv run python -m alembic -c services/api/alembic.ini revision --autogenerate -m "<what>"`,
+  review it, and commit it. CI runs `alembic check` and fails if the ORM and migrations drift.
+- DB tests run on SQLite, and also on Postgres when `TEST_DATABASE_URL` is set (CI sets it).
+
+**Windows note:** Smart App Control / Application Control can block pyarrow's DLLs
+("DLL load failed ... Application Control policy"), intermittently. The fixtures seed path
+does not need pyarrow; Parquet seeding and its tests need it (CI on Linux always runs them).
 
 ## API (bootstrap state)
 

@@ -6,7 +6,7 @@ SHELL := /bin/sh
 .DEFAULT_GOAL := help
 API_PORT ?= 8000
 
-.PHONY: help setup data train seed api web test lint format typecheck contracts check-contracts redteam demo
+.PHONY: help setup data train migrate seed dev-db api web test lint format typecheck contracts check-contracts redteam demo
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-16s %s\n", $$1, $$2}'
@@ -25,9 +25,14 @@ train: ## Train and score models (WS2)
 		uv run npa-models train --all && uv run npa-models score; \
 	else echo "[train] npa-models CLI not available yet (WS2 task 2.1)"; fi
 
-seed: ## Load data into Postgres + demo users (WS5)
-	@if [ -f services/api/seed/__main__.py ]; then uv run --directory services/api python -m seed; \
-	else echo "[seed] seed loader not available yet (WS5 task 5.2)"; fi
+migrate: ## Apply database migrations (DATABASE_URL)
+	uv run python -m alembic -c services/api/alembic.ini upgrade head
+
+seed: migrate ## Migrate, then load Parquet (or fixtures) + demo users; SEED_ARGS=--reset to replace
+	uv run python -m seed $(SEED_ARGS)
+
+dev-db: ## Local Postgres 16 without Docker (prints DATABASE_URL)
+	uv run --with pgserver python scripts/dev_postgres.py
 
 api: ## Run the API with reload on :8000
 	uv run uvicorn app.main:app --reload --port $(API_PORT) --app-dir services/api
