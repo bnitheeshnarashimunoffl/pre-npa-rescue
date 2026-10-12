@@ -1,9 +1,16 @@
 [project]
 name = "npa-redteam"
-version = "0.0.1"
+version = "0.1.0"
 description = "Red-team attack harness and compliance scorecard engine."
 requires-python = ">=3.11,<3.12"
-dependencies = ["npa-contracts"]
+dependencies = [
+    "npa-contracts",
+    "pyyaml>=6",
+    "tzdata>=2024.1",
+]
+
+[project.scripts]
+npa-redteam = "npa_redteam.cli:main"
 
 [build-system]
 requires = ["hatchling"]
