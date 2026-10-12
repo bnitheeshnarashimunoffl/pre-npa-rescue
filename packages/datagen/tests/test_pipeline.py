@@ -57,3 +57,25 @@ def test_integrity_check_catches_errors(small_data: GeneratedData) -> None:
         check_integrity(
             c, am, start_month="2024-10", end_month="2026-09", others={"salary": bad_salary}
         )
+
+
+def test_chunked_features_equal_single_pass(
+    small_written: Path, small_cfg: DatagenConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Large populations are processed in account chunks; the content must not change."""
+    import shutil
+
+    from datagen import pipeline
+
+    run_features(small_cfg)
+    single_f = pd.read_parquet(small_written / "features.parquet")
+    single_l = pd.read_parquet(small_written / "labels.parquet")
+
+    chunked_dir = tmp_path / "chunked"
+    shutil.copytree(small_written, chunked_dir)
+    monkeypatch.setattr(pipeline, "FEATURE_CHUNK_ACCOUNTS", 97)  # 410 accounts -> 5 chunks
+    run_features(small_cfg.model_copy(update={"data_dir": chunked_dir, "samples_dir": tmp_path}))
+    pd.testing.assert_frame_equal(pd.read_parquet(chunked_dir / "features.parquet"), single_f)
+    pd.testing.assert_frame_equal(pd.read_parquet(chunked_dir / "labels.parquet"), single_l)
+    sample = pd.read_parquet(tmp_path / "features_sample.parquet")
+    assert len(sample) == 2_000

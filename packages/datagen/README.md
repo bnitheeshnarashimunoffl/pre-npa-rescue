@@ -29,6 +29,7 @@ uv run datagen generate --no-transactions                          # large runs
 uv run datagen features                                            # ~2 s for 10,000 customers
 uv run datagen experiment                                          # task 1.3
 uv run datagen all --n 10000 --seed 42                             # everything, ~26 s
+uv run datagen all --n 500000 --no-transactions                    # 5 lakh: ~3 min, ~10 GB peak
 uv run python data/scripts/sanity_report.py                        # NPA rate, leading indicators
 uv run datagen --help
 ```

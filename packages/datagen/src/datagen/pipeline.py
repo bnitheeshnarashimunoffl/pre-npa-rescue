@@ -6,14 +6,25 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow.parquet as pq
 
 from datagen.config import DatagenConfig
 from datagen.features import build_features
 from datagen.generate import LABEL_HORIZON_FILE, PERSONAS_JSON
 from datagen.labels import build_labels
 from datagen.personas import to_records, write_json
-from datagen.validate import arrow_schema, table_spec, validate, write_parquet, write_table
+from datagen.validate import (
+    ChunkedTableWriter,
+    arrow_schema,
+    table_spec,
+    validate,
+    write_parquet,
+    write_table,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,18 +32,65 @@ SAMPLE_ACCOUNTS = 200
 SAMPLE_MONTHS = 10  # 200 accounts x 10 consecutive labelled months = 2,000 rows
 SAMPLE_LAST_MONTH = "2026-06"  # pinned, so the committed samples stay byte-identical
 SAMPLE_STREAM = 20
+FEATURE_CHUNK_ACCOUNTS = 100_000  # accounts per features chunk (~3 GB peak per chunk)
 
 
 def read_inputs(data_dir: Path) -> dict[str, pd.DataFrame]:
-    names = ("customers", "account_months", "monthly_spend", "salary_credits", "shocks")
-    tables = {name: pd.read_parquet(data_dir / f"{name}.parquet") for name in names}
-    tables["behaviour_types"] = pd.read_parquet(data_dir / "behaviour_types.parquet")
+    """All inputs of the features step as pandas frames (small and test runs)."""
+    return read_chunk(_open_inputs(data_dir), None)
+
+
+def _open_inputs(data_dir: Path) -> dict[str, Any]:
+    """Large inputs as Arrow tables (compact strings); small ones as pandas."""
     horizon = data_dir / LABEL_HORIZON_FILE
-    tables["label_horizon"] = pd.read_parquet(horizon) if horizon.exists() else pd.DataFrame()
+    return {
+        "account_months": pq.read_table(data_dir / "account_months.parquet"),
+        "monthly_spend": pq.read_table(data_dir / "monthly_spend.parquet"),
+        "salary_credits": pq.read_table(data_dir / "salary_credits.parquet"),
+        "label_horizon": pq.read_table(horizon) if horizon.exists() else None,
+        "customers": pd.read_parquet(data_dir / "customers.parquet"),
+        "shocks": pd.read_parquet(data_dir / "shocks.parquet"),
+        "behaviour_types": pd.read_parquet(data_dir / "behaviour_types.parquet"),
+    }
+
+
+def read_chunk(
+    inputs: dict[str, Any], accounts: npt.NDArray[Any] | None
+) -> dict[str, pd.DataFrame]:
+    """Rows for ``accounts`` (``None`` = everyone) from every features-step input."""
+    customers = inputs["customers"]
+    if accounts is not None:
+        customers = customers[customers["account_id"].isin(accounts)].reset_index(drop=True)
+
+    def pick(name: str, key: str, values: npt.NDArray[Any]) -> pd.DataFrame:
+        table = inputs[name]
+        if table is None:
+            return pd.DataFrame()
+        if accounts is not None:
+            table = table.filter(pc.is_in(table[key], value_set=pa.array(values)))
+        frame: pd.DataFrame = table.to_pandas()
+        return frame
+
+    acc = customers["account_id"].to_numpy()
+    cust = customers["customer_id"].to_numpy()
+    t = {
+        "customers": customers.copy(),
+        "account_months": pick("account_months", "account_id", acc),
+        "monthly_spend": pick("monthly_spend", "account_id", acc),
+        "salary_credits": pick("salary_credits", "customer_id", cust),
+        "label_horizon": pick("label_horizon", "account_id", acc),
+        "shocks": inputs["shocks"],
+        "behaviour_types": inputs["behaviour_types"],
+    }
     for col in ("statement_date", "due_date", "payment_date"):
-        tables["account_months"][col] = pd.to_datetime(tables["account_months"][col])
-    tables["customers"]["card_open_date"] = pd.to_datetime(tables["customers"]["card_open_date"])
-    return tables
+        t["account_months"][col] = pd.to_datetime(t["account_months"][col])
+    t["customers"]["card_open_date"] = pd.to_datetime(t["customers"]["card_open_date"])
+    return t
+
+
+def sample_months(labels: pd.DataFrame) -> list[str]:
+    """The 10 labelled months ending ``SAMPLE_LAST_MONTH``."""
+    return sorted(m for m in labels["month"].unique() if m <= SAMPLE_LAST_MONTH)[-SAMPLE_MONTHS:]
 
 
 def make_samples(
@@ -44,7 +102,7 @@ def make_samples(
     Half the accounts are drawn from those that are ever past due in the sampled months, so
     both label classes appear; the rest at random. Features and labels share the same keys.
     """
-    months = sorted(m for m in labels["month"].unique() if m <= SAMPLE_LAST_MONTH)[-SAMPLE_MONTHS:]
+    months = sample_months(labels)
     lab = labels[labels["month"].isin(months)]
     feat = features[features["month"].isin(months)]
     risky = feat.loc[feat["dpd"] > 0, "account_id"].unique()
@@ -61,17 +119,54 @@ def make_samples(
 
 
 def run_features(cfg: DatagenConfig) -> None:
-    """CLI step: build ``features.parquet`` and ``labels.parquet`` (and optional samples)."""
-    t = read_inputs(cfg.data_dir)
-    features = build_features(
-        t["customers"], t["account_months"], t["monthly_spend"], t["salary_credits"]
-    )
-    labels = build_labels(
-        t["account_months"], t["shocks"], t["behaviour_types"], t["label_horizon"]
-    )
-    write_table(features, "features", cfg.data_dir)
-    write_table(labels, "labels", cfg.data_dir)
-    logger.info("features rows=%d labels rows=%d", len(features), len(labels))
+    """CLI step: build ``features.parquet`` and ``labels.parquet`` (and optional samples).
+
+    Features and labels of an account depend only on that account's rows, so large populations
+    are processed ``FEATURE_CHUNK_ACCOUNTS`` accounts at a time and appended as Parquet row
+    groups (content identical to one big write). A single-chunk run uses the plain writer, so
+    small outputs keep their exact bytes.
+    """
+    inputs = _open_inputs(cfg.data_dir)
+    accounts = np.sort(inputs["customers"]["account_id"].to_numpy())
+    chunks = [
+        accounts[i : i + FEATURE_CHUNK_ACCOUNTS]
+        for i in range(0, accounts.size, FEATURE_CHUNK_ACCOUNTS)
+    ]
+    single = len(chunks) == 1
+    writers = {name: ChunkedTableWriter(name, cfg.data_dir) for name in ("features", "labels")}
+    keep_f: list[pd.DataFrame] = []
+    keep_l: list[pd.DataFrame] = []
+    for k, chunk in enumerate(chunks):
+        t = read_chunk(inputs, None if single else chunk)
+        features = build_features(
+            t["customers"], t["account_months"], t["monthly_spend"], t["salary_credits"]
+        )
+        labels = build_labels(
+            t["account_months"], t["shocks"], t["behaviour_types"], t["label_horizon"]
+        )
+        if single:
+            write_table(features, "features", cfg.data_dir)
+            write_table(labels, "labels", cfg.data_dir)
+            keep_f, keep_l = [features], [labels]
+            break
+        writers["features"].write(features)
+        writers["labels"].write(labels)
+        # Keep only what personas and samples need from each chunk.
+        wanted = features["account_id"].str.startswith("ACC-DEMO-")
+        lab_wanted = labels["account_id"].str.startswith("ACC-DEMO-")
+        if cfg.samples_dir is not None:
+            months = sample_months(labels)
+            wanted |= features["month"].isin(months)
+            lab_wanted |= labels["month"].isin(months)
+        keep_f.append(features[wanted])
+        keep_l.append(labels[lab_wanted])
+        logger.info("features chunk=%d/%d accounts=%d", k + 1, len(chunks), chunk.size)
+    for w in writers.values():
+        w.close()
+    features = pd.concat(keep_f, ignore_index=True)
+    labels = pd.concat(keep_l, ignore_index=True)
+    logger.info("features accounts=%d chunks=%d", accounts.size, len(chunks))
+
     personas = add_persona_features(cfg.data_dir / PERSONAS_JSON, features, labels)
     samples_dir = cfg.samples_dir
     if samples_dir is not None and personas is not None:

@@ -168,6 +168,38 @@ def write_parquet(df: pd.DataFrame, path: Path, schema: pa.Schema | None) -> Non
     pq.write_table(table, path, compression="zstd", write_statistics=True)
 
 
+class ChunkedTableWriter:
+    """Validate and append chunks of a contract table to one Parquet file (row groups).
+
+    For outputs too large to hold in memory at once (5 lakh customers). Same settings as
+    :func:`write_parquet`; the content equals a single write, the row-group layout differs.
+    """
+
+    def __init__(self, table: str, out_dir: Path) -> None:
+        self.table = table
+        self.path = out_dir / f"{table}.parquet"
+        self.schema = arrow_schema(table_spec(table))
+        self.rows = 0
+        self._writer: pq.ParquetWriter | None = None
+
+    def write(self, df: pd.DataFrame) -> None:
+        validate(df, self.table)
+        chunk = pa.Table.from_pandas(df, schema=self.schema, preserve_index=False)
+        chunk = chunk.replace_schema_metadata(None)
+        if self._writer is None:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self._writer = pq.ParquetWriter(
+                self.path, chunk.schema, compression="zstd", write_statistics=True
+            )
+        self._writer.write_table(chunk)
+        self.rows += len(df)
+
+    def close(self) -> None:
+        if self._writer is not None:
+            self._writer.close()
+            self._writer = None
+
+
 def write_table(df: pd.DataFrame, table: str, out_dir: Path) -> Path:
     """Validate against the contract and write ``<out_dir>/<table>.parquet``."""
     validate(df, table)
