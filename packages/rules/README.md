@@ -245,6 +245,56 @@ Without a declaration, affordability is **estimated** (`source="estimated"`) fro
 credited income or the average payment of the last 3 months, whichever gives more. The
 chatbot must confirm it with the customer before offering a plan.
 
+## Tamil and Hindi texts to review
+
+Every customer-facing ta/hi string in this package is a first draft. English is the reviewed
+source. The disclosures are marked `needs_review` in `disclosures.py`, and the footer
+templates live in `compliance_guard.py`. A Tamil or Hindi speaker can check them all here in
+one pass: tick a box when the text is accurate, plain and no harsher or softer than the
+English. Send corrections to WS3, who also clears `needs_review` for the reviewed language.
+`tests/test_review_list.py` fails if a string in this list no longer matches the code.
+
+1. `disc.fee_waiver.stops_growth`
+   - en (source): We will remove the late fees shown in this offer, so those fees no longer add to what you owe. Interest on your remaining card balance still applies as shown in your statement.
+   - [ ] ta: இந்தச் சலுகையில் காட்டப்பட்டுள்ள தாமதக் கட்டணங்களை நாங்கள் நீக்குவோம்; அவை இனி உங்கள் நிலுவையில் சேராது. மீதமுள்ள அட்டை நிலுவைக்கான வட்டி உங்கள் அறிக்கையில் காட்டியபடி தொடரும்.
+   - [ ] hi: इस ऑफ़र में दिखाए गए विलंब शुल्क हम हटा देंगे, इसलिए वे आपकी बकाया राशि में नहीं जुड़ेंगे। बचे हुए कार्ड बैलेंस पर ब्याज आपके स्टेटमेंट के अनुसार लगता रहेगा।
+2. `disc.emi.principal_interest_shown`
+   - en (source): Each monthly instalment is shown split into the amount you owe and the interest on it. You will see the total interest for the whole plan before you agree.
+   - [ ] ta: ஒவ்வொரு மாதத் தவணையும் நீங்கள் செலுத்த வேண்டிய தொகை மற்றும் அதற்கான வட்டி எனப் பிரித்துக் காட்டப்படும். ஒப்புக்கொள்வதற்கு முன் முழுத் திட்டத்திற்கான மொத்த வட்டியைப் பார்க்கலாம்.
+   - [ ] hi: हर मासिक किस्त में मूल बकाया और उस पर ब्याज अलग-अलग दिखाया जाता है। सहमति देने से पहले आप पूरी योजना का कुल ब्याज देख सकेंगे।
+3. `disc.restructuring.npa_downgrade`
+   - en (source): If your repayment plan is restructured, your account will be classified as a non-performing asset. It can be upgraded after you repay as agreed for the required period.
+   - [ ] ta: உங்கள் திருப்பிச் செலுத்தும் திட்டம் மறுசீரமைக்கப்பட்டால், உங்கள் கணக்கு செயல்படாத சொத்தாக (NPA) வகைப்படுத்தப்படும். ஒப்புக்கொண்டபடி தேவையான காலம் செலுத்திய பிறகு அது மேம்படுத்தப்படலாம்.
+   - [ ] hi: अगर आपकी भुगतान योजना का पुनर्गठन होता है, तो आपका खाता गैर-निष्पादित आस्ति (NPA) के रूप में वर्गीकृत होगा। तय अवधि तक सहमति के अनुसार भुगतान करने के बाद इसे अपग्रेड किया जा सकता है।
+4. `disc.restructuring.upgrade_after_performance`
+   - en (source): Your account returns to standard status only after you have paid as agreed for the period set in the bank's policy. A hardship officer will tell you that period before you agree.
+   - [ ] ta: வங்கியின் கொள்கையில் குறிப்பிட்ட காலம் வரை ஒப்புக்கொண்டபடி செலுத்திய பிறகே உங்கள் கணக்கு சாதாரண நிலைக்குத் திரும்பும். நீங்கள் ஒப்புக்கொள்வதற்கு முன் அந்தக் காலத்தை கஷ்டநிலை அலுவலர் உங்களுக்குத் தெரிவிப்பார்.
+   - [ ] hi: बैंक की नीति में तय अवधि तक सहमति के अनुसार भुगतान करने के बाद ही आपका खाता मानक स्थिति में लौटता है। सहमति से पहले हार्डशिप अधिकारी आपको यह अवधि बताएंगे।
+5. `disc.settlement.cooling_period`
+   - en (source): After a settlement, the bank will not offer you new credit for at least 12 months.
+   - [ ] ta: தீர்வுக்குப் பிறகு, குறைந்தது 12 மாதங்களுக்கு வங்கி உங்களுக்குப் புதிய கடன் வழங்காது.
+   - [ ] hi: समझौते के बाद, बैंक आपको कम से कम 12 महीनों तक नया क्रेडिट नहीं देगा।
+6. `disc.settlement.over_3_months_is_restructuring`
+   - en (source): If a settlement is paid over more than 3 months, it is treated as a restructuring, and the restructuring rules explained to you also apply.
+   - [ ] ta: தீர்வுத் தொகை 3 மாதங்களுக்கு மேல் செலுத்தப்பட்டால், அது மறுசீரமைப்பாகக் கருதப்படும்; உங்களுக்கு விளக்கப்பட்ட மறுசீரமைப்பு விதிகளும் பொருந்தும்.
+   - [ ] hi: अगर समझौते की राशि 3 महीने से अधिक समय में चुकाई जाती है, तो इसे पुनर्गठन माना जाता है और आपको बताए गए पुनर्गठन के नियम भी लागू होते हैं।
+7. `disc.settlement.bureau_reporting`
+   - en (source): A settlement is reported to credit bureaus as settled, not as paid in full, and this can affect future loans. The bank updates the credit bureaus within 30 days of the settlement.
+   - [ ] ta: தீர்வு, முழுமையாகச் செலுத்தப்பட்டதாக அல்லாமல் 'தீர்வு செய்யப்பட்டது' என்று கடன் தகவல் நிறுவனங்களுக்குத் தெரிவிக்கப்படும்; இது எதிர்காலக் கடன்களைப் பாதிக்கலாம். தீர்வுக்குப் பின் 30 நாட்களுக்குள் வங்கி அவற்றைப் புதுப்பிக்கும்.
+   - [ ] hi: समझौते की जानकारी क्रेडिट ब्यूरो को 'पूरा भुगतान' नहीं, बल्कि 'सेटल्ड' के रूप में दी जाती है, और इससे भविष्य के ऋण प्रभावित हो सकते हैं। बैंक समझौते के 30 दिनों के भीतर क्रेडिट ब्यूरो को अपडेट करता है।
+8. `disc.insurance.claim_process`
+   - en (source): Your card may include insurance cover. The insurer decides a claim under the policy terms, so payment is not guaranteed. A hardship officer can help you start a claim.
+   - [ ] ta: உங்கள் அட்டையில் காப்பீட்டுப் பாதுகாப்பு இருக்கலாம். காப்பீட்டு விதிமுறைகளின்படி காப்பீட்டு நிறுவனமே கோரிக்கையை முடிவு செய்யும்; எனவே பணம் கிடைக்கும் என்று உறுதி இல்லை. கோரிக்கையைத் தொடங்க கஷ்டநிலை அலுவலர் உதவுவார்.
+   - [ ] hi: आपके कार्ड में बीमा कवर हो सकता है। दावे का फ़ैसला बीमा कंपनी पॉलिसी की शर्तों के अनुसार करती है, इसलिए भुगतान की गारंटी नहीं है। दावा शुरू करने में हार्डशिप अधिकारी आपकी मदद कर सकते हैं।
+9. `disc.review.what_happens_next`
+   - en (source): No payment is asked from you now. A hardship officer will review your situation with you on the agreed date. Your dues stay on your account and appear in your statements, and charges may still apply under your card terms.
+   - [ ] ta: இப்போது உங்களிடம் எந்தப் பணமும் கேட்கப்படவில்லை. ஒப்புக்கொண்ட தேதியில் கஷ்டநிலை அலுவலர் உங்களுடன் உங்கள் நிலையை மறுபரிசீலனை செய்வார். உங்கள் நிலுவை கணக்கில் தொடர்ந்து அறிக்கைகளில் காட்டப்படும்; அட்டை விதிமுறைகளின்படி கட்டணங்கள் பொருந்தலாம்.
+   - [ ] hi: अभी आपसे कोई भुगतान नहीं माँगा जा रहा है। तय तारीख़ पर हार्डशिप अधिकारी आपके साथ आपकी स्थिति की समीक्षा करेंगे। आपकी बकाया राशि खाते में बनी रहेगी और स्टेटमेंट में दिखेगी, और कार्ड की शर्तों के अनुसार शुल्क लग सकते हैं।
+10. Footer: `required_footer(lang)` with the shipped policy
+   - en (source): This conversation may be recorded. For any complaint, contact our Grievance Officer: Grievance Redressal Officer, gro@demobank.example, 1800-000-0000, Demo Bank Ltd, Chennai 600001. If it is not resolved within 30 days, you can approach the RBI Ombudsman.
+   - [ ] ta: இந்த உரையாடல் பதிவு செய்யப்படலாம். புகார் இருந்தால் எங்கள் குறைதீர் அலுவலரைத் தொடர்பு கொள்ளுங்கள்: Grievance Redressal Officer, gro@demobank.example, 1800-000-0000, Demo Bank Ltd, Chennai 600001. 30 நாட்களுக்குள் தீர்வு கிடைக்காவிட்டால், நீங்கள் RBI குறைதீர்ப்பாளரை அணுகலாம்.
+   - [ ] hi: यह बातचीत रिकॉर्ड की जा सकती है। किसी भी शिकायत के लिए हमारे शिकायत निवारण अधिकारी से संपर्क करें: Grievance Redressal Officer, gro@demobank.example, 1800-000-0000, Demo Bank Ltd, Chennai 600001। अगर 30 दिनों में समाधान नहीं होता, तो आप RBI लोकपाल से संपर्क कर सकते हैं।
+
 ## Run
 
 ```bash
