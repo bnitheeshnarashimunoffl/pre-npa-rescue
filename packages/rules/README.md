@@ -56,7 +56,13 @@ checked against `npa_contracts.constants` on every load.
 
 `check_contact` returns `next_allowed_at`: the earliest time every contact rule passes
 (window, quiet times, caps and gap combined). `check_text` applies every language's patterns
-(en, hi, ta, plus romanised Hinglish/Tanglish), so code-mixed text is caught. An optional
+(en, hi, ta, plus romanised Hinglish/Tanglish), so code-mixed text is caught. Patterns match
+**assertions, not mentions** (issue #60): "you will go to jail" is blocked, but the truthful
+denial "you will not go to jail" passes, so the bot can answer "will I go to jail?" honestly.
+English skips a phrase directly preceded by "not", "never" or "n't". Negation in another
+clause doesn't count: "If you don't pay, you will go to jail" is still blocked. Hindi and
+Tamil list only affirmative verb forms ("जेल जाएंगे", "சிறைக்குச் செல்வீர்கள்"), because the
+negation sits between the noun and the verb. An optional
 `llm_judge(text, lang) -> list[rule_id]` hook is injected and off by default. Our own
 disclosures and footer are tested to pass the filter. `required_footer(lang)` returns the
 recording notice (454P) and the grievance officer's details with the Ombudsman route after

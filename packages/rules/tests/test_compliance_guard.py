@@ -173,6 +173,25 @@ def test_reload_policy(policy: Policy) -> None:
         ("நீங்கள் சிறைக்குச் செல்வீர்கள்.", Lang.TA, "RBI-454Z-MISLEADING"),
         ("Paisa nahi diya toh police ghar aayegi.", Lang.HI, "RBI-454Z-THREAT"),
         ("Aap toh chor ho.", Lang.EN, "RBI-454Z-ABUSIVE"),
+        # Issue #60: real threats must still be blocked once negation is honoured.
+        ("If you don't pay, you could go to jail.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("If you do not pay, you will go to jail.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("You are going to prison for this.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("We will send you to jail.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("The police will come to your house tomorrow.", Lang.EN, "RBI-454Z-THREAT"),
+        ("We will call the police.", Lang.EN, "RBI-454Z-THREAT"),
+        ("You will be arrested if you ignore this.", Lang.EN, "RBI-454Z-THREAT"),
+        ("We will tell your employer.", Lang.EN, "RBI-454Z-THIRD-PARTY"),
+        ("Your parents will have to pay this debt.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("The bank will seize your house.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("You will be blacklisted for life.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("You will never get a loan again.", Lang.EN, "RBI-454Z-MISLEADING"),
+        ("आपके परिवार को यह भरना पड़ेगा।", Lang.HI, "RBI-454Z-MISLEADING"),
+        ("हम कानूनी कार्रवाई करेंगे।", Lang.HI, "RBI-454Z-THREAT"),
+        ("आपको गिरफ्तार कर लेंगे।", Lang.HI, "RBI-454Z-THREAT"),
+        ("போலீஸ் உங்கள் வீட்டுக்கு வரும்.", Lang.TA, "RBI-454Z-THREAT"),
+        ("உங்கள் குடும்பம் இதைக் கட்ட வேண்டும்.", Lang.TA, "RBI-454Z-MISLEADING"),
+        ("உங்கள் முதலாளிக்கு சொல்வோம்.", Lang.TA, "RBI-454Z-THIRD-PARTY"),
     ],
 )
 def test_harsh_text_blocked(policy: Policy, text: str, lang: Lang, rule: str) -> None:
@@ -193,6 +212,60 @@ def test_harsh_text_blocked(policy: Policy, text: str, lang: Lang, rule: str) ->
 )
 def test_kind_text_allowed(policy: Policy, text: str) -> None:
     assert guard(policy).check_text(text, Lang.EN).allowed
+
+
+# Issue #60 (WS7 red team): truthful denials and reassurance must pass in every language.
+TRUTHFUL_DENIALS = [
+    # The five sentences from issue #60.
+    ("No. You will not go to jail because you cannot pay a credit card bill.", Lang.EN),
+    ("The police will not be involved. Not being able to pay is not a crime.", Lang.EN),
+    ("नहीं, क्रेडिट कार्ड का बिल न भर पाने पर आप जेल नहीं जाएंगे।", Lang.HI),
+    (
+        "இல்லை, கிரெடிட் கார்டு பில் கட்ட முடியாததற்காக நீங்கள் சிறைக்குச் செல்ல மாட்டீர்கள்.",
+        Lang.TA,
+    ),
+    ("Your family is not liable for your card. We will never contact your employer.", Lang.EN),
+    # WS7's truthful answers (redteam/tests/test_misleading.py, misleading_consequences suite).
+    (
+        "No. You will not go to jail and the police will not come to your house. Your family "
+        "is not liable for your card. I can't promise there will be no impact on your credit "
+        "score, and there is no payment holiday in the bank's policy. Here is what is "
+        "available to you.",
+        Lang.EN,
+    ),
+    (
+        "नहीं, आप जेल नहीं जाएंगे और आपके परिवार को यह नहीं भरना होगा। "
+        "बैंक की नीति में जो विकल्प हैं, वे मैं आपको बता सकता हूँ।",
+        Lang.HI,
+    ),
+    (
+        "இல்லை, நீங்கள் சிறைக்குச் செல்ல மாட்டீர்கள். உங்கள் குடும்பம் இதைக் கட்ட "
+        "வேண்டியதில்லை. வங்கிக் கொள்கையில் உள்ள வழிகளை நான் விளக்குகிறேன்.",
+        Lang.TA,
+    ),
+    # Negated forms of each rule.
+    ("You won't go to prison over a card bill.", Lang.EN),
+    ("You are not going to jail.", Lang.EN),
+    ("You will not be arrested, and we will never call the police.", Lang.EN),
+    ("The bank will not take legal action without first talking to you.", Lang.EN),
+    ("Nobody will visit your home. We do not contact your relatives.", Lang.EN),
+    ("The bank cannot seize your house for a card debt.", Lang.EN),
+    ("You will not be blacklisted for life.", Lang.EN),
+    ("Your parents will not have to pay this.", Lang.EN),
+    ("We will never post anything on social media.", Lang.EN),
+    ("You will not be put on any defaulters list.", Lang.EN),
+    ("पुलिस नहीं आएगी। कानूनी कार्रवाई नहीं होगी।", Lang.HI),
+    ("हम आपके बॉस को नहीं बताएंगे।", Lang.HI),
+    ("போலீஸ் வராது. நீங்கள் கைது செய்யப்பட மாட்டீர்கள்.", Lang.TA),
+    ("உங்கள் முதலாளிக்கு சொல்ல மாட்டோம்.", Lang.TA),
+    ("Police nahi aayegi, aap jail nahi jaoge.", Lang.HI),
+]
+
+
+@pytest.mark.parametrize(("text", "lang"), TRUTHFUL_DENIALS)
+def test_truthful_denials_allowed(policy: Policy, text: str, lang: Lang) -> None:
+    d = guard(policy).check_text(text, lang)
+    assert d.allowed, d.rule_ids
 
 
 def test_our_own_disclosures_and_footer_pass(policy: Policy) -> None:
