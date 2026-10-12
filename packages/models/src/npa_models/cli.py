@@ -1,7 +1,7 @@
 """``npa-models`` command line: ``train | score | evaluate``.
 
-Skeleton: the commands parse their arguments and exit with :data:`EXIT_NOT_IMPLEMENTED` until
-tasks 2.1-2.5 fill them in.
+``train`` fits the early-warning model (task 2.1); the other models join as their tasks land.
+Commands not built yet exit with :data:`EXIT_NOT_IMPLEMENTED`.
 """
 
 import argparse
@@ -9,8 +9,12 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
+from npa_models import early_warning
 from npa_models.config import ModelSettings
+from npa_models.registry import save_bundle
 
+EXIT_OK = 0
+EXIT_ERROR = 1
 EXIT_NOT_IMPLEMENTED = 3
 
 log = logging.getLogger("npa_models.cli")
@@ -35,9 +39,22 @@ def _parser(settings: ModelSettings) -> argparse.ArgumentParser:
     return p
 
 
+def _train(args: argparse.Namespace, settings: ModelSettings) -> int:
+    for path in (args.features, args.labels):
+        if not path.is_file():
+            log.error("missing input file=%s hint='run datagen all first'", path)
+            return EXIT_ERROR
+    bundle = early_warning.train(args.features, args.labels, settings)
+    out = save_bundle(bundle, settings.model_dir)
+    log.info("saved model=%s version=%s dir=%s", bundle.name, bundle.model_version, out)
+    return EXIT_OK
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     settings = ModelSettings()
     args = _parser(settings).parse_args(argv)
+    if args.command == "train":
+        return _train(args, settings)
     log.error("command=%s status=not_implemented seed=%d", args.command, settings.seed)
     return EXIT_NOT_IMPLEMENTED
