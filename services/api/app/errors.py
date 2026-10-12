@@ -39,8 +39,17 @@ def not_implemented(task: str) -> NoReturn:
     raise ApiError(501, "NOT_IMPLEMENTED", f"Stub route; implemented in WS5 task {task}.")
 
 
+# One 404 body for "no such route", "your role may not use this route" and "not yours": the
+# response never reveals whether a route or a resource exists (RBI para 454O; no enumeration).
+NOT_FOUND_MESSAGE = "Not found."
+
+
 def not_found(resource: str, resource_id: str) -> NoReturn:
-    raise ApiError(404, "NOT_FOUND", f"{resource} not found.", {"id": resource_id})
+    """404 for a missing resource *or* one that belongs to someone else (indistinguishable).
+
+    ``resource`` documents the call site only; it is not sent to the client.
+    """
+    raise ApiError(404, "NOT_FOUND", NOT_FOUND_MESSAGE)
 
 
 def conflict(message: str, details: dict[str, Any] | None = None) -> NoReturn:
@@ -83,7 +92,8 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
         code = _HTTP_CODES.get(exc.status_code, "HTTP_ERROR")
-        return _envelope(exc.status_code, code, str(exc.detail), {})
+        message = NOT_FOUND_MESSAGE if exc.status_code == 404 else str(exc.detail)
+        return _envelope(exc.status_code, code, message, {})
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:

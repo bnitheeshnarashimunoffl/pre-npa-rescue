@@ -32,6 +32,7 @@ from npa_contracts.enums import Role
 from tests.conftest import bearer_for
 
 ROLES = [r.value for r in Role]
+UNIFORM_404 = {"error": {"code": "NOT_FOUND", "message": "Not found.", "details": {}}}
 
 
 @pytest.fixture(scope="module")
@@ -202,8 +203,13 @@ def test_route_enforces_documented_roles(
     assert anon.status_code == 401, path
     for role in ROLES:
         res = client.request(method, _concrete(path), json={}, headers=bearer_for(role))
-        denied = res.status_code == 404 and res.json()["error"]["message"] == "Not found."
+        assert res.status_code != 403, (method, path, role)  # never reveal "exists but not yours"
+        # This client has an empty database, so allowed roles get 503/2xx/4xx-but-not-404;
+        # every denial is the uniform 404.
+        denied = res.status_code == 404
         assert denied == (role not in allowed), (method, path, role, res.status_code)
+        if denied:
+            assert res.json() == UNIFORM_404
 
 
 def test_every_operation_is_covered() -> None:

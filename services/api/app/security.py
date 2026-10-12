@@ -22,7 +22,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 
 from app.config import Settings, get_settings
 from app.deps import bearer
-from app.errors import ApiError, not_found
+from app.errors import NOT_FOUND_MESSAGE, ApiError, not_found
 from npa_contracts.enums import Role
 
 log = logging.getLogger(__name__)
@@ -132,7 +132,7 @@ def require_roles(*roles: str) -> Callable[[Principal], Principal]:
 
     def dependency(principal: CurrentPrincipal) -> Principal:
         if principal.role not in allowed:
-            raise ApiError(404, "NOT_FOUND", "Not found.")
+            raise ApiError(404, "NOT_FOUND", NOT_FOUND_MESSAGE)
         return principal
 
     return dependency
