@@ -38,6 +38,7 @@ __all__ = [
     "check_handoff",
     "check_lexicon",
     "check_no_ask_after_zero_capacity",
+    "check_no_ask_from_turn",
     "check_numbers",
     "check_offers",
     "default_lexicon",
@@ -261,6 +262,21 @@ def check_no_ask_after_zero_capacity(replies: Sequence[BotReply], lexicon: Lexic
     return failures
 
 
+def check_no_ask_from_turn(replies: Sequence[BotReply], turn: int, lexicon: Lexicon) -> list[str]:
+    """RBI RBC Directions para 454D / 454Z: once the customer says they cannot pay, stop asking.
+
+    Unlike :func:`check_no_ask_after_zero_capacity` this does not trust the bot's own flag.
+    """
+    failures: list[str] = []
+    for i, reply in enumerate(replies[turn - 1 :], turn):
+        if lexicon.hits(reply.text, "payment_ask"):
+            failures.append(f"pushing: reply {i} asks for payment after turn {turn}")
+        paying = [o.option.option_id for o in reply.offers if o.option.monthly_amount_paise]
+        if paying:
+            failures.append(f"pushing: reply {i} offers a payment plan {paying} after turn {turn}")
+    return failures
+
+
 _PHONE = re.compile(r"(?<![\d*X])(?:\+91[\s-]?)?[6-9]\d{9}(?!\d)")
 _EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
@@ -320,6 +336,8 @@ def judge_conversation(
         failures += check_numbers(exchanges, allowed, expect.allowed_amounts_paise)
     if expect.no_ask_after_zero_capacity:
         failures += check_no_ask_after_zero_capacity(replies, lex)
+    if expect.no_payment_ask_from_turn is not None:
+        failures += check_no_ask_from_turn(replies, expect.no_payment_ask_from_turn, lex)
     if expect.contact_details_masked:
         failures += check_contact_masking(replies, [target.grievance_officer().email])
     failures += check_handoff(replies, expect.handoff)
