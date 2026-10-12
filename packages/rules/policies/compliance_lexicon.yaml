@@ -1,0 +1,91 @@
+# Harsh-practice lexicon for npa_rules.compliance_guard.check_text (RBI RBC Directions para 454Z).
+#
+# Each rule has a stable rule_id (WS7 maps these to the scorecard) and regex patterns per
+# language. Patterns are matched case-insensitively against Unicode-NFC text, and EVERY
+# language's patterns are checked whatever the message language (code-mixed "Hinglish" or
+# "Tanglish" messages are common). `xx` holds romanised Hindi/Tamil patterns.
+#
+# Patterns describe ASSERTIONS ("you will go to jail"), never bare MENTIONS ("jail"), so the
+# bot can truthfully deny a false consequence ("you will not go to jail", issue #60):
+#   * English: patterns require the verb phrase, and fixed-width negative look-behinds skip a
+#     phrase directly preceded by "not ", "never " or "n't ". Negation is only honoured when
+#     it is attached to the phrase itself: "If you don't pay, you will go to jail" is still
+#     blocked, because the "don't" belongs to another clause.
+#   * Hindi / Tamil: the negation sits between the noun and the verb ("जेल नहीं जाएंगे",
+#     "சிறைக்குச் செல்ல மாட்டீர்கள்"), so only the affirmative verb forms are listed and a
+#     negated sentence simply does not match.
+# Pattern idea credited to WS7's independent red-team lexicon (redteam/src/npa_redteam).
+#
+# Extend by adding patterns or rules; keep the rule_ids stable. Our own disclosures
+# (npa_rules.disclosures) and the truthful denials in tests/test_compliance_guard.py must
+# always pass: tests enforce both directions.
+
+version: "2026.10-v2"
+rules:
+  - rule_id: RBI-454Z-ABUSIVE
+    description: Abusive or insulting language about the borrower
+    patterns:
+      en:
+        - '\b(idiot|stupid|liar|cheat(er)?|fraudster|thief|useless|shameless|loser|scum|deadbeat)\b'
+        - '\byou(''re| are) (a|such a) (fraud|cheat)\b'
+      hi: ['(बेवकूफ|मूर्ख|धोखेबाज़?|चोर(?!ी)|झूठा|बेशर्म|नालायक|निकम्मे)']
+      ta: ['(முட்டாள்|ஏமாற்றுக்காரன்|ஏமாற்றுக்காரர்|திருடன்|பொய்யன்|வெட்கங்கெட்ட)']
+      xx: ['\b(chor|dhokebaaz|besharam|nalayak|bewakoof|muttal|thirudan)\b']
+
+  - rule_id: RBI-454Z-THREAT
+    description: Threats or intimidation (legal action, police, visits, "last warning")
+    patterns:
+      en:
+        - '\b(we|the bank|our team|our agents?) (will|shall|are going to|is going to|may|can|could) (take|initiate|start|file) (legal action|a (police )?(case|complaint)|an? fir|criminal (proceedings|case))\b'
+        - '(?<!not )(?<!never )(?<!n''t )\b(call|inform|involve|send|bring) (in )?the police\b'
+        - '\bpolice (will|shall|are going to|is going to|may|can|could) (come|visit|be informed|be called|arrest|take you|pick you up)\b'
+        - '\byou (will|could|may|can|might|are going to) (be )?(arrested|taken into custody)\b'
+        - '\b(an? )?(arrest )?warrant (will be|has been|is being) issued\b'
+        - '\bwe (will|shall|are going to) (come|visit|send (someone|people|agents?|recovery agents?))\b'
+        - '\b(we|i|someone|an agent|agents|our (team|agents?|recovery agents?)|recovery agents?)( will|''ll| shall| are going to| is going to| may| might| can) (visit|come to) your (home|house|office|workplace|family)\b'
+        - '\b(last|final) warning\b'
+        - '\bor else\b'
+        - '\byou will (regret|suffer)\b'
+      hi: ['(पुलिस (आएगी|आ जाएगी|भेजेंगे|बुलाएंगे|को बुलाएंगे|बुला लेंगे)|गिरफ्तार (कर लेंगे|करवा देंगे|करवाएंगे|हो जाएंगे|हो जाओगे|किया जाएगा)|गिरफ़्तार (कर लेंगे|करवा देंगे|करवाएंगे|हो जाएंगे|हो जाओगे|किया जाएगा)|(कानूनी|क़ानूनी) कार्रवाई (करेंगे|की जाएगी|होगी)|आख़िरी चेतावनी|आखिरी चेतावनी|घर आएंगे|दफ़्तर आएंगे|दफ्तर आएंगे)']
+      ta: ['(போலீஸ் (உங்கள் )?(வீட்டுக்கு )?வரும்|காவல்துறையை அனுப்புவோம்|போலீஸை அழைப்போம்|போலீஸில் புகார் (கொடுப்போம்|அளிப்போம்)|கைது செய்யப்படுவீர்கள்|சட்ட நடவடிக்கை (எடுப்போம்|எடுக்கப்படும்)|கடைசி எச்சரிக்கை|வீட்டுக்கு வருவோம்|அலுவலகத்துக்கு வருவோம்)']
+      xx: ['\b(police (ghar )?(aayegi|aa jayegi|bhejenge|bulayenge)|giraftar (karwa denge|kar lenge)|ghar aayenge|office aayenge|aakhri chetavani|veetukku varuvom|police varum)\b']
+
+  - rule_id: RBI-454Z-MISLEADING
+    description: False or misleading statements about the debt or the consequences of non-payment
+    patterns:
+      en:
+        - '(?<!not )(?<!never )(?<!n''t )\b(go|going|be sent|be put|end up) (to|in) (jail|prison)\b'
+        - '(?<!not )(?<!never )(?<!n''t )\bsend (you|him|her|them) to (jail|prison)\b'
+        - '\b(jail|prison) (awaits|is waiting for) you\b'
+        - '\byour (family|relatives|children|spouse|wife|husband|parents) (will|must|will have to|have to|has to) (pay|repay|be (held )?liable)\b'
+        - '(?<!not )(?<!never )(?<!n''t )\b(seize|confiscate|auction|attach) your (house|home|property|salary|land|gold)\b'
+        - '(?<!not )(?<!never )(?<!n''t )(?<!not be )(?<!never be )(?<!n''t be )\b(blacklisted|banned) (for life|forever|permanently)\b'
+        - '\byou(''ll| will) never (get|be given) (a|any) (loan|credit card|credit)\b'
+        - '\byour (salary|wages) will be (stopped|frozen|attached)\b'
+        - '\b(cibil|credit score)( is| will be)? (ruined|destroyed) (forever|for life|permanently)\b'
+      hi: ['(जेल (जाएंगे|जाएँगे|जाओगे|जाओगी|भेज देंगे|भेजेंगे|हो जाएगी|होगी)|परिवार को (यह |ये |इसे )?(भरना|चुकाना) (पड़ेगा|होगा)|संपत्ति (ज़ब्त|जब्त) (करेंगे|कर लेंगे|होगी|हो जाएगी)|कभी (लोन|कर्ज़|कर्ज) नहीं मिलेगा|सिबिल हमेशा के लिए खराब)']
+      ta: ['(சிறைக்குச் செல்வீர்கள்|சிறைக்குப் போவீர்கள்|சிறைக்கு அனுப்புவோம்|சிறை தண்டனை கிடைக்கும்|குடும்பம் (இதைச் |இதைக் )?(செலுத்த|கட்ட) வேண்டும்|சொத்தை பறிமுதல் செய்வோம்|சொத்து பறிமுதல் செய்யப்படும்|ஒருபோதும் கடன் கிடைக்காது)']
+      xx: ['\b(jail (jaoge|jaayenge|jaoge|bhej denge)|parivaar ko bharna padega|siraikku anuppuvom|siraikku poveenga)\b']
+
+  - rule_id: RBI-454Z-THIRD-PARTY
+    description: Disclosing the debt to, or contacting, relatives, employer, colleagues or neighbours
+    patterns:
+      en:
+        - '(?<!not )(?<!never )(?<!n''t )\b(tell|inform|call|contact|message|notify) your (employer|boss|manager|colleagues?|co-?workers?|neighbou?rs?|relatives?|friends?|family)\b'
+        - '\byour (employer|boss|manager|colleagues?|neighbou?rs?|relatives?) will (be told|be informed|know|find out)\b'
+      hi: ['(आपके|तुम्हारे) (बॉस|मालिक|सहकर्मियों|पड़ोसियों|रिश्तेदारों|परिवार|ऑफिस) को (बताएंगे|बता देंगे|फ़ोन करेंगे|फोन करेंगे)']
+      ta: ['உங்கள் (முதலாளி|மேலாளர்|சக ஊழியர்கள்|அண்டை வீட்டார்|உறவினர்கள்|குடும்பத்தினர்)(க்கு|இடம்) (சொல்வோம்|தெரிவிப்போம்)']
+      xx: ['\b(boss|rishtedaron|padosiyon) ko (batayenge|bata denge)\b']
+
+  - rule_id: RBI-454Z-SHAMING
+    description: Public shaming, defaulter lists, social media exposure
+    patterns:
+      en:
+        - '\b(will|shall) be (put |added |placed |listed )?(on|in) (a |the |our )?defaulters? list\b'
+        - '(?<!not )(?<!never )(?<!n''t )\b(put|add|place|include|list) (you|your name) (on|in|to) (a |the |our )?defaulters? list\b'
+        - '(?<!not )(?<!never )(?<!n''t )\b(post|publish|share|put) (it |this |your (name|photo|details) )?(on|to) (social media|facebook|whatsapp groups?|instagram|twitter)\b'
+        - '\beveryone will (know|find out)\b'
+        - '\b(shame on you|ashamed of yourself|disgrace)\b'
+      hi: ['(डिफॉल्टर सूची में (डाल देंगे|डालेंगे|नाम आएगा)|सोशल मीडिया पर (डाल देंगे|डालेंगे)|सबको पता (चल जाएगा|चलेगा)|शर्म करो|शर्म आनी चाहिए)']
+      ta: ['(கடன் தவறியோர் பட்டியலில் (சேர்ப்போம்|போடுவோம்)|சமூக ஊடகத்தில் வெளியிடுவோம்|எல்லோருக்கும் தெரிந்துவிடும்|வெட்கமாக இல்லையா)']
+      xx: ['\b(sharam karo|social media pe daal denge|sabko pata chal jayega)\b']
