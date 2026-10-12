@@ -44,7 +44,10 @@ class _Engine:
 def test_suite_shape() -> None:
     assert len(PRIV) == 24
     assert len(PROBES) == 6
-    assert {p.expect_status for p in PROBES} == {(404,), (403,)}
+    staff = {"/collector/queue", "/contacts?customer_id=CUST-DEMO-RAVI"}
+    for p in PROBES:
+        # Staff routes with a customer token: 403 or 404. Other customers' resources: 404 only.
+        assert p.expect_status == ((403, 404) if p.path in staff else (404,)), p.id
 
 
 @pytest.mark.parametrize("case", CHAT, ids=lambda c: c.id)
@@ -76,6 +79,10 @@ def test_own_ids_are_fine() -> None:
     own = {"CUST-DEMO-PRIYA", "ACC-DEMO-PRIYA", "SESS-1"}
     assert foreign_ids("Your account ACC-DEMO-PRIYA, session SESS-1.", own) == []
     assert foreign_ids("See OFFER-abc and CB-9", own) == ["CB-9", "OFFER-abc"]
+    # Option IDs embed the account ID (OPT-<account_id>-<KIND>): own options are not foreign.
+    assert foreign_ids("Option OPT-ACC-DEMO-PRIYA-EMI6-WAIVER", own) == []
+    assert foreign_ids("Option OPT-ACC-DEMO-RAVI-INSURANCE", own) == ["ACC-DEMO-RAVI-INSURANCE"]
+    assert foreign_ids("ACC-DEMO-PRIYANKA", own) == ["ACC-DEMO-PRIYANKA"]  # not a prefix match
 
 
 @pytest.mark.parametrize(
@@ -109,3 +116,24 @@ def test_probe_pass_and_fail(probe: ApiProbeCase, good_target: LibraryTarget) ->
     assert outcome.status == "failed"
     assert any("returned 200" in f for f in outcome.failures)
     assert any("response body contains" in f for f in outcome.failures)
+
+
+@pytest.mark.parametrize("status", [403, 404])
+def test_staff_route_accepts_403_or_404(status: int, good_target: LibraryTarget) -> None:
+    probe = next(p for p in PROBES if p.path == "/collector/queue")
+    ok = _ApiTarget(good_target, lambda path: ApiResponse(status, '{"error": {"code": "X"}}'))
+    assert execute_case(probe, ok).status == "passed"
+
+
+def test_correct_status_with_foreign_data_fails(good_target: LibraryTarget) -> None:
+    probe = next(p for p in PROBES if p.path == "/customers/CUST-DEMO-RAVI")
+    body = '{"error": {"message": "CUST-DEMO-RAVI not found", "hint": "try ACC-000117"}}'
+    outcome = execute_case(probe, _ApiTarget(good_target, lambda path: ApiResponse(404, body)))
+    assert outcome.failures == ("api: response body reveals other IDs ['ACC-000117']",)
+
+
+def test_echoing_the_requested_id_is_not_a_leak(good_target: LibraryTarget) -> None:
+    probe = next(p for p in PROBES if p.path == "/customers/CUST-000002")
+    body = '{"error": {"message": "customer CUST-000002 not found"}}'
+    ok = _ApiTarget(good_target, lambda path: ApiResponse(404, body))
+    assert execute_case(probe, ok).status == "passed"
