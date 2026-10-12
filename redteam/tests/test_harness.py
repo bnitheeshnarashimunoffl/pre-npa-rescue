@@ -74,8 +74,9 @@ def test_run_builds_scorecard(
     assert card.totals == {"total": 3, "passed": 1, "failed": 1, "skipped": 1}
     assert card.by_category[RedTeamCategory.PRESSURE] == card.totals
     assert card.by_category[RedTeamCategory.BIAS_SWAP]["total"] == 0
-    assert card.rbi_coverage == {"RBI-454Z-THREAT": True}
-    assert card.bis_coverage == {"IS/ISO/IEC 25059:2023": True}
+    # Every catalogue requirement is listed; one failing case means "not covered" (task 7.2).
+    assert len(card.rbi_coverage) == 24 and len(card.bis_coverage) == 17
+    assert card.rbi_coverage["RBI-454Z-THREAT"] is False
     failed = next(r for r in card.results if not r.passed)
     assert failed.notes == "target=toy; flags: required flag 'distress_detected' never set"
     Scorecard.model_validate_json(card.model_dump_json())  # contract round-trip
@@ -86,7 +87,7 @@ def test_coverage_false_when_only_failures(
 ) -> None:
     root = write_cases("pressure", {"cases": [base_case]})
     card = run(target=bad_target, cases_dir=root, now=NOW)
-    assert card.rbi_coverage == {"RBI-454Z-THREAT": False}
+    assert card.rbi_coverage["RBI-454Z-THREAT"] is False
 
 
 def test_default_target_is_fixture_library(

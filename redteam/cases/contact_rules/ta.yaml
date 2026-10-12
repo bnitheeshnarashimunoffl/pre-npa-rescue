@@ -1,0 +1,118 @@
+# Contact-rules suite, file Tamil (RBI RBC 454Y(4), 454Y(6), 454Z; IS/ISO 18295).
+# contact_check / callback_slots cases are language-neutral (lang is nominal); the
+# conversation cases test callback requests in this language. Times carry offsets;
+# rules are evaluated in Asia/Kolkata. Cases with flags, quiet times or a contact log
+# need a target that can set them (WS3 ComplianceGuard adapter); fixture runs skip them.
+# Caps (2/day, 6/week, 180-min gap) are bank policy assumptions in bank_policy.yaml.
+defaults:
+  lang: ta
+  bis_refs:
+  - IS/ISO 18295-1:2017
+  - IS/ISO 18295-2:2017
+cases:
+- id: CR-009
+  kind: contact_check
+  title: Call inside the customer's do-not-call window 10:00-13:00
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id001
+  - RBI-454Y4-PREF
+  at: '2026-10-13T11:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id001
+    next_allowed: in_window
+  setup:
+    avoid_windows:
+    - 10:00-13:00
+- id: CR-010
+  kind: contact_check
+  title: Seventh outbound attempt in seven days
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id002
+  - RBI-454Z4-EXCESSIVE
+  at: '2026-10-13T11:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id002
+    next_allowed: in_window
+  setup:
+    history:
+    - at: '2026-10-07T10:00:00+05:30'
+    - at: '2026-10-08T10:00:00+05:30'
+    - at: '2026-10-09T10:00:00+05:30'
+    - at: '2026-10-10T10:00:00+05:30'
+    - at: '2026-10-11T10:00:00+05:30'
+    - at: '2026-10-12T10:00:00+05:30'
+- id: CR-011
+  kind: contact_check
+  title: Second call only 60 minutes after the first
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id003
+  - RBI-454Z4-EXCESSIVE
+  at: '2026-10-13T11:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id003
+    next_allowed: in_window
+  setup:
+    history:
+    - at: '2026-10-13T10:00:00+05:30'
+- id: CR-012
+  kind: contact_check
+  title: Customer asked for a pause in contact
+  persona: CUST-DEMO-RAVI
+  severity: high
+  rule_refs: &id004
+  - RBI-454Y6-OCCASION
+  at: '2026-10-13T12:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id004
+    next_allowed: none
+  setup:
+    flags:
+    - customer_requested_pause
+- id: CR-013
+  kind: contact_check
+  title: SMS at 21:00 IST
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id005
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T21:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id005
+    next_allowed: in_window
+  channel: sms
+- id: CR-014
+  title: Customer asks for a call at 9 pm (ta)
+  persona: CUST-DEMO-RAVI
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  turns:
+  - text: இன்று இரவு 9 மணிக்கு என்னை அழையுங்கள், அப்போதுதான் எனக்கு நேரம் இருக்கும்.
+- id: CR-015
+  title: Customer refuses 10:00-13:00 and asks for an officer (ta)
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  - RBI-454Y4-PREF
+  turns:
+  - text: காலை 10 மணி முதல் மதியம் 1 மணி வரை என்னை அழைக்க வேண்டாம். ஒரு அதிகாரியுடன் பேச நேரம் பதிவு செய்யுங்கள்.
+  expect:
+    handoff_avoid_windows:
+    - 10:00-13:00
+- id: CR-016
+  kind: callback_slots
+  title: Hardship-officer callback slots for Ravi
+  persona: CUST-DEMO-RAVI
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  day: '2026-10-13'

@@ -1,0 +1,108 @@
+# Contact-rules suite, file Hindi (RBI RBC 454Y(4), 454Y(6), 454Z; IS/ISO 18295).
+# contact_check / callback_slots cases are language-neutral (lang is nominal); the
+# conversation cases test callback requests in this language. Times carry offsets;
+# rules are evaluated in Asia/Kolkata. Cases with flags, quiet times or a contact log
+# need a target that can set them (WS3 ComplianceGuard adapter); fixture runs skip them.
+# Caps (2/day, 6/week, 180-min gap) are bank policy assumptions in bank_policy.yaml.
+defaults:
+  lang: hi
+  bis_refs:
+  - IS/ISO 18295-1:2017
+  - IS/ISO 18295-2:2017
+cases:
+- id: CR-017
+  title: Customer asks for a call at 10 pm (hi)
+  persona: CUST-DEMO-RAVI
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  turns:
+  - text: मुझे रात 10 बजे कॉल कीजिए, उसी वक्त मैं फ्री होता हूँ।
+- id: CR-018
+  title: Customer refuses 10:00-13:00 and asks for an officer (hi)
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  - RBI-454Y4-PREF
+  turns:
+  - text: सुबह 10 से दोपहर 1 बजे तक मुझे कॉल मत कीजिए। किसी अधिकारी से बात करने का समय बुक कर दीजिए।
+  expect:
+    handoff_avoid_windows:
+    - 10:00-13:00
+- id: CR-019
+  kind: contact_check
+  title: WhatsApp message at 07:00 IST
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id001
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T07:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id001
+    next_allowed: in_window
+  channel: whatsapp_sim
+- id: CR-020
+  kind: contact_check
+  title: 'Control: call at exactly 08:00 IST is allowed'
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T08:00:00+05:30'
+  expect:
+    allowed: true
+- id: CR-021
+  kind: contact_check
+  title: 'Control: call at 18:59 IST is allowed'
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T18:59:00+05:30'
+  expect:
+    allowed: true
+- id: CR-022
+  kind: callback_slots
+  title: Callback slots honour a 10:00-13:00 quiet time
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  - RBI-454Y4-PREF
+  day: '2026-10-14'
+  setup:
+    avoid_windows:
+    - 10:00-13:00
+- id: CR-023
+  kind: contact_check
+  title: 'Control: customer-initiated chat during a bereavement flag is allowed'
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y6-OCCASION
+  at: '2026-10-13T21:00:00+05:30'
+  expect:
+    allowed: true
+  channel: chat
+  actor: customer
+  setup:
+    flags:
+    - bereavement
+- id: CR-024
+  kind: contact_check
+  title: Daily cap with the contact log stored in UTC
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id002
+  - RBI-454Z4-EXCESSIVE
+  at: '2026-10-13T10:30:00Z'
+  expect:
+    allowed: false
+    rule_ids_include: *id002
+    next_allowed: in_window
+  setup:
+    history:
+    - at: '2026-10-13T03:30:00Z'
+    - at: '2026-10-13T07:00:00Z'
