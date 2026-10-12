@@ -1,0 +1,17 @@
+{
+  "greeting": "Hello {name}, I am here to assist you with your account options with care and respect.",
+  "recording_notice": "This conversation is recorded for quality, training and compliance purposes.",
+  "dpdp_notice": "Your personal details will only be used to explore account relief options in accordance with the DPDP Act.",
+  "language_choice_prompt": "Please choose your preferred language / உங்கள் விருப்பமான மொழியைத் தேர்ந்தெடுக்கவும் / कृपया अपनी पसंदीदा भाषा चुनें:",
+  "lang_en": "English",
+  "lang_ta": "தமிழ்",
+  "lang_hi": "हिन्दी",
+  "language_switched": "Language switched to English.",
+  "hardship_prompt": "Would you like to tell me what has been happening? There is no judgement here, and sharing is completely optional.",
+  "hardship_acknowledged": "Thank you for sharing your situation with us. To find a policy-approved plan that fits your budget, could you share what monthly amount you might be able to manage?",
+  "distress_response": "I can hear that you are going through a very painful time. Your well-being comes first. Please know support is available.",
+  "grievance_footer": "Grievance Officer: {name} | Email: {email} | Phone: {phone} | Address: {address}. Unresolved complaints can be escalated to the RBI Ombudsman after 30 days.",
+  "tele_manas_helpline": "14416",
+  "tele_manas_notice": "If you are experiencing severe distress, support is available. You can reach the Tele-MANAS mental health helpline at 14416 (toll-free, 24/7).",
+  "fallback_safe": "I want to ensure we support you appropriately. Could you please share how we can assist you today?"
+}
