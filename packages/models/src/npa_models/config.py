@@ -21,3 +21,6 @@ class ModelSettings(BaseSettings):
     data_dir: Path = Path("data/generated")
     model_dir: Path = Path("packages/models/artifacts")
     as_of_month: str = AS_OF_MONTH
+    # Risk bands on calibrated p_roll_forward (task 2.1): high >= high, medium >= medium.
+    risk_high_threshold: float = 0.35
+    risk_medium_threshold: float = 0.15
