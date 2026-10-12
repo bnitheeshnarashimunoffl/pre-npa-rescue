@@ -133,8 +133,7 @@ class OffersPolicy(_Frozen):
 
 
 class NbaPolicy(_Frozen):
-    hardship_boost: Annotated[Decimal, Field(ge=1, le=10)]
-    hardship_floor_weight: Annotated[Decimal, Field(ge=0, le=1)]
+    hardship_first: bool
     chat_invites_ignored_before_call: Annotated[int, Field(ge=1)]
 
 

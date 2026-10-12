@@ -56,8 +56,10 @@ offers:
 # Priority = expected benefit (p_roll_forward x max(uplift, 0) x outstanding), never "ease of
 # extraction"; collector incentives must not reward harsh practices (RBI RBC para 454Q).
 nba:
-  hardship_boost: "1.5"                   # multiplier for hardship cases
-  hardship_floor_weight: "0.1"            # hardship cases never drop below p x outstanding x this
+  # Hardship-officer cases form a band at the top of the queue, ordered by p_roll_forward x
+  # outstanding: uplift is ~0 for customers who cannot pay, but RBC para 454D requires
+  # documented engagement before escalation.
+  hardship_first: true
   chat_invites_ignored_before_call: 2     # after this many ignored chat invites, offer an agent call
 
 options:

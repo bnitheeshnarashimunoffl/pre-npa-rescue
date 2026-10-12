@@ -95,12 +95,110 @@ still passes `check_text`).
 `earliest_contact_at` comes from `check_contact` (now, or `next_allowed_at`). `reason_codes`
 are the model's reason codes, then the rule fired (`RULE_*`), then any `WAIT:<rule_id>`.
 
-**Collector queue priority** = expected benefit = `p_roll_forward × max(uplift_score, 0) ×
-outstanding`, scaled to 0..1 within the batch. Hardship cases get ×1.5 and a floor of
-`p_roll_forward × outstanding × 0.1` (bank policy assumptions in `nba:`), so they are never
-pushed to the bottom. `no_contact` is 0. The queue is **never** ordered by "ease of
-extraction", and nothing in it rewards contact volume: RBI RBC para 454Q requires that recovery
-targets and incentives do not encourage harsh practices.
+**Collector queue.** `prioritise()` puts the queue in two bands:
+
+1. **Hardship band** (`hardship_officer` actions, when `nba.hardship_first: true`): ordered by
+   risk-weighted exposure `p_roll_forward × outstanding`, scaled into (0.5, 1].
+2. **Everyone else:** ordered by expected benefit
+   `p_roll_forward × max(uplift_score, 0) × outstanding`, scaled into [0, 0.5].
+
+Why a band, not a multiplier: uplift measures how much contact raises the chance of a cure,
+and for a customer who cannot pay it is close to 0, so no multiplier on expected benefit lifts
+them reliably. Those customers still need documented engagement with a person before any
+escalation (RBC para 454D). `no_contact` is 0, and so is any case with no positive expected
+benefit. A `priority` above 0.5 always means a hardship case. The queue is **never** ordered
+by "ease of extraction", and nothing in it rewards contact volume: RBC para 454Q requires
+that recovery targets and incentives do not encourage harsh practices.
+
+## How to use npa_rules
+
+Import from the modules (the package root re-exports nothing). All examples below run as
+written against the shipped policy and the demo personas.
+
+**1. Load the policy and build the three providers** (WS5, `app/deps.py`):
+
+```python
+from npa_contracts.enums import Actor, Channel, Lang
+from npa_rules.compliance_guard import ComplianceGuard
+from npa_rules.nba import NextBestActionService, StaticRiskProvider
+from npa_rules.policy_engine import PolicyEngine
+from npa_rules.policy_loader import load_policy, parse_policy, PolicyError
+from npa_rules.relief_calc import AccountSnapshot
+
+policy = load_policy()  # POLICY_PATH env var, else packages/rules/policies/bank_policy.yaml
+
+# You supply three lookups from the DB (npa_rules never reads a database):
+#   account_for_customer(customer_id) -> AccountSnapshot
+#   account_for_account(account_id)   -> AccountSnapshot
+#   contact_history(customer_id)      -> list[ContactEvent]   (audit log, RBC 454P)
+# AccountSnapshot.from_context(ctx_dict) builds one from a CustomerContextProvider dict.
+
+policy_provider = PolicyEngine(policy, account_for_customer)                  # PolicyProvider
+compliance = ComplianceGuard(policy, contact_history, account_for_customer)    # ComplianceProvider
+nba = NextBestActionService(                                                   # NBAProvider
+    policy, risk_provider, compliance, account_for_account,
+    policy_provider=policy_provider,   # optional: pre-computes options for chat invites
+)
+nba.next_best_action("ACC-DEMO-PRIYA", "2026-09").action    # NextAction.CHAT_INVITE
+
+# Until WS2 ships: risk_provider = StaticRiskProvider.from_queue_fixture(json_of_queue_fixture)
+
+# PUT /admin/policy: validate, then hot-reload every provider (PolicyError -> HTTP 422).
+try:
+    new_policy = parse_policy(body)
+except PolicyError as exc:
+    errors = exc.errors              # list[str], one per problem
+else:
+    for provider in (policy_provider, compliance, nba):
+        provider.reload(new_policy)
+```
+
+**2. Relief options for an `Affordability`, then an offer** (WS4 offer flow):
+
+```python
+from npa_rules.relief_calc import estimate_affordability
+
+ctx = account_for_customer("CUST-DEMO-PRIYA")
+afford = estimate_affordability(
+    ctx,
+    {"income_paise": 2_000_000, "expenses_paise": 900_000, "dependants": 1},  # from the chat
+    policy.affordability,
+)  # declared=None gives source="estimated": confirm with the customer before offering
+options = policy_provider.relief_options("CUST-DEMO-PRIYA", afford)   # least harmful first
+plan = next(o for o in options if o.type == "emi_conversion")         # 200000 paise x 6
+offer = policy_provider.propose_offer("CUST-DEMO-PRIYA", plan.option_id, Actor.BOT)
+offer.status    # "approved", or "proposed" when option.requires_human_approval
+```
+
+Show only these options and amounts. `propose_offer` raises `UnknownOptionError` for any
+`option_id` that `relief_options` did not just return for that customer.
+
+**3. Contact and text checks** (every outbound message, every bot reply):
+
+```python
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+now = datetime(2026, 10, 12, 21, 0, tzinfo=ZoneInfo("Asia/Kolkata"))  # must be tz-aware
+d = compliance.check_contact("CUST-DEMO-PRIYA", Channel.SMS, now, Actor.SYSTEM)
+d.allowed, d.rule_ids, d.next_allowed_at   # False, ['RBI-454Y4-WINDOW'], 2026-10-13 08:00 IST
+
+# The customer started the chat: the bot may reply at any hour.
+compliance.check_contact("CUST-DEMO-PRIYA", Channel.CHAT, now, Actor.BOT, direction="inbound")
+
+v = compliance.check_text("Pay today or we will take legal action.", Lang.EN)
+v.allowed, v.rule_ids                      # False, ['RBI-454Z-THREAT']: do not send
+```
+
+**4. Disclosure texts and the mandatory footer:**
+
+```python
+from npa_rules.disclosures import disclosure_text
+
+for key in plan.disclosure_keys:           # show every one whenever the option is presented
+    text = disclosure_text(key, Lang.TA)   # KeyError for an unknown key
+footer = compliance.required_footer(Lang.HI)  # recording notice + grievance officer + Ombudsman
+```
 
 ## Demo personas (task 3.2 demo requirement)
 
