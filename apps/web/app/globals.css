@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Calm bank-grade Teal/Slate Blue primary */
+    --primary: 187 75% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 20% 93%;
+    --secondary-foreground: 215 25% 20%;
+
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 15% 40%;
+
+    --accent: 187 40% 92%;
+    --accent-foreground: 187 80% 20%;
+
+    /* Status tokens - accessible contrast, calm styling */
+    --info: 205 85% 35%;
+    --info-foreground: 0 0% 100%;
+    --info-subtle: 205 90% 94%;
+
+    --success: 152 70% 28%;
+    --success-foreground: 0 0% 100%;
+    --success-subtle: 152 60% 93%;
+
+    --warning: 38 92% 33%;
+    --warning-foreground: 0 0% 100%;
+    --warning-subtle: 40 90% 93%;
+
+    /* Red strictly reserved for real errors */
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-subtle: 0 85% 95%;
+
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 187 75% 28%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 216 28% 9%;
+    --foreground: 210 20% 96%;
+
+    --card: 217 28% 12%;
+    --card-foreground: 210 20% 96%;
+
+    --popover: 217 28% 12%;
+    --popover-foreground: 210 20% 96%;
+
+    --primary: 187 65% 42%;
+    --primary-foreground: 216 28% 9%;
+
+    --secondary: 217 20% 18%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 217 20% 17%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 187 40% 20%;
+    --accent-foreground: 187 65% 75%;
+
+    --info: 205 75% 55%;
+    --info-foreground: 216 28% 9%;
+    --info-subtle: 205 60% 18%;
+
+    --success: 152 60% 45%;
+    --success-foreground: 216 28% 9%;
+    --success-subtle: 152 50% 16%;
+
+    --warning: 38 85% 55%;
+    --warning-foreground: 216 28% 9%;
+    --warning-subtle: 40 60% 18%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-subtle: 0 60% 18%;
+
+    --border: 217 20% 22%;
+    --input: 217 20% 22%;
+    --ring: 187 65% 42%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Accessibility: IS 17802 / WCAG 2.1 AA focus outline */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
