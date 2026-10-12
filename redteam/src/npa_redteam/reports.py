@@ -147,22 +147,30 @@ def render_summary(report: RunReport) -> str:
         "",
         f"Source `{fair.source}`: **{fair.status}**" + (f" ({fair.detail})" if fair.detail else ""),
         "",
+        f"Thresholds: **primary** `|*_diff| ≤ {fair.max_diff:.2f}` (a gap fails "
+        f"IS/ISO/IEC TR 24027:2021) · **secondary** `*_ratio ≥ {fair.min_ratio:.2f}` "
+        "(warning only). Set in `mappings.yaml` → `fairness`.",
+        "",
     ]
     if fair.findings:
         lines += [
-            _row(["Model", "Attribute", "Metric", "Value", "Threshold", "OK"]),
-            _row(["---"] * 6),
+            f"{len(fair.gaps)} primary gap(s), {len(fair.warnings)} secondary warning(s).",
+            "",
+            _row(["Model", "Attribute", "Metric", "Tier", "Value", "Threshold", "Result"]),
+            _row(["---"] * 7),
         ]
         for f in fair.findings:
+            result = "ok" if f.ok else ("**gap**" if f.tier == "primary" else "warning")
             lines.append(
                 _row(
                     [
                         f.model,
                         f.attribute,
                         f.metric,
+                        f.tier,
                         f"{f.value:.3f}",
                         f"{f.threshold:.2f}",
-                        "yes" if f.ok else "**no**",
+                        result,
                     ]
                 )
             )

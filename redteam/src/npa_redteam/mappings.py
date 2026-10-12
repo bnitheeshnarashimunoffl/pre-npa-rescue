@@ -89,10 +89,22 @@ class BisStandard(_Item):
     themes: str
 
 
+class FairnessThresholds(BaseModel):
+    """Fairness thresholds: ``fairness:`` in mappings.yaml (see :mod:`npa_redteam.fairness`)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    # Primary: |*_diff| above this is a gap and fails IS/ISO/IEC TR 24027:2021.
+    max_diff: float = Field(default=0.05, gt=0, lt=1)
+    # Secondary: *_ratio below this is reported as a warning (four-fifths rule).
+    min_ratio: float = Field(default=0.8, gt=0, le=1)
+
+
 class Mappings(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     version: str
+    fairness: FairnessThresholds = FairnessThresholds()
     rbi: dict[str, RbiRequirement] = Field(min_length=1)
     bis: dict[str, BisStandard] = Field(min_length=1)
 

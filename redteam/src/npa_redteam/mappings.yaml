@@ -17,7 +17,12 @@
 # BIS standards use the human-readable form, e.g. "IS/ISO/IEC 42001:2023". Described in our own
 # words: design alignment, not certification.
 
-version: "2026.10-v1"
+version: "2026.10-v2"
+
+# Model-level fairness from WS2's packages/models/reports/metrics.json (IS/ISO/IEC TR 24027:2021).
+fairness:
+  max_diff: 0.05   # primary: any |*_diff| above this is a gap -> TR 24027 failing (project value)
+  min_ratio: 0.8   # secondary: any *_ratio below this is a warning (four-fifths rule), not a failure
 
 rbi:
   RBI-CC-NPA-90:

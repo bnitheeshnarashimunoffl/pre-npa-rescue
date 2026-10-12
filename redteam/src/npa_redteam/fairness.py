@@ -9,11 +9,18 @@ so this reader is tolerant and only needs a ``fairness`` block shaped like::
           "gender": {                           # protected attribute
             "demographic_parity_diff": 0.03,    # any number of *_diff / *_ratio metrics
             "equal_opportunity_diff": 0.02,
+            "disparate_impact_ratio": 0.94,
             "groups": {"female": {"n": 1200, "positive_rate": 0.21}, ...}}}}}
 
-Every ``*_diff`` value is compared with ``max_gap`` (absolute difference between groups) and
-every ``*_ratio`` value with ``min_ratio`` (the four-fifths rule). A missing or unreadable file
-is reported as "not available", never as a pass, and never breaks the red-team run.
+Thresholds come from ``mappings.yaml`` (``fairness:``):
+
+* **primary**: every ``*_diff`` (absolute difference between groups) above ``max_diff``
+  (project value 0.05) is a gap; any gap marks IS/ISO/IEC TR 24027:2021 as failing;
+* **secondary**: every ``*_ratio`` below ``min_ratio`` (four-fifths rule, 0.8) is reported as
+  a warning but does not fail the standard on its own.
+
+A missing or unreadable file is reported as "not available", never as a pass, and never breaks
+the red-team run.
 """
 
 from __future__ import annotations
@@ -26,11 +33,19 @@ from pydantic import BaseModel, ConfigDict
 
 from npa_redteam.mappings import repo_root
 
-__all__ = ["METRICS_PATH", "FairnessFinding", "FairnessSummary", "load_fairness"]
+__all__ = [
+    "DEFAULT_MAX_DIFF",
+    "DEFAULT_MIN_RATIO",
+    "METRICS_PATH",
+    "FairnessFinding",
+    "FairnessSummary",
+    "load_fairness",
+]
 
 METRICS_PATH = Path("packages/models/reports/metrics.json")
-DEFAULT_MAX_GAP = 0.1
+DEFAULT_MAX_DIFF = 0.05
 DEFAULT_MIN_RATIO = 0.8
+Status = Literal["not_available", "invalid", "within_thresholds", "gaps_found"]
 
 
 class FairnessFinding(BaseModel):
@@ -42,23 +57,32 @@ class FairnessFinding(BaseModel):
     value: float
     threshold: float
     ok: bool
+    tier: Literal["primary", "secondary"] = "primary"
 
 
 class FairnessSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    status: Literal["not_available", "invalid", "within_thresholds", "gaps_found"]
+    status: Status
     source: str
+    max_diff: float = DEFAULT_MAX_DIFF
+    min_ratio: float = DEFAULT_MIN_RATIO
     model_version: str | None = None
     detail: str = ""
     findings: tuple[FairnessFinding, ...] = ()
 
     @property
     def gaps(self) -> list[FairnessFinding]:
-        return [f for f in self.findings if not f.ok]
+        """Primary findings over threshold: these fail IS/ISO/IEC TR 24027:2021."""
+        return [f for f in self.findings if not f.ok and f.tier == "primary"]
+
+    @property
+    def warnings(self) -> list[FairnessFinding]:
+        """Secondary findings over threshold: reported, not failing."""
+        return [f for f in self.findings if not f.ok and f.tier == "secondary"]
 
 
-def _findings(block: dict[str, Any], max_gap: float, min_ratio: float) -> list[FairnessFinding]:
+def _findings(block: dict[str, Any], max_diff: float, min_ratio: float) -> list[FairnessFinding]:
     out: list[FairnessFinding] = []
     for model, attrs in sorted(block.items()):
         if not isinstance(attrs, dict):
@@ -69,10 +93,11 @@ def _findings(block: dict[str, Any], max_gap: float, min_ratio: float) -> list[F
             for metric, value in sorted(metrics.items()):
                 if isinstance(value, bool) or not isinstance(value, int | float):
                     continue
+                tier: Literal["primary", "secondary"]
                 if metric.endswith("_diff"):
-                    ok, threshold = abs(value) <= max_gap, max_gap
+                    ok, threshold, tier = abs(value) <= max_diff, max_diff, "primary"
                 elif metric.endswith("_ratio"):
-                    ok, threshold = value >= min_ratio, min_ratio
+                    ok, threshold, tier = value >= min_ratio, min_ratio, "secondary"
                 else:
                     continue
                 out.append(
@@ -83,6 +108,7 @@ def _findings(block: dict[str, Any], max_gap: float, min_ratio: float) -> list[F
                         value=float(value),
                         threshold=threshold,
                         ok=ok,
+                        tier=tier,
                     )
                 )
     return out
@@ -91,32 +117,39 @@ def _findings(block: dict[str, Any], max_gap: float, min_ratio: float) -> list[F
 def load_fairness(
     path: Path | None = None,
     *,
-    max_gap: float = DEFAULT_MAX_GAP,
+    max_diff: float = DEFAULT_MAX_DIFF,
     min_ratio: float = DEFAULT_MIN_RATIO,
 ) -> FairnessSummary:
     """Read WS2's fairness metrics; see the module docstring for the expected shape."""
     target = path or repo_root() / METRICS_PATH
     source = METRICS_PATH.as_posix() if path is None else path.as_posix()
-    if not target.exists():
+
+    def summary(status: Status, detail: str = "", **extra: Any) -> FairnessSummary:
         return FairnessSummary(
-            status="not_available", source=source, detail="WS2 has not published metrics yet"
+            status=status,
+            source=source,
+            max_diff=max_diff,
+            min_ratio=min_ratio,
+            detail=detail,
+            **extra,
         )
+
+    if not target.exists():
+        return summary("not_available", "WS2 has not published metrics yet")
     try:
         data = json.loads(target.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        return FairnessSummary(status="invalid", source=source, detail=f"unreadable: {exc}")
+        return summary("invalid", f"unreadable: {exc}")
     block = data.get("fairness") if isinstance(data, dict) else None
     if not isinstance(block, dict):
-        return FairnessSummary(status="invalid", source=source, detail="no 'fairness' block")
-    findings = _findings(block, max_gap, min_ratio)
+        return summary("invalid", "no 'fairness' block")
+    findings = _findings(block, max_diff, min_ratio)
     if not findings:
-        return FairnessSummary(
-            status="invalid", source=source, detail="no *_diff or *_ratio metrics found"
-        )
+        return summary("invalid", "no *_diff or *_ratio metrics found")
     version = data.get("model_version")
-    return FairnessSummary(
-        status="gaps_found" if any(not f.ok for f in findings) else "within_thresholds",
-        source=source,
+    gaps = any(not f.ok and f.tier == "primary" for f in findings)
+    return summary(
+        "gaps_found" if gaps else "within_thresholds",
         model_version=str(version) if version is not None else None,
         findings=tuple(findings),
     )

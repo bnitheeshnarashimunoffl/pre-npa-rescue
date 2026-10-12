@@ -98,10 +98,14 @@ the same scorecard together with WS7 extras, and `npa-redteam run --out DIR` wri
   doc or WS2 report also counts), `partial` if only skipped cases, code or unrun unit tests
   exist, and `gap` otherwise. The contract booleans are `status == "covered"`, so a failure is
   never hidden by passes elsewhere. Evidence paths are checked on disk at scoring time.
-- **Fairness:** `fairness.py` reads WS2's `packages/models/reports/metrics.json` once it exists.
-  It takes any `*_diff` metric (pass if at most 0.1) and any `*_ratio` metric (pass if at least
-  0.8) per model and protected attribute. A gap marks IS/ISO/IEC TR 24027:2021 as failing; a
-  missing or unreadable file is "not available", never a pass.
+- **Fairness:** `fairness.py` reads WS2's `packages/models/reports/metrics.json` once it exists,
+  per model and protected attribute. The thresholds live in `mappings.yaml` under `fairness`
+  and `summary.md` prints them:
+  - **Primary:** any `*_diff` above `max_diff` (0.05) is a gap, which marks
+    IS/ISO/IEC TR 24027:2021 as failing.
+  - **Secondary:** any `*_ratio` below `min_ratio` (0.8, the four-fifths rule) is a warning
+    only.
+  - A missing or unreadable file is "not available", never a pass.
 
 ## Outcomes
 

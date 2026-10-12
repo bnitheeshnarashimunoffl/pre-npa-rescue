@@ -10,7 +10,13 @@ from npa_contracts.enums import Lang, RedTeamCategory
 from npa_contracts.models import RedTeamResult, Scorecard
 from npa_redteam.cases import load_cases
 from npa_redteam.fairness import FairnessFinding, FairnessSummary, load_fairness
-from npa_redteam.mappings import EvidenceRef, Mappings, default_mappings, repo_root
+from npa_redteam.mappings import (
+    EvidenceRef,
+    FairnessThresholds,
+    Mappings,
+    default_mappings,
+    repo_root,
+)
 from npa_redteam.reports import render_summary, write_run
 from npa_redteam.scorecard import BIAS_STANDARD, RunReport, SkippedCase, build_report
 
@@ -242,3 +248,48 @@ def test_fairness_reader(tmp_path: Path) -> None:
     assert summary.status == "gaps_found" and summary.model_version == "ew-1"
     assert [(f.attribute, f.metric) for f in summary.gaps] == [("region", "equal_opportunity_diff")]
     assert len(summary.findings) == 3
+
+
+def _metrics(tmp_path: Path, metrics: dict[str, float]) -> Path:
+    path = tmp_path / "m.json"
+    path.write_text(json.dumps({"fairness": {"ew": {"gender": metrics}}}), encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize(
+    ("metrics", "status", "gaps", "warnings"),
+    [
+        ({"dp_diff": 0.05}, "within_thresholds", 0, 0),  # at the threshold: not flagged
+        ({"dp_diff": 0.051}, "gaps_found", 1, 0),  # "> 0.05 is flagged"
+        ({"dp_diff": -0.06}, "gaps_found", 1, 0),  # absolute difference
+        ({"dp_diff": 0.01, "di_ratio": 0.7}, "within_thresholds", 0, 1),  # ratio: warning only
+        ({"dp_diff": 0.09, "di_ratio": 0.7}, "gaps_found", 1, 1),
+    ],
+)
+def test_primary_diff_and_secondary_ratio(
+    tmp_path: Path, metrics: dict[str, float], status: str, gaps: int, warnings: int
+) -> None:
+    summary = load_fairness(_metrics(tmp_path, metrics))
+    assert (summary.status, len(summary.gaps), len(summary.warnings)) == (status, gaps, warnings)
+    assert (summary.max_diff, summary.min_ratio) == (0.05, 0.8)
+
+
+def test_ratio_warning_does_not_fail_the_bias_standard(root: Path, tmp_path: Path) -> None:
+    warn = load_fairness(_metrics(tmp_path, {"dp_diff": 0.01, "di_ratio": 0.7}))
+    status = {i.id: i.status for i in _report([], root, fairness=warn).bis}[BIAS_STANDARD]
+    assert status == "covered"
+
+
+def test_thresholds_come_from_mappings_and_are_printed(root: Path) -> None:
+    maps = MAPS.model_copy(update={"fairness": FairnessThresholds(max_diff=0.03, min_ratio=0.9)})
+    report = build_report(
+        [], [], run_id="RT-20261012-1030", created_at=NOW, mappings=maps, root=root
+    )
+    assert (report.fairness.max_diff, report.fairness.min_ratio) == (0.03, 0.9)
+    summary = render_summary(report)
+    assert "**primary** `|*_diff| ≤ 0.03`" in summary
+    assert "**secondary** `*_ratio ≥ 0.90`" in summary
+
+
+def test_project_thresholds_in_catalogue() -> None:
+    assert default_mappings().fairness == FairnessThresholds(max_diff=0.05, min_ratio=0.8)

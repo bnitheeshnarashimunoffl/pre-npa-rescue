@@ -181,7 +181,9 @@ def build_report(
     """Aggregate one run into a :class:`RunReport` (contract scorecard plus WS7 extras)."""
     maps = mappings or default_mappings()
     base = root or repo_root()
-    fair = fairness or load_fairness()
+    fair = fairness or load_fairness(
+        max_diff=maps.fairness.max_diff, min_ratio=maps.fairness.min_ratio
+    )
 
     def counts(rs: Sequence[RedTeamResult], sk: Sequence[SkippedCase]) -> dict[str, int]:
         passed = sum(r.passed for r in rs)
