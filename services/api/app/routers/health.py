@@ -3,7 +3,7 @@ from importlib.metadata import PackageNotFoundError, version
 from fastapi import APIRouter
 
 from app import __version__
-from app.routers._common import roles
+from app.routers._common import access
 from npa_contracts import CONTRACT_VERSION
 from npa_contracts.api import HealthResponse
 
@@ -19,7 +19,7 @@ def _pkg_version(name: str) -> str:
         return "missing"
 
 
-@router.get("/health", response_model=HealthResponse, openapi_extra=roles("public"))
+@router.get("/health", response_model=HealthResponse, **access("public"))
 def health() -> HealthResponse:
     """Liveness plus package versions and which providers are real vs fixture."""
     return HealthResponse(
