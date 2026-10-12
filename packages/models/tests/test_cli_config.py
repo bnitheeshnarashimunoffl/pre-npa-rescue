@@ -39,6 +39,7 @@ def test_cli_train_writes_artifacts(
     monkeypatch.setenv("MODEL_DIR", str(tmp_path / "artifacts"))
     assert main(["train", "--all", "--features", str(fp), "--labels", str(lp)]) == EXIT_OK
     assert (tmp_path / "artifacts" / "early_warning" / "meta.json").is_file()
+    assert (tmp_path / "artifacts" / "segment" / "meta.json").is_file()
 
 
 def test_cli_train_missing_input_fails(tmp_path: Path) -> None:
