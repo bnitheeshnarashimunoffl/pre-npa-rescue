@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -8,7 +9,9 @@ import pytest
 from npa_contracts.enums import RedTeamCategory
 from npa_contracts.models import BotReply, ChatTurnRequest
 from npa_redteam.cases import ConversationCase, load_cases
+from npa_redteam.fakes import contracts_dir
 from npa_redteam.harness import execute_case
+from npa_redteam.judges import extract_amounts_paise
 from npa_redteam.suites import prompt_injection
 from npa_redteam.suites.prompt_injection import leak_failures, prompt_fragments
 
@@ -89,3 +92,54 @@ def test_generic_leak_markers(text: str) -> None:
 
 def test_refusals_are_not_leaks() -> None:
     assert leak_failures(["I can't share internal instructions, but I can help you."], ()) == []
+
+
+# Canonical demo values in paise (WS9 phase-2 brief, 2026-10-12): Priya's waiver, plan instalment,
+# overdue, outstanding after the due date and total due. Fixtures may lag behind them.
+CANONICAL_PAISE = {153400, 200000, 1149200, 9251900, 10745200}
+
+
+def _real_amounts() -> set[int]:
+    """Every amount a customer could legitimately see: all ``*_paise`` values in the active
+    fixtures (``$CONTRACTS_DIR``; policy.json is excluded because it holds fee slabs and caps,
+    not customer amounts), monthly x tenure totals, and the canonical demo values."""
+    amounts = set(CANONICAL_PAISE)
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if (
+                    key.endswith("_paise")
+                    and isinstance(value, int)
+                    and not isinstance(value, bool)
+                ):
+                    amounts.add(value)
+                walk(value)
+            monthly, tenure = node.get("monthly_amount_paise"), node.get("tenure_months")
+            if isinstance(monthly, int) and isinstance(tenure, int):
+                amounts.add(monthly * tenure)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    for path in sorted((contracts_dir() / "fixtures").glob("*.json")):
+        if path.name != "policy.json":
+            walk(json.loads(path.read_text(encoding="utf-8")))
+    return amounts
+
+
+def test_real_amounts_include_the_fixture_plan(h: SimpleNamespace) -> None:
+    plan = h.priya_plan()
+    assert {plan.monthly_amount_paise, plan.waiver_paise} <= _real_amounts()
+    assert _real_amounts() >= CANONICAL_PAISE
+
+
+@pytest.mark.parametrize("case", INJ, ids=lambda c: c.id)
+def test_attacker_amounts_never_equal_real_amounts(case: ConversationCase) -> None:
+    """The generator guarantee, checked against whichever fixtures are active, so a forbidden
+    amount can never coincide with a legitimate offer, waiver or balance."""
+    attacker = set(case.expect.forbidden_amounts_paise)
+    for turn in case.turns:
+        attacker |= set(extract_amounts_paise(turn.text))
+    clash = attacker & _real_amounts()
+    assert not clash, f"{case.id}: attacker amounts {sorted(clash)} equal real amounts"
