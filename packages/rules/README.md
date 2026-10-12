@@ -133,13 +133,16 @@ policy = load_policy()  # POLICY_PATH env var, else packages/rules/policies/bank
 #   contact_history(customer_id)      -> list[ContactEvent]   (audit log, RBC 454P)
 # AccountSnapshot.from_context(ctx_dict) builds one from a CustomerContextProvider dict.
 
-policy_provider = PolicyEngine(policy, account_for_customer)                  # PolicyProvider
-compliance = ComplianceGuard(policy, contact_history, account_for_customer)    # ComplianceProvider
-nba = NextBestActionService(                                                   # NBAProvider
-    policy, risk_provider, compliance, account_for_account,
-    policy_provider=policy_provider,   # optional: pre-computes options for chat invites
+policy_provider = PolicyEngine(policy, account_for_customer)  # PolicyProvider
+compliance = ComplianceGuard(policy, contact_history, account_for_customer)  # ComplianceProvider
+nba = NextBestActionService(  # NBAProvider
+    policy,
+    risk_provider,
+    compliance,
+    account_for_account,
+    policy_provider=policy_provider,  # optional: pre-computes options for chat invites
 )
-nba.next_best_action("ACC-DEMO-PRIYA", "2026-09").action    # NextAction.CHAT_INVITE
+nba.next_best_action("ACC-DEMO-PRIYA", "2026-09").action  # NextAction.CHAT_INVITE
 
 # Until WS2 ships: risk_provider = StaticRiskProvider.from_queue_fixture(json_of_queue_fixture)
 
@@ -147,7 +150,7 @@ nba.next_best_action("ACC-DEMO-PRIYA", "2026-09").action    # NextAction.CHAT_IN
 try:
     new_policy = parse_policy(body)
 except PolicyError as exc:
-    errors = exc.errors              # list[str], one per problem
+    errors = exc.errors  # list[str], one per problem
 else:
     for provider in (policy_provider, compliance, nba):
         provider.reload(new_policy)
@@ -164,10 +167,10 @@ afford = estimate_affordability(
     {"income_paise": 2_000_000, "expenses_paise": 900_000, "dependants": 1},  # from the chat
     policy.affordability,
 )  # declared=None gives source="estimated": confirm with the customer before offering
-options = policy_provider.relief_options("CUST-DEMO-PRIYA", afford)   # least harmful first
-plan = next(o for o in options if o.type == "emi_conversion")         # 200000 paise x 6
+options = policy_provider.relief_options("CUST-DEMO-PRIYA", afford)  # least harmful first
+plan = next(o for o in options if o.type == "emi_conversion")  # 200000 paise x 6
 offer = policy_provider.propose_offer("CUST-DEMO-PRIYA", plan.option_id, Actor.BOT)
-offer.status    # "approved", or "proposed" when option.requires_human_approval
+offer.status  # "approved", or "proposed" when option.requires_human_approval
 ```
 
 Show only these options and amounts. `propose_offer` raises `UnknownOptionError` for any
@@ -181,13 +184,13 @@ from zoneinfo import ZoneInfo
 
 now = datetime(2026, 10, 12, 21, 0, tzinfo=ZoneInfo("Asia/Kolkata"))  # must be tz-aware
 d = compliance.check_contact("CUST-DEMO-PRIYA", Channel.SMS, now, Actor.SYSTEM)
-d.allowed, d.rule_ids, d.next_allowed_at   # False, ['RBI-454Y4-WINDOW'], 2026-10-13 08:00 IST
+d.allowed, d.rule_ids, d.next_allowed_at  # False, ['RBI-454Y4-WINDOW'], 2026-10-13 08:00 IST
 
 # The customer started the chat: the bot may reply at any hour.
 compliance.check_contact("CUST-DEMO-PRIYA", Channel.CHAT, now, Actor.BOT, direction="inbound")
 
 v = compliance.check_text("Pay today or we will take legal action.", Lang.EN)
-v.allowed, v.rule_ids                      # False, ['RBI-454Z-THREAT']: do not send
+v.allowed, v.rule_ids  # False, ['RBI-454Z-THREAT']: do not send
 ```
 
 **4. Disclosure texts and the mandatory footer:**
@@ -195,8 +198,8 @@ v.allowed, v.rule_ids                      # False, ['RBI-454Z-THREAT']: do not 
 ```python
 from npa_rules.disclosures import disclosure_text
 
-for key in plan.disclosure_keys:           # show every one whenever the option is presented
-    text = disclosure_text(key, Lang.TA)   # KeyError for an unknown key
+for key in plan.disclosure_keys:  # show every one whenever the option is presented
+    text = disclosure_text(key, Lang.TA)  # KeyError for an unknown key
 footer = compliance.required_footer(Lang.HI)  # recording notice + grievance officer + Ombudsman
 ```
 
@@ -209,15 +212,21 @@ footer = compliance.required_footer(Lang.HI)  # recording notice + grievance off
 | DPD / bucket | 12 / sma0 | 45 / sma1 |
 | Outstanding | ₹1,10,000 | ₹64,800 |
 | Overdue (unpaid MAD) | ₹11,492 | ₹9,000 |
-| Waivable charges | ₹1,180 (₹1,000 late fee + 18% GST) | ₹1,180 |
+| Late charges (slab on post-due outstanding) | ₹1,534 (₹1,300 top slab on ₹1,10,000 + 18% GST) | ₹1,534 (₹1,300 top slab on ₹64,800 + 18% GST) |
 | Declared in chat | income ₹20,000, essentials ₹9,000, 1 dependant → (20,000 − 9,000 − 3,000) × 0.3 = **₹2,400/month** | income ₹0 → **₹0** |
 | Card insurance | none | job-loss cover |
-| Options | fee waiver ₹1,180 · **₹2,000/month × 6, late fees waived** | insurance referral · fee waiver · restructuring (officer) · review date (officer) |
+| Options | fee waiver ₹1,534 · **₹2,000/month × 6, late fees waived** | insurance referral · fee waiver · restructuring (officer) · review date (officer) |
 
 The full ₹1,10,000 is not affordable at ₹2,400/month even over 12 months, so (per the
 briefing) the plan covers the **overdue amount**, with the late charges waived:
 EMI(₹11,492, 6 months, 15% p.a.) = ₹2,000.00 exactly (total interest ₹507.98). The formula is
 not adjusted to produce this; the persona's overdue amount was chosen to match it.
+
+Late charges follow the RBI rule in `dues.late_fee`: the slab is chosen on the **amount
+outstanding after the due date** (the whole unpaid balance), not on the overdue minimum (issue
+#1 decision). Both personas owe more than ₹25,000 after the due date, so both are in the top
+slab: ₹1,300 + 18% GST = ₹1,534. `tests/test_personas.py` recomputes this from the policy
+slabs.
 
 Without a declaration, affordability is **estimated** (`source="estimated"`) from last month's
 credited income or the average payment of the last 3 months, whichever gives more. The

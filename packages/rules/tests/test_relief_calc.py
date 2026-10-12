@@ -152,7 +152,7 @@ def test_size_emi_never_exceeds_affordable(principal: int, affordable: int) -> N
 
 
 def test_waiver_capped(policy: Policy) -> None:
-    assert size_waiver(PRIYA, policy.options.fee_waiver) == 118_000
+    assert size_waiver(PRIYA, policy.options.fee_waiver) == 153_400
     big = PRIYA.model_copy(update={"waivable_charges_paise": 10**7})
     assert size_waiver(big, policy.options.fee_waiver) == policy.options.fee_waiver.max_waiver_paise
 

@@ -57,7 +57,7 @@ def test_priya_gets_fee_waiver_plus_six_month_plan(engine: PolicyEngine, policy:
     assert (plan.monthly_amount_paise, plan.tenure_months, plan.waiver_paise) == (
         200_000,
         6,
-        118_000,
+        153_400,
     )
     assert plan.option_id == "OPT-ACC-DEMO-PRIYA-EMI6-WAIVER"
     assert not plan.requires_human_approval
