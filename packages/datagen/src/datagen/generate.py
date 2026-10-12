@@ -1,7 +1,4 @@
-"""``datagen generate``: build the task 1.1 tables into ``DATA_DIR``.
-
-This stage builds customers, protected attributes and monthly statements for UCI-calibrated
-"normal" behaviour; shocks, salary credits and transactions follow in the next PR.
+"""``datagen generate``: build every task 1.1 table into ``DATA_DIR``.
 
 Each component draws from its own RNG stream, ``default_rng([seed, stream])``, so the same
 seed gives byte-identical Parquet and changing one component does not reshuffle the others.
@@ -22,7 +19,16 @@ from datagen.calibrate_uci import load_calibration
 from datagen.config import DatagenConfig
 from datagen.customers import generate_customers
 from datagen.protected import generate_protected
+from datagen.salary import generate_salary
+from datagen.shocks import (
+    BehaviourModel,
+    apply_spend_effects,
+    assign_hidden_truth,
+    behaviour_frame,
+    shocks_frame,
+)
 from datagen.statements import PURCHASE_CATEGORIES, Accounts, simulate_statements
+from datagen.transactions import write_transactions
 from datagen.validate import check_integrity, write_parquet, write_table
 
 logger = logging.getLogger(__name__)
@@ -48,6 +54,13 @@ MONTHLY_SPEND_SCHEMA = pa.schema(
         pa.field("txn_count", pa.int64(), nullable=False),
     ]
 )
+BEHAVIOUR_SCHEMA = pa.schema(
+    [
+        pa.field("customer_id", pa.string(), nullable=False),
+        pa.field("behaviour_type", pa.string(), nullable=False),
+        pa.field("wont_pay_start_month", pa.string(), nullable=True),
+    ]
+)
 
 
 def rng_for(seed: int, stream: int) -> np.random.Generator:
@@ -60,6 +73,9 @@ class GeneratedData:
     protected: pd.DataFrame
     account_months: pd.DataFrame
     monthly_spend: pd.DataFrame
+    salary: pd.DataFrame
+    shocks: pd.DataFrame
+    behaviour: pd.DataFrame
 
 
 def build(cfg: DatagenConfig, calibration: dict[str, Any] | None = None) -> GeneratedData:
@@ -72,6 +88,9 @@ def build(cfg: DatagenConfig, calibration: dict[str, Any] | None = None) -> Gene
     protected = generate_protected(ids, rng_for(cfg.seed, STREAM_PROTECTED))
     customers = generate_customers(
         protected, calibration, cfg.start_month, rng_for(cfg.seed, STREAM_CUSTOMERS), seed=cfg.seed
+    )
+    truth = assign_hidden_truth(
+        customers["occupation_type"].to_numpy(), len(months), rng_for(cfg.seed, STREAM_TRUTH)
     )
 
     acc_rng = rng_for(cfg.seed, STREAM_ACCOUNTS)
@@ -90,18 +109,24 @@ def build(cfg: DatagenConfig, calibration: dict[str, Any] | None = None) -> Gene
     )
 
     spend_rng = rng_for(cfg.seed, STREAM_SPEND)
-    plan, _ = spend_plan(customers["monthly_income_paise"].to_numpy(np.int64), months, spend_rng)
+    plan, base = spend_plan(customers["monthly_income_paise"].to_numpy(np.int64), months, spend_rng)
+    plan = apply_spend_effects(plan, base, truth, spend_rng)
 
-    policy = NormalBehaviour.from_calibration(
+    normal = NormalBehaviour.from_calibration(
         calibration, limit.size, rng_for(cfg.seed, STREAM_NORMAL)
     )
+    policy = BehaviourModel(normal, truth, rng_for(cfg.seed, STREAM_OVERRIDES))
     account_months, monthly_spend = simulate_statements(accounts, months, policy, plan)
 
+    salary = generate_salary(customers, months, truth, rng_for(cfg.seed, STREAM_SALARY))
     return GeneratedData(
         customers=customers,
         protected=protected,
         account_months=account_months,
         monthly_spend=monthly_spend,
+        salary=salary,
+        shocks=shocks_frame(ids, months, truth),
+        behaviour=behaviour_frame(ids, months, truth),
     )
 
 
@@ -115,6 +140,8 @@ def write(data: GeneratedData, cfg: DatagenConfig) -> list[Path]:
         end_month=cfg.end_month,
         others={
             "protected_attributes": data.protected,
+            "salary_credits": data.salary,
+            "shocks": data.shocks,
             "monthly_spend": data.monthly_spend,
         },
     )
@@ -122,10 +149,26 @@ def write(data: GeneratedData, cfg: DatagenConfig) -> list[Path]:
         write_table(data.customers, "customers", out),
         write_table(data.protected, "protected_attributes", out),
         write_table(data.account_months, "account_months", out),
+        write_table(data.salary, "salary_credits", out),
+        write_table(data.shocks, "shocks", out),
     ]
-    path = out / "monthly_spend.parquet"
-    write_parquet(data.monthly_spend, path, MONTHLY_SPEND_SCHEMA)
-    paths.append(path)
+    for df, name, schema in (
+        (data.monthly_spend, "monthly_spend", MONTHLY_SPEND_SCHEMA),
+        (data.behaviour, "behaviour_types", BEHAVIOUR_SCHEMA),
+    ):
+        path = out / f"{name}.parquet"
+        write_parquet(df, path, schema)
+        paths.append(path)
+    if cfg.write_transactions:
+        n_txn = write_transactions(
+            data.monthly_spend,
+            data.account_months,
+            data.customers,
+            out,
+            rng_for(cfg.seed, STREAM_TRANSACTIONS),
+        )
+        logger.info("transactions rows=%d", n_txn)
+        paths.append(out / "transactions.parquet")
     return paths
 
 

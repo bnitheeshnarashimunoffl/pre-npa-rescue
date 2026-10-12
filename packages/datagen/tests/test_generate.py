@@ -17,6 +17,8 @@ CONTRACT_TABLES = (
     "customers",
     "protected_attributes",
     "account_months",
+    "salary_credits",
+    "shocks",
 )
 
 
@@ -35,6 +37,7 @@ def test_same_seed_gives_byte_identical_parquet(tmp_path: Path) -> None:
         write(build(cfg), cfg)
         digests.append(_digest(cfg.data_dir))
     assert digests[0] == digests[1]
+    assert "transactions.parquet/2026-09.parquet" in digests[0]
 
 
 def test_different_seed_differs(tmp_path: Path) -> None:
@@ -47,6 +50,8 @@ def test_written_tables_match_contract(small_written: Path) -> None:
     for table in CONTRACT_TABLES:
         df = pd.read_parquet(small_written / f"{table}.parquet")
         assert len(df) > 0, table
+    txn = pd.read_parquet(small_written / "transactions.parquet")
+    assert txn["txn_id"].is_unique
 
 
 def test_shapes(small_data: GeneratedData, small_cfg: DatagenConfig) -> None:
@@ -137,5 +142,5 @@ def test_population_shape(small_data: GeneratedData) -> None:
 
 def test_protected_attributes_only_in_their_table(small_data: GeneratedData) -> None:
     protected_cols = set(small_data.protected.columns) - {"customer_id"}
-    for name in ("customers", "account_months", "monthly_spend"):
+    for name in ("customers", "account_months", "salary", "shocks", "monthly_spend"):
         assert not protected_cols & set(getattr(small_data, name).columns), name
