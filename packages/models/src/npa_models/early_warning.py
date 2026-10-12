@@ -8,6 +8,7 @@
   probability (IS/ISO/IEC TS 4213 calibration).
 - Secondary head for ``reaches_npa_90d`` (RBI: card NPA when min due unpaid > 90 days).
 - Time-based split only (:mod:`npa_models.features`); protected attributes never reach it.
+- Each score carries the top 3 plain-language reasons (task 2.2, :mod:`npa_models.explain`).
 """
 
 import logging
@@ -27,8 +28,9 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from npa_contracts.enums import RiskBand
-from npa_contracts.models import RiskScore
+from npa_contracts.models import ReasonCode, RiskScore
 from npa_models.config import ModelSettings
+from npa_models.explain import explain
 from npa_models.features import (
     CATEGORICAL_FEATURES,
     DEFAULT_SPLIT,
@@ -201,19 +203,25 @@ class EarlyWarningModel:
             }
         )
 
+    def reasons(self, df: pd.DataFrame) -> list[list[ReasonCode]]:
+        """Top 3 reasons per row that push ``p_roll_forward`` up (SHAP on the main head)."""
+        x = build_matrix(df, self.bundle.feature_columns)
+        return explain(self.bundle.estimators["roll_forward"], x)
+
     def score(self, df: pd.DataFrame) -> list[RiskScore]:
-        """One :class:`RiskScore` per feature row. Reasons are added by task 2.2."""
+        """One :class:`RiskScore` per feature row, with its top 3 reasons."""
         frame = self.score_frame(df)
+        reasons = self.reasons(df)
         return [
             RiskScore(
                 account_id=row.account_id,
                 as_of_month=row.as_of_month,
                 p_roll_forward=float(row.p_roll_forward),
                 risk_band=RiskBand(row.risk_band),
-                reasons=[],
+                reasons=r,
                 model_version=self.model_version,
             )
-            for row in frame.itertuples(index=False)
+            for row, r in zip(frame.itertuples(index=False), reasons, strict=True)
         ]
 
     def score_batch(self, features: pd.DataFrame, as_of_month: str) -> list[RiskScore]:

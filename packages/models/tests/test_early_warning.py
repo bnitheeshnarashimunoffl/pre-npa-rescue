@@ -163,7 +163,8 @@ def test_score_returns_contract_objects(model, fake_data) -> None:
     assert s.as_of_month == AS_OF
     assert MODEL_VERSION_RE.match(s.model_version)
     assert s.model_version.startswith("ew-lgbm-")
-    assert s.reasons == []
+    assert all(len(x.reasons) <= 3 for x in scores)
+    assert all(x.reasons for x in scores if x.risk_band is RiskBand.HIGH)
     RiskScore.model_validate_json(s.model_dump_json())
 
 

@@ -9,8 +9,8 @@ uplift model that decides who is worth contacting at all. Implements
 
 **Tasks:** 2.1 early-warning · 2.2 explanations · 2.3 segmentation · 2.4 uplift · 2.5 evaluation report
 
-> Status: skeleton + task 2.1 early-warning model. Reasons (2.2), segmentation (2.3), uplift
-> (2.4) and the evaluation report (2.5) land in the following PRs.
+> Status: tasks 2.1 (early warning), 2.2 (reason codes), 2.3 (segmentation) and 2.4 (uplift).
+> The evaluation report (2.5) lands in a following PR.
 
 ## Early-warning model (task 2.1, `early_warning.py`)
 
@@ -30,6 +30,27 @@ uplift model that decides who is worth contacting at all. Implements
   `EarlyWarningModel.score(df) -> list[RiskScore]`, `.score_batch(features, as_of_month)`,
   `.score_frame(df)` (vectorised), `.save()` / `.load()`.
 - **CLI:** `uv run npa-models train --all` → `$MODEL_DIR/early_warning/`.
+
+## Reason codes (task 2.2, `explain.py`, `reason_codes.yaml`)
+
+- **SHAP:** LightGBM's built-in TreeSHAP (`pred_contrib=True`, the same algorithm as
+  `shap.TreeExplainer`) on the raw log-odds of the `rolls_forward_60d` head. Isotonic calibration
+  is monotone, so it doesn't change which features push risk up. No `shap` dependency.
+- **Catalogue:** `reason_codes.yaml` maps features to codes with text in `en`, `ta`, `hi`. A code
+  sums the contributions of its features and is shown only when its `when` conditions hold on
+  the account's own values (so "salary stopped" never appears when salary arrived). Numbers are
+  filled in at render time (`{n}` months, `{pct}%`), with singular / exact-value forms.
+- **Output:** the top 3 codes with a positive contribution, as `ReasonCode(code, weight, text)`;
+  `weight` is the code's share of the account's total positive contribution (0..1).
+  `RiskScore.reasons` is filled by `EarlyWarningModel.score` / `.score_batch`; `.reasons(df)`
+  returns them on their own.
+- **Not shown as reasons:** `limit_paise`, `tenure_months`, `dependants`, `occupation_type`. They
+  describe the person or the product, not what changed on the account (A3 fair treatment).
+- **Language rules:** describe the account, never the person; no blame; no raw feature names
+  (the loader rejects text that contains one). Tamil and Hindi are drafts marked
+  `needs_review: [ta, hi]` for a native-speaker check.
+- **Stable codes:** `SALARY_STOPPED`, `MIN_DUE_ONLY_STREAK`, `UTILISATION_RISING` are used in
+  `contracts/fixtures/risk_score.json`; don't rename them.
 
 ## Segmentation (task 2.3, `segment.py`)
 
@@ -116,6 +137,7 @@ including the demo personas `CUST-DEMO-PRIYA` and `CUST-DEMO-RAVI`.
 | IS/ISO/IEC 42001:2023, RBI FREE-AI (AI inventory) | `registry.make_model_version` on every output |
 | IS/ISO/IEC TS 4213, IS/ISO/IEC 25059:2023 | model cards in `reports/` (task 2.5) |
 | IS/ISO/IEC TS 4213 (classification performance) | `metrics.binary_metrics`: ROC-AUC, PR-AUC, Brier, KS + base rate |
-| IS/ISO/IEC 25059:2023 (explainability, controllability) | monotonic constraints in `early_warning.MONOTONE` |
+| IS/ISO/IEC 25059:2023 (explainability, controllability) | monotonic constraints in `early_warning.MONOTONE`; reason codes (`explain.py`) |
+| A3 fair treatment (non-judgemental communication) | `reason_codes.yaml` language rules, `not_shown` features |
 | RBI card NPA rule (min due unpaid > 90 days, 16 Jul 2015) | `reaches_npa_90d` head |
 | RBI RBC Directions para 454Z (no excessive contact) | uplift: sleeping dogs and sure things get no contact |

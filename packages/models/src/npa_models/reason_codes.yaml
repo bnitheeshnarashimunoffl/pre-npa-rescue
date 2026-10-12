@@ -1,0 +1,173 @@
+# Task 2.2: early-warning features -> plain-language reason codes (en / ta / hi).
+#
+# Rules for the text (briefing B4 2.2, B8):
+# - Describe what happened on the account, never the person. No blame ("irresponsible"),
+#   no guesses about causes, no raw feature names.
+# - Used by collectors and in the customer's own "why am I getting this message" view.
+# - Tamil and Hindi are careful drafts and need a native-speaker check (needs_review).
+#
+# Schema per code:
+#   features: features whose SHAP contributions are summed into this code
+#   when:     conditions on the account's own values that must all hold for the code to be
+#             shown ("<feature> <op> <number>", op in < <= > >= == !=), so the text is true.
+#             Codes that share a feature must have mutually exclusive conditions.
+#   params:   placeholders; a feature name renders as an integer, {feature, scale} as
+#             round(value * scale)
+#   plural:   the param that picks the text form: a form keyed by its exact value ("3")
+#             first, then "one" when it equals 1, else "other"
+#   text:     per language, a string or {one, other, "<n>"}
+#
+# Codes SALARY_STOPPED, MIN_DUE_ONLY_STREAK and UTILISATION_RISING are used in
+# contracts/fixtures/risk_score.json and by other workstreams; keep these names stable.
+
+version: 1
+needs_review: [ta, hi]
+
+codes:
+  SALARY_STOPPED:
+    features: [salary_missing_months_3m, salary_delta_3m]
+    when: ["salary_missing_months_3m >= 1"]
+    params: {n: salary_missing_months_3m}
+    plural: n
+    text:
+      en:
+        one: "A salary credit did not arrive in one of the last 3 months."
+        other: "Salary credits did not arrive in {n} of the last 3 months."
+        "3": "Salary credits have not arrived for the last 3 months."
+      ta:
+        one: "கடந்த 3 மாதங்களில் ஒரு மாதம் சம்பளம் வரவு வைக்கப்படவில்லை."
+        other: "கடந்த 3 மாதங்களில் {n} மாதங்கள் சம்பளம் வரவு வைக்கப்படவில்லை."
+        "3": "கடந்த 3 மாதங்களாக சம்பளம் வரவு வைக்கப்படவில்லை."
+      hi:
+        one: "पिछले 3 महीनों में से एक महीने वेतन जमा नहीं हुआ।"
+        other: "पिछले 3 महीनों में से {n} महीनों में वेतन जमा नहीं हुआ।"
+        "3": "पिछले 3 महीनों से वेतन जमा नहीं हुआ है।"
+
+  INCOME_DOWN:
+    features: [salary_delta_3m]
+    when: ["salary_missing_months_3m == 0", "salary_delta_3m < 0"]
+    text:
+      en: "Income credits have fallen over the last 3 months."
+      ta: "கடந்த 3 மாதங்களில் வருமான வரவு குறைந்துள்ளது."
+      hi: "पिछले 3 महीनों में आय की जमा राशि कम हुई है।"
+
+  MIN_DUE_ONLY_STREAK:
+    features: [min_due_only_streak]
+    when: ["min_due_only_streak >= 1"]
+    params: {n: min_due_only_streak}
+    plural: n
+    text:
+      en:
+        one: "Only the minimum due was paid on the last bill."
+        other: "Only the minimum due has been paid for {n} months in a row."
+      ta:
+        one: "கடந்த பில்லுக்கு குறைந்தபட்சத் தொகை மட்டுமே செலுத்தப்பட்டது."
+        other: "தொடர்ந்து {n} மாதங்களாக குறைந்தபட்சத் தொகை மட்டுமே செலுத்தப்பட்டுள்ளது."
+      hi:
+        one: "पिछले बिल पर केवल न्यूनतम देय राशि का भुगतान हुआ।"
+        other: "लगातार {n} महीनों से केवल न्यूनतम देय राशि का भुगतान हुआ है।"
+
+  NO_FULL_PAYMENT:
+    features: [months_since_full_payment]
+    when: ["months_since_full_payment >= 2"]
+    params: {n: months_since_full_payment}
+    text:
+      en: "The full bill has not been paid for {n} months."
+      ta: "{n} மாதங்களாக முழு பில் தொகை செலுத்தப்படவில்லை."
+      hi: "{n} महीनों से पूरे बिल का भुगतान नहीं हुआ है।"
+
+  PAYMENTS_BELOW_MIN_DUE:
+    features: [payment_ratio_3m]
+    when: ["payment_ratio_3m < 1"]
+    text:
+      en: "Recent payments have been less than the minimum due."
+      ta: "சமீபத்திய கட்டணங்கள் குறைந்தபட்சத் தொகையை விடக் குறைவாக உள்ளன."
+      hi: "हाल के भुगतान न्यूनतम देय राशि से कम रहे हैं।"
+
+  PAYMENT_OVERDUE:
+    features: [dpd, max_dpd_6m]
+    when: ["dpd >= 1"]
+    params: {n: dpd}
+    plural: n
+    text:
+      en:
+        one: "The current payment is 1 day overdue."
+        other: "The current payment is {n} days overdue."
+      ta:
+        one: "தற்போதைய கட்டணம் 1 நாள் தாமதமாக உள்ளது."
+        other: "தற்போதைய கட்டணம் {n} நாட்கள் தாமதமாக உள்ளது."
+      hi: "मौजूदा भुगतान {n} दिन से बकाया है।"
+
+  RECENT_LATE_PAYMENT:
+    features: [max_dpd_6m]
+    when: ["dpd == 0", "max_dpd_6m >= 1"]
+    text:
+      en: "A payment was late in the last 6 months."
+      ta: "கடந்த 6 மாதங்களில் ஒரு கட்டணம் தாமதமாகச் செலுத்தப்பட்டது."
+      hi: "पिछले 6 महीनों में एक भुगतान देर से हुआ।"
+
+  PAYMENT_PATTERN_CHANGED:
+    features: [broken_streak_flag]
+    when: ["broken_streak_flag >= 1"]
+    text:
+      en: "A long run of full, on-time payments ended recently."
+      ta: "நீண்ட காலமாக முழுத் தொகையையும் சரியான நேரத்தில் செலுத்தி வந்த முறை சமீபத்தில் மாறியுள்ளது."
+      hi: "लंबे समय से समय पर पूरा भुगतान करने का क्रम हाल ही में रुका है।"
+
+  UTILISATION_HIGH:
+    features: [utilisation]
+    when: ["utilisation >= 0.8"]
+    params: {pct: {feature: utilisation, scale: 100}}
+    text:
+      en: "The card is close to its limit ({pct}% used)."
+      ta: "அட்டை அதன் கடன் வரம்பை நெருங்கியுள்ளது ({pct}% பயன்படுத்தப்பட்டுள்ளது)."
+      hi: "कार्ड अपनी क्रेडिट सीमा के क़रीब है ({pct}% उपयोग हुआ)।"
+
+  UTILISATION_RISING:
+    features: [utilisation_delta_3m]
+    when: ["utilisation_delta_3m > 0"]
+    text:
+      en: "Card usage has risen compared with the credit limit over the last 3 months."
+      ta: "கடந்த 3 மாதங்களில் கடன் வரம்புடன் ஒப்பிடும்போது அட்டைப் பயன்பாடு அதிகரித்துள்ளது."
+      hi: "पिछले 3 महीनों में क्रेडिट सीमा की तुलना में कार्ड का उपयोग बढ़ा है।"
+
+  CASH_ADVANCE_UP:
+    features: [cash_advance_ratio_3m]
+    when: ["cash_advance_ratio_3m > 0"]
+    text:
+      en: "Cash withdrawals on the card have increased."
+      ta: "அட்டையில் ரொக்கம் எடுப்பது அதிகரித்துள்ளது."
+      hi: "कार्ड से नकद निकासी बढ़ी है।"
+
+  ESSENTIALS_SQUEEZE:
+    features: [essentials_spend_delta_3m, discretionary_spend_delta_3m]
+    when: ["discretionary_spend_delta_3m < 0"]
+    text:
+      en: "Spending has shifted to essentials only."
+      ta: "செலவுகள் அத்தியாவசியத் தேவைகளுக்கு மட்டுமே என மாறியுள்ளன."
+      hi: "ख़र्च अब केवल ज़रूरी चीज़ों तक सीमित हो गया है।"
+
+  CARD_USE_CHANGED:
+    features: [txn_count_delta_3m]
+    when: ["txn_count_delta_3m != 0"]
+    text:
+      en: "The number of card transactions has changed noticeably in the last 3 months."
+      ta: "கடந்த 3 மாதங்களில் அட்டைப் பரிவர்த்தனைகளின் எண்ணிக்கை குறிப்பிடத்தக்க அளவில் மாறியுள்ளது."
+      hi: "पिछले 3 महीनों में कार्ड लेन-देन की संख्या में काफ़ी बदलाव आया है।"
+
+  BILL_HIGH_FOR_INCOME:
+    features: [income_to_due_ratio]
+    when: ["income_to_due_ratio > 0"]
+    text:
+      en: "The amount due is high compared with monthly income."
+      ta: "மாத வருமானத்துடன் ஒப்பிடும்போது செலுத்த வேண்டிய தொகை அதிகமாக உள்ளது."
+      hi: "मासिक आय की तुलना में देय राशि अधिक है।"
+
+# Model inputs that are never shown as a reason: they describe the person or the product
+# rather than what changed on the account, so they would read as judging the customer
+# (A3 fair treatment, IS/ISO/IEC TR 24027:2021). Their contributions still count in `weight`.
+not_shown:
+  limit_paise: "credit limit is set by the bank, not something the customer did"
+  tenure_months: "length of relationship is not a reason to contact someone"
+  dependants: "family circumstances must not be presented as a risk reason"
+  occupation_type: "occupation must not be presented as a risk reason"
