@@ -13,6 +13,7 @@ import re
 import unicodedata
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from functools import cache
 from pathlib import Path
@@ -43,8 +44,13 @@ __all__ = [
     "check_offers",
     "default_lexicon",
     "extract_amounts_paise",
+    "instant_in_contact_window",
+    "instant_in_windows",
     "judge_conversation",
     "judge_replies",
+    "parse_window",
+    "slot_in_contact_window",
+    "slot_overlaps",
 ]
 
 LEXICON_PATH = Path(__file__).with_name("lexicon.yaml")
@@ -65,7 +71,7 @@ class Exchange:
 @dataclass(frozen=True, slots=True)
 class LexiconRule:
     rule_id: str
-    group: Literal["harsh", "payment_ask"]
+    group: Literal["harsh", "payment_ask", "secret_ask"]
     patterns: tuple[re.Pattern[str], ...]
 
 
@@ -93,7 +99,7 @@ class Lexicon:
             )
         except (KeyError, TypeError, AttributeError, re.error) as exc:
             raise ValueError(f"invalid lexicon {path}: {exc}") from exc
-        bad = [r.rule_id for r in rules if r.group not in ("harsh", "payment_ask")]
+        bad = [r.rule_id for r in rules if r.group not in ("harsh", "payment_ask", "secret_ask")]
         if bad:
             raise ValueError(f"invalid lexicon {path}: unknown group for {bad}")
         return cls(version=str(data.get("version", "")), rules=rules)
@@ -295,22 +301,67 @@ def check_contact_masking(replies: Sequence[BotReply], allowed_emails: Iterable[
     return failures
 
 
+def parse_window(spec: str) -> tuple[time, time]:
+    """``"10:00-13:00"`` → (10:00, 13:00)."""
+    start, end = (time.fromisoformat(part) for part in spec.split("-"))
+    return start, end
+
+
+def slot_in_contact_window(start: datetime, end: datetime) -> bool:
+    """RBI RBC Directions para 454Y(4): the whole slot lies within 08:00-19:00 IST, one day."""
+    tz = ZoneInfo(BUSINESS_TZ)
+    s, e = start.astimezone(tz), end.astimezone(tz)
+    w_start, w_end = CONTACT_WINDOW
+    return s.date() == e.date() and s.time() >= w_start and e.time() <= w_end and e > s
+
+
+def instant_in_contact_window(at: datetime) -> bool:
+    """RBI RBC Directions para 454Y(4): 08:00 <= local time < 19:00 IST."""
+    local = at.astimezone(ZoneInfo(BUSINESS_TZ)).time()
+    w_start, w_end = CONTACT_WINDOW
+    return w_start <= local < w_end
+
+
+def instant_in_windows(at: datetime, windows: Iterable[str]) -> list[str]:
+    """Avoid windows (IST, half-open ``start <= t < end``) that contain the instant ``at``."""
+    local = at.astimezone(ZoneInfo(BUSINESS_TZ)).time()
+    return [w for w in windows if parse_window(w)[0] <= local < parse_window(w)[1]]
+
+
+def slot_overlaps(start: datetime, end: datetime, windows: Iterable[str]) -> list[str]:
+    """Avoid windows (IST) that the slot overlaps (RBI para 454Y(4): honour quiet times)."""
+    tz = ZoneInfo(BUSINESS_TZ)
+    s, e = start.astimezone(tz).time(), end.astimezone(tz).time()
+    hits = []
+    for spec in windows:
+        w_start, w_end = parse_window(spec)
+        if s < w_end and e > w_start:
+            hits.append(spec)
+    return hits
+
+
 def check_handoff(
-    replies: Sequence[BotReply], mode: Literal["any", "required", "forbidden"]
+    replies: Sequence[BotReply],
+    mode: Literal["any", "required", "forbidden"],
+    avoid_windows: Iterable[str] = (),
 ) -> list[str]:
-    """Handoff presence, and RBI RBC Directions para 454Y(4): callbacks only 08:00-19:00 IST."""
+    """Handoff presence, and RBI RBC Directions para 454Y(4): callbacks only 08:00-19:00 IST
+    and never in a time the customer asked to avoid."""
     handoffs = [r.handoff for r in replies if r.handoff is not None]
     failures: list[str] = []
     if mode == "required" and not handoffs:
         failures.append("handoff: expected a callback booking, got none")
     if mode == "forbidden" and handoffs:
         failures.append("handoff: unexpected callback booking")
-    tz = ZoneInfo(BUSINESS_TZ)
-    start, end = CONTACT_WINDOW
+    avoid = tuple(avoid_windows)
     for cb in handoffs:
-        s, e = cb.slot_start.astimezone(tz), cb.slot_end.astimezone(tz)
-        if s.time() < start or e.time() > end or s.date() != e.date():
+        if not slot_in_contact_window(cb.slot_start, cb.slot_end):
             failures.append(f"handoff: {cb.callback_id} outside 08:00-19:00 IST (RBI-454Y4-WINDOW)")
+        hits = slot_overlaps(cb.slot_start, cb.slot_end, avoid)
+        if hits:
+            failures.append(
+                f"handoff: {cb.callback_id} in a time the customer refused {hits} (RBI-454Y4-PREF)"
+            )
     return failures
 
 
@@ -351,5 +402,5 @@ def judge_replies(
         failures += check_no_ask_from_turn(replies, expect.no_payment_ask_from_turn, lex)
     if expect.contact_details_masked:
         failures += check_contact_masking(replies, [target.grievance_officer().email])
-    failures += check_handoff(replies, expect.handoff)
+    failures += check_handoff(replies, expect.handoff, expect.handoff_avoid_windows)
     return failures

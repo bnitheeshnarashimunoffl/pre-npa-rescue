@@ -10,10 +10,12 @@ from __future__ import annotations
 import random
 import uuid
 from collections.abc import Callable
-from typing import Protocol
+from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Any, Protocol
 
 from npa_contracts.constants import AS_OF_MONTH
-from npa_contracts.enums import Lang
+from npa_contracts.enums import Actor, Channel, Lang
 from npa_contracts.models import (
     Affordability,
     BotReply,
@@ -29,6 +31,7 @@ from npa_contracts.providers import (
     NBAProvider,
     PolicyProvider,
 )
+from npa_redteam.cases import ContactSetup
 from npa_redteam.fakes import (
     FixtureChatEngine,
     FixtureComplianceProvider,
@@ -37,7 +40,14 @@ from npa_redteam.fakes import (
 )
 from npa_redteam.variants import PersonaRegistry, Profile
 
-__all__ = ["LibraryTarget", "Target", "UnsupportedCaseError"]
+__all__ = [
+    "ApiResponse",
+    "LibraryTarget",
+    "ScenarioCompliance",
+    "ScenarioScheduler",
+    "Target",
+    "UnsupportedCaseError",
+]
 
 
 class UnsupportedCaseError(Exception):
@@ -72,6 +82,50 @@ class Target(Protocol):
         """NBA for the customer's account; raises :class:`UnsupportedCaseError` if unavailable."""
         ...
 
+    def api_request(
+        self, method: str, path: str, *, as_user: str, body: dict[str, Any] | None = None
+    ) -> ApiResponse:
+        """One call to ``/api/v1`` as a demo user. Library targets raise
+        :class:`UnsupportedCaseError`."""
+        ...
+
+    def check_contact(
+        self,
+        customer_id: str,
+        channel: Channel,
+        at: datetime,
+        actor: Actor,
+        setup: ContactSetup,
+    ) -> ComplianceDecision:
+        """Compliance pre-check for a contact, with the account state in ``setup``."""
+        ...
+
+    def available_slots(
+        self, customer_id: str, day: date, setup: ContactSetup
+    ) -> list[tuple[datetime, datetime]]:
+        """Callback slots the scheduler would offer on ``day``."""
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class ApiResponse:
+    status: int
+    text: str
+
+
+class ScenarioCompliance(Protocol):
+    """A compliance provider that can be set up with a customer's flags, quiet times and
+    contact log. The WS3 adapter (``ComplianceGuard`` with injected ``contact_history`` and
+    ``accounts``) implements this once ``npa_rules`` is merged."""
+
+    def with_setup(self, customer_id: str, setup: ContactSetup) -> ComplianceProvider: ...
+
+
+class ScenarioScheduler(Protocol):
+    def available_slots(
+        self, customer_id: str, day: date, setup: ContactSetup
+    ) -> list[tuple[datetime, datetime]]: ...
+
 
 def _no_declared_affordability(customer_id: str) -> Affordability:
     return Affordability(
@@ -99,6 +153,7 @@ class LibraryTarget:
         compliance: ComplianceProvider,
         *,
         nba: NBAProvider | None = None,
+        scheduler: ScenarioScheduler | None = None,
         registry: PersonaRegistry | None = None,
         name: str = "library",
         seed: int = 42,
@@ -111,6 +166,7 @@ class LibraryTarget:
         self._policy = policy
         self._compliance = compliance
         self._nba = nba
+        self._scheduler = scheduler
         self._affordability = affordability
         self._as_of_month = as_of_month
         self._rng = random.Random(seed)
@@ -153,3 +209,33 @@ class LibraryTarget:
             raise UnsupportedCaseError(f"target {self.name} has no NBA provider")
         account_id = PersonaRegistry.account_of(customer_id)
         return self._nba.next_best_action(account_id, self._as_of_month)
+
+    def api_request(
+        self, method: str, path: str, *, as_user: str, body: dict[str, Any] | None = None
+    ) -> ApiResponse:
+        raise UnsupportedCaseError("API probes need API mode (phase 2)")
+
+    def check_contact(
+        self,
+        customer_id: str,
+        channel: Channel,
+        at: datetime,
+        actor: Actor,
+        setup: ContactSetup,
+    ) -> ComplianceDecision:
+        provider: ComplianceProvider = self._compliance
+        if not setup.empty:
+            with_setup = getattr(self._compliance, "with_setup", None)
+            if with_setup is None:
+                raise UnsupportedCaseError(
+                    f"target {self.name} cannot set flags, quiet times or contact history"
+                )
+            provider = with_setup(customer_id, setup)
+        return provider.check_contact(customer_id, channel, at, actor)
+
+    def available_slots(
+        self, customer_id: str, day: date, setup: ContactSetup
+    ) -> list[tuple[datetime, datetime]]:
+        if self._scheduler is None:
+            raise UnsupportedCaseError(f"target {self.name} has no callback scheduler")
+        return self._scheduler.available_slots(customer_id, day, setup)

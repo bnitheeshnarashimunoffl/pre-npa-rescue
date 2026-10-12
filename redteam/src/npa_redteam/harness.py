@@ -15,7 +15,6 @@ Modes:
 from __future__ import annotations
 
 import logging
-from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -27,14 +26,24 @@ from npa_contracts.constants import BUSINESS_TZ, DEFAULT_SEED
 from npa_contracts.enums import Lang, RedTeamCategory
 from npa_contracts.models import RedTeamResult, Scorecard
 from npa_redteam.cases import AttackCase, ConversationCase, load_cases
+from npa_redteam.fairness import FairnessSummary
 from npa_redteam.fakes import UnknownPersonaError
 from npa_redteam.judges import Lexicon, default_lexicon
 from npa_redteam.llm_judge import LlmJudge
-from npa_redteam.scorecard import build_scorecard
+from npa_redteam.mappings import Mappings
+from npa_redteam.scorecard import RunReport, SkippedCase, build_report
 from npa_redteam.suites import SUITES
 from npa_redteam.targets import LibraryTarget, Target, UnsupportedCaseError
 
-__all__ = ["CaseOutcome", "UnsupportedCaseError", "execute_case", "new_run_id", "run"]
+__all__ = [
+    "CaseOutcome",
+    "UnsupportedCaseError",
+    "execute_case",
+    "new_run_id",
+    "run",
+    "run_cases",
+    "run_report",
+]
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +72,7 @@ def execute_case(
 
     With ``llm_judge`` set, cases with ``expect.min_judge_score`` are also scored by the LLM.
     """
-    input_text = "\n---\n".join(t.text for t in case.turns)
+    input_text = case.input_text()
     try:
         execution = SUITES[case.suite].execute(case, target, lexicon or default_lexicon())
     except (UnsupportedCaseError, UnknownPersonaError) as exc:
@@ -111,14 +120,20 @@ def run_cases(
     created_at: datetime,
     lexicon: Lexicon | None = None,
     llm_judge: LlmJudge | None = None,
-) -> Scorecard:
-    """Execute ``cases`` against ``target`` and build the scorecard."""
+    mappings: Mappings | None = None,
+    root: Path | None = None,
+    fairness: FairnessSummary | None = None,
+) -> RunReport:
+    """Execute ``cases`` against ``target`` and build the run report (task 7.2)."""
     results: list[RedTeamResult] = []
-    skipped: Counter[RedTeamCategory] = Counter()
+    skipped: list[SkippedCase] = []
     for case in cases:
         outcome = execute_case(case, target, lexicon, llm_judge)
         if outcome.status == "skipped":
-            skipped[case.suite] += 1
+            reason = outcome.failures[0].removeprefix("skipped: ") if outcome.failures else ""
+            skipped.append(
+                SkippedCase(case.id, case.suite, case.lang, case.rule_refs, case.bis_refs, reason)
+            )
             continue
         results.append(_result(outcome, run_id, target))
     log.info(
@@ -126,9 +141,50 @@ def run_cases(
         run_id,
         target.name,
         len(results),
-        sum(skipped.values()),
+        len(skipped),
     )
-    return build_scorecard(results, run_id=run_id, created_at=created_at, skipped=skipped)
+    return build_report(
+        results,
+        skipped,
+        run_id=run_id,
+        created_at=created_at,
+        target=target.name,
+        mappings=mappings,
+        root=root,
+        fairness=fairness,
+    )
+
+
+def run_report(
+    api_base_url: str | None = None,
+    token: str | None = None,
+    suites: Iterable[RedTeamCategory | str] | None = None,
+    langs: Iterable[Lang | str] = ("en", "ta", "hi"),
+    seed: int = DEFAULT_SEED,
+    *,
+    target: Target | None = None,
+    cases_dir: Path | None = None,
+    now: datetime | None = None,
+    lexicon: Lexicon | None = None,
+    llm_judge: LlmJudge | None = None,
+    fairness: FairnessSummary | None = None,
+) -> RunReport:
+    """Like :func:`run`, but return the full :class:`RunReport` (scorecard plus WS7 extras)."""
+    if target is None:
+        if api_base_url:
+            raise NotImplementedError("API mode is not implemented yet; use library mode")
+        target = LibraryTarget.from_fixtures(seed=seed)
+    created_at = now or datetime.now(UTC)
+    cases = load_cases(cases_dir, suites=suites, langs=langs)
+    return run_cases(
+        cases,
+        target,
+        run_id=new_run_id(created_at),
+        created_at=created_at,
+        lexicon=lexicon,
+        llm_judge=llm_judge,
+        fairness=fairness,
+    )
 
 
 def run(
@@ -144,22 +200,20 @@ def run(
     lexicon: Lexicon | None = None,
     llm_judge: LlmJudge | None = None,
 ) -> Scorecard:
-    """Run the red-team suites and return a :class:`Scorecard`.
+    """Run the red-team suites and return a :class:`Scorecard` (stable entry point for WS5).
 
     ``suites=None`` runs all six. ``target`` overrides the mode chosen from ``api_base_url``.
     ``llm_judge`` is off by default (CI); demo runs pass one built on a real ``LLMClient``.
     """
-    if target is None:
-        if api_base_url:
-            raise NotImplementedError("API mode is not implemented yet; use library mode")
-        target = LibraryTarget.from_fixtures(seed=seed)
-    created_at = now or datetime.now(UTC)
-    cases = load_cases(cases_dir, suites=suites, langs=langs)
-    return run_cases(
-        cases,
-        target,
-        run_id=new_run_id(created_at),
-        created_at=created_at,
+    return run_report(
+        api_base_url,
+        token,
+        suites,
+        langs,
+        seed,
+        target=target,
+        cases_dir=cases_dir,
+        now=now,
         lexicon=lexicon,
         llm_judge=llm_judge,
-    )
+    ).scorecard
