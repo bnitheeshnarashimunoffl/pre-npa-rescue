@@ -17,8 +17,11 @@ class Settings(BaseSettings):
     policy_path: Path = REPO_ROOT / "packages" / "rules" / "policies" / "bank_policy.yaml"
     contracts_dir: Path = REPO_ROOT / "contracts"
     database_url: str = "postgresql+psycopg://npa:npa@localhost:5432/npa"
-    jwt_secret: str = "change-me-dev-only"
+    # Dev default only; >= 32 bytes for HS256 (RFC 7518). Set a random secret anywhere shared.
+    jwt_secret: str = "change-me-dev-only-0123456789abcdef"
     jwt_expire_minutes: int = 120
+    login_rate_per_minute: int = 10
+    chat_rate_per_minute: int = 30
     cors_origins: str = ""
     llm_provider: str = "mock"
     llm_model: str = "claude-sonnet-5-5"

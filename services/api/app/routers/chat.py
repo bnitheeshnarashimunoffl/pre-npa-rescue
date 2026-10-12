@@ -1,26 +1,38 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 
 from app.errors import not_implemented
 from app.fixtures import load_fixture
-from app.routers._common import PROTECTED, roles
+from app.ratelimit import RateLimits, enforce
+from app.routers._common import ERRORS, access
+from app.security import CurrentPrincipal
 from npa_contracts.api import ChatSessionCreated, ChatSessionCreateRequest, ChatTranscript
 from npa_contracts.models import BotReply, ChatTurnRequest
 
-router = APIRouter(prefix="/chat", tags=["chat"], **PROTECTED)
+
+def _chat_rate_limit(principal: CurrentPrincipal) -> None:
+    enforce(RateLimits.chat(), principal.username)
+
+
+router = APIRouter(
+    prefix="/chat",
+    tags=["chat"],
+    dependencies=[Depends(_chat_rate_limit)],
+    responses=ERRORS,
+)
 
 
 @router.post(
     "/sessions",
     response_model=ChatSessionCreated,
     status_code=status.HTTP_201_CREATED,
-    openapi_extra=roles("customer"),
+    **access("customer"),
 )
 def create_session(body: ChatSessionCreateRequest | None = None) -> ChatSessionCreated:
     """Start a chat session tied to the logged-in customer."""
     not_implemented("5.1")
 
 
-@router.post("/sessions/{sid}/messages", response_model=BotReply, openapi_extra=roles("customer"))
+@router.post("/sessions/{sid}/messages", response_model=BotReply, **access("customer"))
 def post_message(sid: str, body: ChatTurnRequest) -> BotReply:
     """One chat turn: ``ChatEngine.handle`` -> ``BotReply`` (fixture-backed until task 5.1)."""
     reply = BotReply.model_validate(load_fixture("bot_reply_offer.json"))
@@ -31,7 +43,7 @@ def post_message(sid: str, body: ChatTurnRequest) -> BotReply:
     "/sessions/{sid}/stream",
     response_model=None,
     responses={200: {"content": {"text/event-stream": {"schema": {"type": "string"}}}}},
-    openapi_extra=roles("customer"),
+    **access("customer"),
 )
 def stream(sid: str) -> None:
     """Optional SSE stream of reply chunks."""
@@ -41,7 +53,7 @@ def stream(sid: str) -> None:
 @router.get(
     "/sessions/{sid}",
     response_model=ChatTranscript,
-    openapi_extra=roles("customer", "hardship_officer", "auditor"),
+    **access("customer", "hardship_officer", "auditor"),
 )
 def transcript(sid: str) -> ChatTranscript:
     not_implemented("5.1")

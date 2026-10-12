@@ -10,7 +10,11 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import Engine, text
 
+from app.config import get_settings
 from app.db import make_engine
+from app.ratelimit import RateLimits
+from app.security import Principal, create_access_token
+from npa_contracts.enums import Role
 
 API_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = API_DIR.parents[1]
@@ -47,3 +51,22 @@ def engine(db_url: str) -> Iterator[Engine]:
     eng = make_engine(db_url)
     yield eng
     eng.dispose()
+
+
+# --- auth helpers (task 5.3) ------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def _reset_rate_limits() -> Iterator[None]:
+    RateLimits.reset()
+    yield
+    RateLimits.reset()
+
+
+def bearer_for(
+    role: str, customer_id: str | None = None, username: str | None = None
+) -> dict[str, str]:
+    """Authorization header with a valid token for ``role`` (no DB needed)."""
+    if role == "customer" and customer_id is None:
+        customer_id = "CUST-DEMO-PRIYA"
+    principal = Principal(username or f"test-{role}-{customer_id}", Role(role), customer_id)
+    token, _ = create_access_token(principal, get_settings())
+    return {"Authorization": f"Bearer {token}"}

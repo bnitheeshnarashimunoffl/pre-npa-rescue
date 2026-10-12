@@ -94,6 +94,26 @@ uv run python -m seed --reset    # wipe all rows and seed again
 ("DLL load failed ... Application Control policy"), intermittently. The fixtures seed path
 does not need pyarrow; Parquet seeding and its tests need it (CI on Linux always runs them).
 
+## Auth (task 5.3)
+
+```bash
+curl -s -X POST localhost:8000/api/v1/auth/login -H 'content-type: application/json' \
+  -d '{"username":"collector1","password":"demo"}'          # -> {"access_token": ...}
+curl -s localhost:8000/api/v1/collector/queue -H "Authorization: Bearer <token>"
+```
+
+- JWT HS256 signed with `JWT_SECRET` (use 32+ random bytes on any shared deployment; the API
+  logs a warning for shorter secrets), valid for `JWT_EXPIRE_MINUTES`.
+- Each route's allowed roles are its `x-roles` in `contracts/openapi.yaml`; the same list is
+  enforced. A role that may not use a route, or a customer asking for another customer, gets
+  **404** (not 403) so IDs cannot be enumerated.
+- Login failures always return the same `INVALID_CREDENTIALS` error. `/auth/login` is limited
+  to `LOGIN_RATE_PER_MINUTE` per client+username and `/chat/*` to `CHAT_RATE_PER_MINUTE` per
+  user (in-memory, per process) -> `429` with `Retry-After`.
+- Profiles are minimised per role (`app/minimise.py`): collectors see identity, language,
+  masked contact details and contact window; hardship officers also see occupation,
+  insurance, limit, age and city; auditors see identity only.
+
 ## API (bootstrap state)
 
 `make api` starts the stub API. Every A7.4 route exists; most serve `contracts/fixtures/`, the
