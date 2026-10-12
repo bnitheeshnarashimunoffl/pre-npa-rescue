@@ -37,7 +37,8 @@ def test_walk_all_pages_in_priority_order(seeded: Engine) -> None:
     assert len(seen) == 10
     assert len({r.account_id for r in seen}) == 10
     assert [r.priority for r in seen] == sorted((r.priority for r in seen), reverse=True)
-    assert seen[0].account_id == "ACC-DEMO-PRIYA"
+    # The demo customers lead the queue (their order is WS3's rule; #51 puts Ravi first).
+    assert {r.account_id for r in seen[:2]} == {"ACC-DEMO-PRIYA", "ACC-DEMO-RAVI"}
 
 
 def test_exact_page_has_no_next_cursor(seeded: Engine) -> None:
