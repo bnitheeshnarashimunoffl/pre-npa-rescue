@@ -1,18 +1,18 @@
 # CODEOWNERS (owned by WS5, A5). Later rules override earlier ones.
 # Used to auto-request reviews; Code Owner review is NOT required to merge (docs/setup.md).
-# Placeholders @ws4-teammate and @ws6-teammate must be replaced with real GitHub usernames.
+# Every workstream owner below must be a collaborator with write access.
 
 *                       @bnitheeshnarashimunoffl
 /packages/datagen/      @GautamV-srg
 /data/                  @GautamV-srg
 /packages/models/       @GautamV-srg
 /packages/rules/        @GautamV-srg
-/packages/chatbot/      @ws4-teammate
+/packages/chatbot/      @sharmeshms
 /services/api/          @GautamV-srg
 /packages/contracts/    @GautamV-srg @bnitheeshnarashimunoffl
 /contracts/             @GautamV-srg @bnitheeshnarashimunoffl
 /.github/               @GautamV-srg @bnitheeshnarashimunoffl
-/apps/web/              @ws6-teammate
+/apps/web/              @masked-garlic26
 /redteam/               @GautamV-srg
 /governance/            @GautamV-srg
 /docs/                  @bnitheeshnarashimunoffl

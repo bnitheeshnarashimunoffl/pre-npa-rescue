@@ -169,13 +169,12 @@ Settings → Actions → General: allow GitHub Actions and the third-party actio
 | WS1 Data foundation | `@GautamV-srg` | `/packages/datagen/`, `/data/` |
 | WS2 Models | `@GautamV-srg` | `/packages/models/` |
 | WS3 Rules | `@GautamV-srg` | `/packages/rules/` |
-| WS4 Chatbot | `@ws4-teammate` (**placeholder**) | `/packages/chatbot/` |
+| WS4 Chatbot | `@sharmeshms` | `/packages/chatbot/` |
 | WS5 Backend & platform | `@GautamV-srg` | `/services/api/`, `/packages/contracts/`, `/contracts/`, `/.github/`, `/docs/setup.md` |
-| WS6 Frontend | `@ws6-teammate` (**placeholder**) | `/apps/web/` |
+| WS6 Frontend | `@masked-garlic26` | `/apps/web/` |
 | WS7 Red team & compliance | `@GautamV-srg` | `/redteam/`, `/governance/` |
 | WS8 Pitch | `@bnitheeshnarashimunoffl` | `/docs/`, `/README.md` |
 
-Replace the two placeholders with the teammates' real GitHub usernames (each must be a
-collaborator with write access). Until then GitHub shows "unknown owner" warnings for those
-lines. Code Owner review is not required for merging (see the Owner checklist), so the
-placeholders block nothing.
+Every handle must be a collaborator with write access, or GitHub shows an "unknown owner"
+warning for that line. Code Owner review is not required for merging (see the Owner checklist);
+CODEOWNERS only requests reviews automatically.
