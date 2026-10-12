@@ -21,7 +21,10 @@ from npa_chat.flows import (
 )
 from npa_chat.guardrails import check_input_guardrails, verify_output_guardrails
 from npa_chat.i18n import get_string
-from npa_chat.language import detect_language_switch_request, resolve_language
+from npa_chat.language import (
+    detect_language_switch_request,
+    resolve_language,
+)
 from npa_chat.nlu import NLU, Intent
 from npa_chat.state import ChatState, ConversationState, InMemorySessionStore, SessionStore
 from npa_contracts.enums import Actor, Channel, Lang
@@ -95,7 +98,7 @@ class ChatEngine:
             else (Lang.HI if "hi" in context_lang_str else Lang.EN)
         )
 
-        # 3. Resolve active language
+        # 3. Resolve active language (follows customer's choice in session, not language_pref)
         if req.lang is not None:
             active_lang = req.lang
         elif len(state.history) == 0:
@@ -142,8 +145,25 @@ class ChatEngine:
         flags_to_add: list[str] = []
         presented_offers: list[Offer] = []
 
+        # Check input guardrails (prompt injection, PII leak) on every turn
+        guard_res = check_input_guardrails(req.text, customer_id, state.lang)
+        if not guard_res.allowed:
+            for f in guard_res.flags:
+                flags_to_add.append(f)
+                state.add_flag(f)
+            reply_text = guard_res.refusal_text or get_string("fallback_safe", state.lang)
+
+        # Global Interrupt: Severe Distress (Task 4.4 / distress.py) takes precedence even on Turn 1
+        elif detect_distress(req.text):
+            distress_res = handle_distress(state)
+            reply_text = distress_res.reply_text
+            quick_replies = distress_res.quick_replies
+            state.transition_to(distress_res.next_state)
+            for f in distress_res.flags:
+                state.add_flag(f)
+
         # First turn: Greeting, Recording Notice (RBI para 454P), DPDP Notice & Language Choices
-        if not state.recording_notice_given:
+        elif not state.recording_notice_given:
             state.recording_notice_given = True
             state.dpdp_notice_given = True
 
@@ -166,12 +186,6 @@ class ChatEngine:
             next_line = get_string("hardship_prompt", state.lang)
             reply_text = f"{ack_line}\n\n{next_line}"
             state.transition_to(ChatState.HARDSHIP_DISCLOSURE)
-
-        elif not (guard_res := check_input_guardrails(req.text, customer_id, state.lang)).allowed:
-            for f in guard_res.flags:
-                flags_to_add.append(f)
-                state.add_flag(f)
-            reply_text = guard_res.refusal_text or get_string("fallback_safe", state.lang)
 
         else:
             # Parse customer message via NLU

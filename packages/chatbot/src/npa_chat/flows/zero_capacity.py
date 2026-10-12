@@ -16,7 +16,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from npa_chat.flows.offer import format_option_summary, render_disclosure
+from npa_chat.flows.offer import (
+    canonicalize_relief_option,
+    format_option_summary,
+    render_disclosure,
+)
 from npa_chat.i18n import get_string
 from npa_chat.nlu import NLUResult
 from npa_chat.state import ChatState, ConversationState
@@ -58,7 +62,8 @@ def present_zero_capacity_options(
     """Construct initial zero-capacity response stopping payment asks and offering slots."""
     lang = state.lang
     customer_id = state.customer_id
-    flags: list[str] = ["zero_capacity_acknowledged"]
+    state.add_flag("zero_capacity")
+    flags: list[str] = ["zero_capacity", "zero_capacity_acknowledged"]
 
     lines: list[str] = [get_string("zero_capacity_stop_ask", lang)]
 
@@ -80,9 +85,11 @@ def present_zero_capacity_options(
         source="declared",
     )
     raw_options = policy_provider.relief_options(customer_id, aff)
+    acct_id = str(customer_context.get("account_id", customer_id))
     if raw_options:
         lines.append(f"\n{get_string('zero_capacity_options_intro', lang)}")
         for idx, opt in enumerate(raw_options[:2], start=1):
+            opt = canonicalize_relief_option(opt, acct_id)
             summary = format_option_summary(opt, lang, index=idx)
             lines.append(f"• {summary}")
             for disc_key in opt.disclosure_keys:
@@ -92,7 +99,7 @@ def present_zero_capacity_options(
             offer = Offer(
                 offer_id=f"OFFER-ZC-{opt.option_id}",
                 customer_id=customer_id,
-                account_id=str(customer_context.get("account_id", customer_id)),
+                account_id=acct_id,
                 option=opt,
                 status=(
                     OfferStatus.PROPOSED if opt.requires_human_approval else OfferStatus.PRESENTED

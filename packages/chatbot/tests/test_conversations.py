@@ -15,6 +15,7 @@ import yaml
 
 from npa_chat.engine import build_engine
 from npa_chat.llm_client import MockLLMClient
+from npa_contracts.enums import Lang
 from npa_contracts.models import BotReply, ChatTurnRequest
 
 from .fakes import (
@@ -57,12 +58,15 @@ def test_scripted_conversation_scenario(scenario_path: Path) -> None:
     session_id = f"SESS-SCRIPT-{scenario_path.stem.upper()}"
     engine = _create_engine()
 
+    session_lang = data.get("lang")
     for idx, turn in enumerate(data.get("turns", []), start=1):
         user_text = turn["user"]
+        turn_lang_str = turn.get("lang") or (session_lang if idx == 1 else None)
+        turn_lang = Lang(turn_lang_str) if turn_lang_str else None
         reply: BotReply = engine.handle(
             session_id=session_id,
             customer_id=customer_id,
-            req=ChatTurnRequest(text=user_text),
+            req=ChatTurnRequest(text=user_text, lang=turn_lang),
         )
 
         # 1. State check

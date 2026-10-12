@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Final
 
+from npa_chat.config import default_config
 from npa_chat.i18n import get_string
 from npa_chat.state import ChatState, ConversationState
 from npa_contracts.models import GrievanceOfficer, QuickReply
@@ -230,6 +231,9 @@ def handle_complaint_turn(
         state.lang,
         docket_no=complaint.docket_no,
         category=category_label,
+        sla_days=default_config.complaint_sla_days,
+        ombudsman_url=default_config.rbi_ombudsman_cms_url,
+        ombudsman_toll_free=default_config.rbi_ombudsman_toll_free,
     )
 
     parts: list[str] = [main_msg]

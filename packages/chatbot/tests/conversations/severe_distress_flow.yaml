@@ -1,6 +1,7 @@
 scenario: "Severe Emotional Distress Intervention Flow"
 description: "Severe emotional distress detected, immediate compassionate intervention, and Tele-MANAS helpline 14416 routing."
 customer_id: "CUST-DEMO-RAVI"
+lang: "en"
 turns:
   - user: "Hi"
     expected_state: "CONSENT_NOTICE"
