@@ -146,3 +146,27 @@ def time_split(
         val=df[(m >= split.val_start) & (m <= split.val_end)],
         test=df[(m >= split.test_start) & (m <= split.test_end)],
     )
+
+
+def labelled_splits(
+    features: pd.DataFrame,
+    labels: pd.DataFrame,
+    targets: Iterable[str],
+    split: TimeSplit = DEFAULT_SPLIT,
+) -> Splits:
+    """Join ``targets`` from ``labels`` onto ``features`` by ``(account_id, month)`` and split.
+
+    Train and validation must be non-empty. The test window may be empty when labels don't reach
+    that far yet (short label horizon); callers then skip test metrics.
+    """
+    data = features.merge(
+        labels[["account_id", "month", *targets]],
+        on=["account_id", "month"],
+        how="inner",
+        validate="one_to_one",
+    )
+    s = time_split(data, split)
+    for name, part in (("train", s.train), ("validation", s.val)):
+        if part.empty:
+            raise ValueError(f"{name} split is empty; check the months in features/labels")
+    return s

@@ -1,6 +1,6 @@
 """``npa-models`` command line: ``train | score | evaluate``.
 
-``train`` fits the early-warning model (task 2.1); the other models join as their tasks land.
+``train`` fits the early-warning (2.1) and segmentation (2.3) models; uplift joins in 2.4.
 Commands not built yet exit with :data:`EXIT_NOT_IMPLEMENTED`.
 """
 
@@ -9,7 +9,7 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-from npa_models import early_warning
+from npa_models import early_warning, segment
 from npa_models.config import ModelSettings
 from npa_models.registry import save_bundle
 
@@ -44,9 +44,10 @@ def _train(args: argparse.Namespace, settings: ModelSettings) -> int:
         if not path.is_file():
             log.error("missing input file=%s hint='run datagen all first'", path)
             return EXIT_ERROR
-    bundle = early_warning.train(args.features, args.labels, settings)
-    out = save_bundle(bundle, settings.model_dir)
-    log.info("saved model=%s version=%s dir=%s", bundle.name, bundle.model_version, out)
+    for trainer in (early_warning.train, segment.train):
+        bundle = trainer(args.features, args.labels, settings)
+        out = save_bundle(bundle, settings.model_dir)
+        log.info("saved model=%s version=%s dir=%s", bundle.name, bundle.model_version, out)
     return EXIT_OK
 
 

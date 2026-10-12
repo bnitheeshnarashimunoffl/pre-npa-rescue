@@ -28,6 +28,14 @@ REGIONS = {
 }
 
 
+# Payment ratio (payments / min due) when not in hardship: mean, sd per habit.
+PAY_RATIO = {"normal": (3.0, 1.0), "forgetful": (2.5, 1.0), "strategic": (1.0, 0.3)}
+# Priya's card is close to its limit (A1 story: minimum-only payments, salary stopped).
+PERSONA_BASE_UTIL = {"ACC-DEMO-PRIYA": 0.75}
+# Last-month DPD forced for the segmentation personas.
+PERSONA_LAST_DPD = {"ACC-DEMO-FORGOT": 10, "ACC-DEMO-WONTPAY": 35}
+
+
 @dataclass(frozen=True)
 class FakeData:
     features: pd.DataFrame
@@ -67,17 +75,23 @@ def _accounts(n: int, rng: np.random.Generator) -> list[_Account]:
     out.append(_Account("ACC-DEMO-PRIYA", "CUST-DEMO-PRIYA", "salaried", 1, last - 2, 99, "normal"))
     # Ravi: lost his job earlier, sole earner with dependants, already past due.
     out.append(_Account("ACC-DEMO-RAVI", "CUST-DEMO-RAVI", "salaried", 3, last - 5, 99, "normal"))
+    # Test-only personas for the segmentation checks (WS1's extra personas will replace them).
+    out.append(_Account("ACC-DEMO-FORGOT", "CUST-DEMO-FORGOT", "salaried", 0, None, 0, "forgetful"))
+    out.append(
+        _Account("ACC-DEMO-WONTPAY", "CUST-DEMO-WONTPAY", "salaried", 0, None, 0, "strategic")
+    )
     return out
 
 
 def make_fake_data(n_accounts: int = 1000, seed: int = DEFAULT_SEED) -> FakeData:
-    """Return a deterministic monthly panel of ``n_accounts`` (+2 personas) over 24 months."""
+    """Return a deterministic monthly panel of ``n_accounts`` (+4 personas) over 24 months."""
     rng = np.random.default_rng(seed)
     feats: list[dict[str, object]] = []
     labels: list[dict[str, object]] = []
     for acc in _accounts(n_accounts, rng):
         limit = int(rng.choice([50_000, 100_000, 200_000, 500_000])) * 100
-        base_util = float(rng.uniform(0.05, 0.6))
+        base_util = float(rng.uniform(0.05, 0.6)) + 0.3 * (acc.habit == "strategic")
+        base_util = PERSONA_BASE_UTIL.get(acc.account_id, base_util)
         tenure0 = int(rng.integers(6, 120))
         for t, month in enumerate(MONTHS):
             in_shock = acc.shock_t is not None and acc.shock_t <= t < acc.shock_t + acc.shock_len
@@ -92,6 +106,9 @@ def make_fake_data(n_accounts: int = 1000, seed: int = DEFAULT_SEED) -> FakeData
                 dpd = int(rng.integers(1, 15))
             elif acc.habit == "strategic" and rng.random() < 0.3:
                 dpd = int(rng.integers(5, 45))
+            if t == len(MONTHS) - 1 and acc.account_id in PERSONA_LAST_DPD:
+                dpd = PERSONA_LAST_DPD[acc.account_id]
+                streak = 3 if acc.habit == "strategic" else 0
             util = float(np.clip(base_util + 0.08 * k + rng.normal(0, 0.03), 0, 1.2))
             feats.append(
                 {
@@ -104,7 +121,7 @@ def make_fake_data(n_accounts: int = 1000, seed: int = DEFAULT_SEED) -> FakeData
                     "min_due_only_streak": streak,
                     "months_since_full_payment": streak + int(rng.integers(0, 2)),
                     "payment_ratio_3m": float(
-                        max(0.0, (1.1 - 0.25 * k) if k else rng.normal(3, 1))
+                        max(0.0, (1.1 - 0.25 * k) if k else rng.normal(*PAY_RATIO[acc.habit]))
                     ),
                     "dpd": dpd,
                     "max_dpd_6m": dpd + int(rng.integers(0, 10)) * int(dpd > 0),
@@ -122,16 +139,24 @@ def make_fake_data(n_accounts: int = 1000, seed: int = DEFAULT_SEED) -> FakeData
                     "occupation_type": acc.occupation,
                 }
             )
-            logit = -3.5 + 0.5 * streak + 0.7 * salary_missing + 0.03 * dpd + 2.0 * (util > 0.9)
+            logit = (
+                -4.0
+                + 0.5 * streak
+                + 0.7 * salary_missing
+                + 0.03 * dpd
+                + 2.0 * (util > 0.9)
+                + 4.0 * (acc.habit == "forgetful" and dpd > 0)
+                + 1.5 * (acc.habit == "strategic")
+            )
             rolls = bool(rng.random() < 1 / (1 + np.exp(-logit)))
             if not rolls:
                 segment = "not_at_risk"
             elif k:
                 segment = "cant_pay"
-            elif acc.habit == "forgetful":
-                segment = "forgot"
-            else:
+            elif acc.habit == "strategic":
                 segment = "wont_pay"
+            else:  # a usual payer who slipped
+                segment = "forgot"
             labels.append(
                 {
                     "account_id": acc.account_id,

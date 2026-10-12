@@ -37,7 +37,7 @@ from npa_models.features import (
     OCCUPATION_TYPES,
     TimeSplit,
     build_matrix,
-    time_split,
+    labelled_splits,
 )
 from npa_models.metrics import binary_metrics
 from npa_models.registry import ModelBundle, load_bundle, make_model_version, save_bundle
@@ -243,17 +243,8 @@ def train_frames(
 ) -> EarlyWarningModel:
     """Train the early-warning heads and the baseline on in-memory frames."""
     bands = bands or RiskBands()
-    data = features.merge(
-        labels[["account_id", "month", TARGET, NPA_TARGET]],
-        on=["account_id", "month"],
-        how="inner",
-        validate="one_to_one",
-    )
-    s = time_split(data, split)
-    # The test window may have no labels yet (short label horizon): then test metrics are skipped.
-    for name, part in (("train", s.train), ("validation", s.val)):
-        if part.empty:
-            raise ValueError(f"{name} split is empty; check the months in features/labels")
+    s = labelled_splits(features, labels, (TARGET, NPA_TARGET), split)
+    data = pd.concat(s)
     x_tr, x_val, x_te = (build_matrix(part) for part in s)
 
     estimators: dict[str, Any] = {}
