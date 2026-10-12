@@ -6,6 +6,8 @@ from npa_chat.flows import (
     estimate_affordability,
     handle_affordability_turn,
     handle_hardship_turn,
+    handle_offer_turn,
+    present_relief_options,
 )
 from npa_chat.i18n import get_bundle, get_string
 from npa_chat.language import detect_language_switch_request, detect_script, resolve_language
@@ -37,6 +39,8 @@ __all__ = [
     "get_string",
     "handle_affordability_turn",
     "handle_hardship_turn",
+    "handle_offer_turn",
     "parse_amount_paise",
+    "present_relief_options",
     "resolve_language",
 ]

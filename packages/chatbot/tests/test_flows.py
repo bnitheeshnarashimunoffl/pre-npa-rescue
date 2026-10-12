@@ -3,8 +3,12 @@
 from npa_chat.flows import (
     classify_hardship,
     estimate_affordability,
+    format_option_summary,
     handle_affordability_turn,
     handle_hardship_turn,
+    handle_offer_turn,
+    present_relief_options,
+    render_disclosure,
 )
 from npa_chat.flows.affordability import extract_dependants
 from npa_chat.flows.hardship import (
@@ -15,8 +19,12 @@ from npa_chat.flows.hardship import (
     HARDSHIP_OTHER,
     HARDSHIP_PREFER_NOT_TO_SAY,
 )
+from npa_chat.nlu import Intent, NLUResult
 from npa_chat.state import ChatState, ConversationState
-from npa_contracts.enums import Lang
+from npa_contracts.enums import Lang, OfferStatus, ReliefType
+from npa_contracts.models import Affordability, ReliefOption
+
+from .fakes import FakePolicyProvider, FakeRiskProvider
 
 
 def test_classify_hardship_multilingual() -> None:
@@ -159,3 +167,145 @@ def test_extract_dependants() -> None:
     assert extract_dependants("1 dependant") == 1
     assert extract_dependants("ஒருவர் என்னை சார்ந்துள்ளார்") == 1
     assert extract_dependants("no dependants mentioned") is None
+
+
+def test_render_disclosure_prefixes() -> None:
+    # Key with disclosure. prefix
+    disc_long = render_disclosure("disclosure.fee_waiver.scope", Lang.EN)
+    assert "Late fees and penal charges waived" in disc_long
+
+    # Key with disc. prefix (upcoming WS5 fixture format)
+    disc_short = render_disclosure("disc.fee_waiver.scope", Lang.EN)
+    assert "Late fees and penal charges waived" in disc_short
+
+    # Tamil localization
+    disc_ta = render_disclosure("disc.emi_conversion.interest_breakdown", Lang.TA)
+    assert "வட்டி" in disc_ta
+
+    # Fallback for unknown key
+    disc_unknown = render_disclosure("disc.custom.key", Lang.EN)
+    assert "disc.custom.key" in disc_unknown
+
+
+def test_format_option_summary() -> None:
+    opt_emi_waiver = ReliefOption(
+        option_id="OPT-PRIYA-EMI",
+        type=ReliefType.EMI_CONVERSION,
+        monthly_amount_paise=200000,
+        tenure_months=6,
+        waiver_paise=118000,
+        settlement_amount_paise=None,
+        policy_ref="bank_policy.yaml#emi_conversion.v1",
+        regulatory_refs=["RBI Prudential Framework 2019"],
+        disclosure_keys=["disc.emi_conversion.interest_breakdown"],
+        requires_human_approval=False,
+        eligibility_reason="Affordability surplus supports ₹2,000/month",
+    )
+    summary_en = format_option_summary(opt_emi_waiver, Lang.EN, index=1)
+    assert "₹2,000" in summary_en
+    assert "6 months" in summary_en
+    assert "₹1,180" in summary_en
+
+    summary_ta = format_option_summary(opt_emi_waiver, Lang.TA, index=1)
+    assert "₹2,000" in summary_ta
+    assert "6 மாதங்கள்" in summary_ta
+
+
+def test_present_relief_options_structure() -> None:
+    policy_provider = FakePolicyProvider()
+    aff = Affordability(
+        customer_id="CUST-DEMO-PRIYA",
+        declared_income_paise=3500000,
+        declared_expenses_paise=3250000,
+        dependants=1,
+        max_monthly_payment_paise=250000,
+        source="declared",
+    )
+
+    text, offers, quick_replies = present_relief_options(
+        customer_id="CUST-DEMO-PRIYA",
+        account_id="ACC-PRIYA-001",
+        affordability=aff,
+        policy_provider=policy_provider,
+        lang=Lang.TA,
+    )
+
+    assert len(offers) <= 3
+    assert len(offers) > 0
+    assert offers[0].status in (OfferStatus.PRESENTED, OfferStatus.PROPOSED)
+    assert any(qr.id == "accept_offer" for qr in quick_replies)
+    assert any(qr.id == "reject_offer" for qr in quick_replies)
+    # Check disclosure bullet in rendered text
+    assert "ℹ️" in text
+
+
+def test_handle_offer_turn_acceptance() -> None:
+    policy_provider = FakePolicyProvider()
+    aff = Affordability(
+        customer_id="CUST-DEMO-PRIYA",
+        declared_income_paise=3500000,
+        declared_expenses_paise=3250000,
+        dependants=1,
+        max_monthly_payment_paise=250000,
+        source="declared",
+    )
+    _, offers, _ = present_relief_options(
+        customer_id="CUST-DEMO-PRIYA",
+        account_id="ACC-PRIYA-001",
+        affordability=aff,
+        policy_provider=policy_provider,
+        lang=Lang.EN,
+    )
+
+    state = ConversationState(session_id="SESS-OFFER", customer_id="CUST-DEMO-PRIYA", lang=Lang.EN)
+    state.transition_to(ChatState.OPTIONS)
+    state.presented_offers = offers
+
+    # Accept
+    res = handle_offer_turn(
+        state=state,
+        text="I accept this plan",
+        nlu_result=NLUResult(intent=Intent.ACCEPT_OPTION),
+        policy_provider=policy_provider,
+    )
+    assert res.next_state == ChatState.ACCEPTED
+    assert "offer_accepted" in res.flags
+    assert "rbi_454aa_grievance_attached" in res.flags
+    assert state.presented_offers[0].status == OfferStatus.ACCEPTED
+    # Grievance officer contact details attached
+    assert "@" in res.reply_text
+
+
+def test_handle_offer_turn_rejection() -> None:
+    policy_provider = FakePolicyProvider()
+    state = ConversationState(session_id="SESS-REJ", customer_id="CUST-DEMO-PRIYA", lang=Lang.EN)
+    state.transition_to(ChatState.OPTIONS)
+
+    res = handle_offer_turn(
+        state=state,
+        text="No, I decline this offer",
+        nlu_result=NLUResult(intent=Intent.REJECT_OPTION),
+        policy_provider=policy_provider,
+    )
+    assert res.next_state == ChatState.OPTIONS
+    assert "offer_rejected" in res.flags
+    assert any(qr.id == "speak_officer" for qr in res.quick_replies)
+
+
+def test_handle_offer_turn_why_contacted() -> None:
+    policy_provider = FakePolicyProvider()
+    risk_provider = FakeRiskProvider()
+    state = ConversationState(session_id="SESS-WHY", customer_id="CUST-DEMO-PRIYA", lang=Lang.TA)
+    state.transition_to(ChatState.OPTIONS)
+
+    res = handle_offer_turn(
+        state=state,
+        text="ஏன் என்னை தொடர்பு கொள்கிறீர்கள்?",
+        nlu_result=NLUResult(intent=Intent.ASK_WHY_CONTACTED),
+        policy_provider=policy_provider,
+        risk_provider=risk_provider,
+    )
+    assert "why_contacted_explained" in res.flags
+    # Check risk reasons are provided in Tamil or translated
+    assert len(res.reply_text) > 50
+    assert any(qr.id == "accept_offer" for qr in res.quick_replies)

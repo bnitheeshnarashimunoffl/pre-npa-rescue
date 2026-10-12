@@ -9,7 +9,12 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from npa_chat.flows import handle_affordability_turn, handle_hardship_turn
+from npa_chat.flows import (
+    handle_affordability_turn,
+    handle_hardship_turn,
+    handle_offer_turn,
+    present_relief_options,
+)
 from npa_chat.i18n import get_string
 from npa_chat.language import detect_language_switch_request, resolve_language
 from npa_chat.nlu import NLU, Intent
@@ -20,6 +25,7 @@ from npa_contracts.models import (
     ChatTurnRequest,
     ComplianceDecision,
     ContactEvent,
+    Offer,
     QuickReply,
 )
 from npa_contracts.providers import (
@@ -129,6 +135,7 @@ class ChatEngine:
         # 5. Process turn based on state machine & NLU
         quick_replies: list[QuickReply] = []
         flags_to_add: list[str] = []
+        presented_offers: list[Offer] = []
 
         # First turn: Greeting, Recording Notice (RBI para 454P), DPDP Notice & Language Choices
         if not state.recording_notice_given:
@@ -217,12 +224,20 @@ class ChatEngine:
                 for f in aff_res.flags:
                     state.add_flag(f)
 
-                if aff_res.next_state == ChatState.OPTIONS:
+                if aff_res.next_state == ChatState.OPTIONS and aff_res.affordability:
                     state.transition_to(ChatState.OPTIONS)
-                    reply_text = (
-                        "Thank you for confirming your budget. Based on approved bank policy, "
-                        "here are the relief options available for your account:"
+                    account_id = str(ctx.get("account_id", customer_id))
+                    opts_text, offers_list, q_replies = present_relief_options(
+                        customer_id=customer_id,
+                        account_id=account_id,
+                        affordability=aff_res.affordability,
+                        policy_provider=self.policy_provider,
+                        lang=state.lang,
                     )
+                    reply_text = opts_text
+                    quick_replies = q_replies
+                    state.presented_offers = offers_list
+                    presented_offers = offers_list
                 elif aff_res.next_state == ChatState.ZERO_CAPACITY:
                     state.transition_to(ChatState.ZERO_CAPACITY)
                     reply_text = (
@@ -232,6 +247,22 @@ class ChatEngine:
                 else:
                     reply_text = aff_res.reply_text
                     quick_replies = aff_res.quick_replies
+
+            # Plan offer turn (Task 4.3)
+            elif state.current_state == ChatState.OPTIONS:
+                offer_res = handle_offer_turn(
+                    state=state,
+                    text=req.text,
+                    nlu_result=nlu_res,
+                    policy_provider=self.policy_provider,
+                    risk_provider=self.risk_provider,
+                )
+                reply_text = offer_res.reply_text
+                quick_replies = offer_res.quick_replies
+                state.transition_to(offer_res.next_state)
+                presented_offers = offer_res.offers
+                for f in offer_res.flags:
+                    state.add_flag(f)
 
             else:
                 # Default safe conversational fallback
@@ -273,7 +304,7 @@ class ChatEngine:
             text=reply_text,
             lang=state.lang,
             quick_replies=quick_replies,
-            offers=[],
+            offers=presented_offers or state.presented_offers,
             handoff=None,
             complaint=None,
             flags=list(state.flags),

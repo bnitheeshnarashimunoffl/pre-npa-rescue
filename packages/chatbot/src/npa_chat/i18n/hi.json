@@ -32,5 +32,17 @@
   "affordability_quick_0": "₹0 (कोई आय नहीं)",
   "affordability_quick_10k": "₹10,000 तक",
   "affordability_quick_25k": "₹10,000 - ₹25,000",
-  "affordability_quick_50k": "₹25,000 - ₹50,000"
+  "affordability_quick_50k": "₹25,000 - ₹50,000",
+  "offer_intro": "आपके बजट और बैंक नीति के आधार पर, आपके खाते के लिए स्वीकृत राहत विकल्प यहाँ दिए गए हैं:",
+  "offer_item_emi_waiver": "योजना {index}: प्रति माह {amount} की दर से {tenure} महीने, {waiver} विलंब शुल्क माफ।",
+  "offer_item_emi": "योजना {index}: प्रति माह {amount} की दर से {tenure} महीने।",
+  "offer_item_fee_waiver": "योजना {index}: पूर्ण विलंब शुल्क ({waiver}) माफी।",
+  "offer_item_human_review": "(अधिकारी की पुष्टि आवश्यक है)",
+  "offer_accept_btn": "स्वीकार करें",
+  "offer_reject_btn": "अस्वीकार / अन्य विकल्प",
+  "offer_officer_btn": "अधिकारी से बात करें",
+  "offer_accepted_confirm": "स्वीकार करने के लिए धन्यवाद। आपकी राहत योजना ({plan_summary}) की पुष्टि कर दी गई है। आपकी अगली किस्त {amount} देय तिथि: {due_date}।",
+  "offer_rejected_response": "हम समझते हैं कि यह योजना आपके लिए उपयुक्त नहीं हो सकती। क्या आप अन्य विकल्पों की समीक्षा करना चाहते हैं या सीधे हमारे अधिकारी से बात करना चाहते हैं?",
+  "why_contacted_intro": "हम आपके खाते के संबंध में क्यों संपर्क कर रहे हैं, इसके कारण:",
+  "why_contacted_outro": "हमारा उद्देश्य विलंब शुल्क बढ़ने से पहले और आपके क्रेडिट स्कोर की सुरक्षा के लिए समय रहते सहायता करना है।"
 }

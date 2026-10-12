@@ -32,5 +32,17 @@
   "affordability_quick_0": "₹0 (No income)",
   "affordability_quick_10k": "Up to ₹10,000",
   "affordability_quick_25k": "₹10,000 - ₹25,000",
-  "affordability_quick_50k": "₹25,000 - ₹50,000"
+  "affordability_quick_50k": "₹25,000 - ₹50,000",
+  "offer_intro": "Based on your budget and bank policy, here are the approved relief options for your account:",
+  "offer_item_emi_waiver": "Plan {index}: {amount}/month for {tenure} months, late fees of {waiver} waived.",
+  "offer_item_emi": "Plan {index}: {amount}/month for {tenure} months.",
+  "offer_item_fee_waiver": "Plan {index}: Full waiver of late fees ({waiver}).",
+  "offer_item_human_review": "(Requires officer confirmation)",
+  "offer_accept_btn": "Accept Plan",
+  "offer_reject_btn": "Decline / Other options",
+  "offer_officer_btn": "Speak with Officer",
+  "offer_accepted_confirm": "Thank you for accepting. Your relief plan ({plan_summary}) has been confirmed. Your next instalment of {amount} is due on {due_date}.",
+  "offer_rejected_response": "We understand this plan may not feel right for you. Would you like to review alternative options or speak directly with our hardship team?",
+  "why_contacted_intro": "Here is why we reached out regarding your account:",
+  "why_contacted_outro": "Our goal is to assist you early before late fees build up or credit score is affected."
 }

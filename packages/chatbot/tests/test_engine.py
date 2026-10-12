@@ -185,7 +185,7 @@ def test_engine_priya_hardship_and_affordability_flow() -> None:
     assert "₹2,500" in r5.text or "2,500" in r5.text
     assert "affordability_confirming" in r5.flags
 
-    # Turn 6: Confirm budget capacity
+    # Turn 6: Confirm budget capacity -> Bot presents relief options
     r6 = engine.handle(
         session_id="SESS-PRIYA-FULL",
         customer_id="CUST-DEMO-PRIYA",
@@ -193,6 +193,30 @@ def test_engine_priya_hardship_and_affordability_flow() -> None:
     )
     assert r6.state == ChatState.OPTIONS.value
     assert "affordability_confirmed" in r6.flags
+    # Check Priya's plan is presented (₹2,000/month for 6 months and fee waiver)
+    assert "2,000" in r6.text
+    assert "ℹ️" in r6.text
+
+    # Turn 7: Priya asks why contacted in Tamil
+    r7 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="ஏன் என்னை தொடர்பு கொள்கிறீர்கள்?"),
+    )
+    assert r7.state == ChatState.OPTIONS.value
+    assert "why_contacted_explained" in r7.flags
+
+    # Turn 8: Priya accepts the offer in Tamil
+    r8 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="ஏற்றுக்கொள்கிறேன்"),
+    )
+    assert r8.state == ChatState.ACCEPTED.value
+    assert "offer_accepted" in r8.flags
+    assert "rbi_454aa_grievance_attached" in r8.flags
+    # Confirms 30-day first instalment due date and grievance officer
+    assert "@" in r8.text
 
 
 def test_engine_bereavement_pause_flow() -> None:
