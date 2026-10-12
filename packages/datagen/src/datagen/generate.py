@@ -18,6 +18,13 @@ from datagen.calendar import BILL_DAYS, month_range
 from datagen.calibrate_uci import load_calibration
 from datagen.config import DatagenConfig
 from datagen.customers import generate_customers
+from datagen.personas import (
+    PERSONA_SEED,
+    build_personas,
+    persona_facts,
+    to_records,
+    write_json,
+)
 from datagen.protected import generate_protected
 from datagen.salary import generate_salary
 from datagen.shocks import (
@@ -30,6 +37,9 @@ from datagen.shocks import (
 from datagen.statements import PURCHASE_CATEGORIES, Accounts, simulate_statements
 from datagen.transactions import write_transactions
 from datagen.validate import check_integrity, write_parquet, write_table
+
+PERSONAS_JSON = "demo_personas.json"
+SINGLE_ROW_TABLES = {"customers", "protected_attributes", "shocks"}
 
 logger = logging.getLogger(__name__)
 
@@ -119,15 +129,23 @@ def build(cfg: DatagenConfig, calibration: dict[str, Any] | None = None) -> Gene
     account_months, monthly_spend = simulate_statements(accounts, months, policy, plan)
 
     salary = generate_salary(customers, months, truth, rng_for(cfg.seed, STREAM_SALARY))
-    return GeneratedData(
-        customers=customers,
-        protected=protected,
-        account_months=account_months,
-        monthly_spend=monthly_spend,
-        salary=salary,
-        shocks=shocks_frame(ids, months, truth),
-        behaviour=behaviour_frame(ids, months, truth),
-    )
+    generated = {
+        "customers": customers,
+        "protected": protected,
+        "account_months": account_months,
+        "monthly_spend": monthly_spend,
+        "salary": salary,
+        "shocks": shocks_frame(ids, months, truth),
+        "behaviour": behaviour_frame(ids, months, truth),
+    }
+    # Demo personas (CUST-DEMO-*) are appended after the random population; their histories
+    # are scripted and identical for every seed.
+    personas = build_personas(months)
+    merged = {
+        k: pd.concat([v, personas[k]], ignore_index=True).astype(v.dtypes.to_dict())
+        for k, v in generated.items()
+    }
+    return GeneratedData(**merged)
 
 
 def write(data: GeneratedData, cfg: DatagenConfig) -> list[Path]:
@@ -159,17 +177,61 @@ def write(data: GeneratedData, cfg: DatagenConfig) -> list[Path]:
         path = out / f"{name}.parquet"
         write_parquet(df, path, schema)
         paths.append(path)
+    persona_txns = None
     if cfg.write_transactions:
-        n_txn = write_transactions(
+        n_txn, persona_txns = write_transactions(
             data.monthly_spend,
             data.account_months,
             data.customers,
             out,
             rng_for(cfg.seed, STREAM_TRANSACTIONS),
+            fixed_rng=np.random.default_rng([PERSONA_SEED, STREAM_TRANSACTIONS]),
+            fixed_accounts=set(data.customers.loc[is_persona(data.customers), "account_id"]),
         )
         logger.info("transactions rows=%d", n_txn)
         paths.append(out / "transactions.parquet")
+    path = out / PERSONAS_JSON
+    write_personas_json(persona_tables(data, persona_txns), path)
+    paths.append(path)
     return paths
+
+
+def is_persona(df: pd.DataFrame) -> pd.Series:
+    return df["customer_id"].str.startswith("CUST-DEMO-")
+
+
+def persona_tables(
+    data: GeneratedData, transactions: pd.DataFrame | None = None
+) -> dict[str, pd.DataFrame]:
+    """Persona rows from every task 1.1 table (contract names)."""
+    accounts = set(data.customers.loc[is_persona(data.customers), "account_id"])
+    tables = {
+        "customers": data.customers[is_persona(data.customers)],
+        "protected_attributes": data.protected[is_persona(data.protected)],
+        "account_months": data.account_months[data.account_months["account_id"].isin(accounts)],
+        "salary_credits": data.salary[is_persona(data.salary)],
+        "shocks": data.shocks[is_persona(data.shocks)],
+    }
+    if transactions is not None:
+        tables["transactions"] = transactions
+    return tables
+
+
+def write_personas_json(tables: dict[str, pd.DataFrame], path: Path) -> None:
+    """``demo_personas.json``: per persona, a facts block plus its rows from every table."""
+    facts = persona_facts(tables["account_months"])
+    doc: dict[str, Any] = {}
+    for cid, persona_facts_ in facts.items():
+        acc = cid.replace("CUST-", "ACC-")
+        entry: dict[str, Any] = {"facts": persona_facts_}
+        for name, df in tables.items():
+            if "customer_id" in df.columns:
+                rows = to_records(df[df["customer_id"] == cid])
+            else:
+                rows = to_records(df[df["account_id"] == acc])
+            entry[name] = rows[0] if name in SINGLE_ROW_TABLES else rows
+        doc[cid] = entry
+    write_json(doc, path)
 
 
 def run_generate(cfg: DatagenConfig) -> None:

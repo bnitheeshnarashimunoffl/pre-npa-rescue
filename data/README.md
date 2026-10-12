@@ -6,7 +6,7 @@
 |---|---|---|
 | `raw/` | no (gitignored) | downloaded public data (`scripts/download_public.py`) |
 | `generated/` | no (gitignored) | Parquet outputs (`$DATA_DIR`) |
-| `samples/` | yes, ≤ 5 MB total | small samples for tests (`features_sample.parquet`, `labels_sample.parquet`) |
+| `samples/` | yes, ≤ 5 MB total | small samples for tests (`features_sample.parquet`, `labels_sample.parquet`, `demo_personas.json`) |
 | `scripts/` | yes | `download_public.py`, `sanity_report.py` |
 | `ATTRIBUTION.md` | yes | dataset licences and credits |
 
@@ -18,7 +18,7 @@
 UCI download (raw/uci/, not committed)
   → datagen.calibrate_uci → packages/datagen/src/datagen/calibration.json (committed)
   → datagen generate      → generated/{customers, protected_attributes, account_months,
-                            salary_credits, shocks, transactions/}.parquet
+                            salary_credits, shocks, transactions/}.parquet, demo_personas.json
                             + internal monthly_spend.parquet, behaviour_types.parquet
   → datagen features      → generated/{features, labels}.parquet (+ samples/ with --samples)
   → datagen experiment    → generated/experiment.parquet          (task 1.3)
@@ -138,10 +138,57 @@ their own level 4–6 months before the first missed payment; `t+0` = first miss
 | t−1 | 0.60 | 0.97 | 7.19 | 0.59 |
 | t+0 | 0.47 | 0.74 | 4.78 | 0.06 |
 
+## Demo personas (task 1.1 step 6)
+
+Ten fixed customers (`CUST-DEMO-*` / `ACC-DEMO-*`) are appended to every generated population.
+Their payments, spend, salary and shocks are hand-scripted in `personas.py` and run through the
+same statement engine, so they obey the same RBI rules. They use a fixed RNG, so their histories
+are identical for every `SEED` (tested); only their `txn_id` numbers depend on the population.
+Numbers agreed with WS3 on issue #1:
+
+| Customer | Who | Story | Bucket (DPD) at 2026-09 | Total due ₹ | Late fee ₹ | Overdue ₹ | Segment / uplift group |
+|---|---|---|---|---|---|---|---|
+| `CUST-DEMO-PRIYA` | Priya Subramanian, 29, Chennai, `ta` | Salary stopped 2026-06; minimum only in 07 and 08; part of the minimum in 09 | sma0 (16) | 1,07,452 | 1,300 | **11,492** | cant_pay / persuadable |
+| `CUST-DEMO-RAVI` | Ravi Kumar, 41, Madurai, `ta` (chats in `en`) | Sole earner, job lost 2026-07, no payments since 2026-08, job-loss insurance | sma1 (47) | 65,541 | 1,300 | 14,422 | cant_pay / lost_cause |
+| `CUST-DEMO-ANITA` | Anita Reddy, 34, Hyderabad | Pays in full; once 6 days late; forgot 2026-09 | sma0 (16) | 67,443 | 1,300 | 6,061 | forgot / sure_thing |
+| `CUST-DEMO-VIKRAM` | Vikram Malhotra, 45, New Delhi | Income intact, spend up, stopped paying 2026-07 | sma2 (77) | 4,52,348 | 1,300 | 1,39,154 | wont_pay / lost_cause |
+| `CUST-DEMO-MEERA` | Meera Nair, 38, Kochi | Anxious; skips and self-cures; no calls at work | sma0 (16) | 1,63,611 | 1,300 | 27,077 | forgot / sleeping_dog |
+| `CUST-DEMO-ARJUN` | Arjun Rao, 31, Bengaluru | Wedding spend, minimum only for 2 months, never late | current (0) | 2,58,005 | 0 | 0 | not_at_risk / sure_thing |
+| `CUST-DEMO-FATIMA` | Fatima Sheikh, 47, Lucknow | Medical shock 2026-05, half pay, paying what she can | sma1 (47) | 1,32,236 | 1,300 | 33,840 | cant_pay / persuadable |
+| `CUST-DEMO-SURESH` | Suresh Patel, 52, Ahmedabad | Business loss 2025-12, no payments since 2026-02 | npa (228) | 2,37,095 | 0 | 1,27,095 | cant_pay / lost_cause |
+| `CUST-DEMO-KAVYA` | Kavya Joshi, 26, Pune | Gig job lost 2025-11, recovered 2026-03, caught up | current (0) | 40,184 | 0 | 0 | not_at_risk / sure_thing |
+| `CUST-DEMO-JOSEPH` | Joseph Fernandes, 36, Mumbai | Pays in full on time (control) | current (0) | 25,264 | 0 | 0 | not_at_risk / — |
+
+- **Priya**: affordable **₹2,000/month** (declared income ₹20,000, expenses ₹9,000, one dependant).
+  **Overdue ₹11,492** is the minimum due on the 2026-09 statement net of the waivable late fee
+  and its GST, i.e. what she must pay to be current once the fee is waived. The 6 × ₹2,000 plan
+  at the policy EMI rate of 15% p.a. covers exactly this. Her 2026-09 part-payment (₹5,684 of an
+  ₹8,181 minimum) is solved at build time to hit it to the paisa. **Late fee ₹1,300 + 18% GST =
+  ₹1,534** (waivable): the slab is chosen on the amount outstanding after the due date (₹98,203
+  total due − ₹5,684 paid by the due date = ₹92,519), following the RBI text (decision on issue #1), and charged because she was more than
+  3 days past due. Limit ₹1,80,000, no insurance, one dependant.
+- **Ravi**: affordable **₹0** (zero capacity); **job-loss insurance** cover; preferred contact
+  window 10:00–13:00, so the 11:00 hardship-officer callback fits both it and 08:00–19:00.
+- "Overdue" is 0 for accounts that are not past due. "Segment / uplift group" are the intended
+  hidden truths (in `facts`); `labels.segment_truth` is computed by the normal rules.
+
+`demo_personas.json` (in `DATA_DIR`, and committed in `data/samples/` without transactions)
+holds, per persona: `facts` (story, expectations, as-of statement numbers, affordability,
+offer) and the persona's rows from `customers`, `protected_attributes`, `account_months`,
+`salary_credits`, `shocks`, `transactions` (DATA_DIR copy only), `features` and `labels`, with
+the same column names. Dates are `YYYY-MM-DD`; timestamps are ISO 8601 in UTC.
+
 ## Features (task 1.2)
 
 All features at month `t` use only rows at or before `t` (tested by truncation). The payment in
 month `t` settles the statement of month `t−1`.
+
+**Missing history is filled with 0.0.** Every `features` column is non-nullable in
+`contracts/data/features.md`, so the delta features that need more history than exists (the
+first 3 months for `utilisation_delta_3m`, the first 5 for the spend, transaction and salary
+deltas) are 0.0, read as "no observable change", never NaN (agreed with the team lead on
+2026-10-12). They only occur in the first months of the window (`month` ≤ 2025-02), so models
+can filter or flag them by `month`.
 
 | Feature | Definition |
 |---|---|
@@ -175,6 +222,8 @@ shocks, behaviour types (tested).
 
 ## Samples
 
+`samples/demo_personas.json`: the ten personas (see above), regenerated by the same commands.
+
 `samples/features_sample.parquet` and `samples/labels_sample.parquet`: seed 42, 10,000
 customers, **200 accounts × the last 10 labelled months (`2025-09` .. `2026-06`) = 2,000 rows**
 with identical keys. Half the accounts were past due at some point in those months (so both label
@@ -187,5 +236,4 @@ uv run datagen features --samples data/samples
 
 ## Still to come
 
-- **Demo persona numbers** (task 1.1 step 6, agreed with WS3).
 - **Experiment probabilities and contact costs** (task 1.3).
