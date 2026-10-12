@@ -5,8 +5,13 @@ them; see the README section "Demo personas"). Tests, the fixture generator and 
 workstreams' tests can import them; production code never does.
 
 Priya: Rs 1,10,000 outstanding is not affordable as an EMI, so the plan covers the overdue
-amount (Rs 11,492) with late charges (Rs 1,180) waived: Rs 2,000/month for 6 months at the
+amount (Rs 11,492) with late charges (Rs 1,534) waived: Rs 2,000/month for 6 months at the
 policy EMI rate of 15% p.a. (task 3.2 demo requirement).
+
+Late charges follow ``npa_rules.dues.late_fee``: the slab is chosen on the amount outstanding
+after the due date (the whole unpaid balance, RBI Credit Card Directions 2025), not on the
+overdue minimum. Both personas owe more than Rs 25,000 after the due date, so both fall in the
+top slab: Rs 1,300 + 18% GST = Rs 1,534. ``tests/test_personas.py`` recomputes this.
 """
 
 from npa_rules.relief_calc import AccountSnapshot
@@ -19,7 +24,7 @@ PRIYA = AccountSnapshot(
     dpd=12,
     total_outstanding_paise=11_000_000,  # Rs 1,10,000
     overdue_paise=1_149_200,  # Rs 11,492 unpaid minimum dues
-    waivable_charges_paise=118_000,  # Rs 1,000 late fee + 18% GST
+    waivable_charges_paise=153_400,  # Rs 1,300 late fee (slab on Rs 1,10,000) + 18% GST
     monthly_income_paise=6_500_000,
     recent_income_paise=0,  # salary credits stopped
     avg_payment_3m_paise=550_000,  # paid only the minimum for 3 months
@@ -38,7 +43,7 @@ RAVI = AccountSnapshot(
     dpd=45,
     total_outstanding_paise=6_480_000,  # Rs 64,800
     overdue_paise=900_000,
-    waivable_charges_paise=118_000,
+    waivable_charges_paise=153_400,  # Rs 1,300 late fee (slab on Rs 64,800) + 18% GST
     monthly_income_paise=3_500_000,
     recent_income_paise=0,
     avg_payment_3m_paise=0,

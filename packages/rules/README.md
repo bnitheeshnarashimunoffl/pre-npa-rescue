@@ -212,15 +212,21 @@ footer = compliance.required_footer(Lang.HI)  # recording notice + grievance off
 | DPD / bucket | 12 / sma0 | 45 / sma1 |
 | Outstanding | ₹1,10,000 | ₹64,800 |
 | Overdue (unpaid MAD) | ₹11,492 | ₹9,000 |
-| Waivable charges | ₹1,180 (₹1,000 late fee + 18% GST) | ₹1,180 |
+| Late charges (slab on post-due outstanding) | ₹1,534 (₹1,300 top slab on ₹1,10,000 + 18% GST) | ₹1,534 (₹1,300 top slab on ₹64,800 + 18% GST) |
 | Declared in chat | income ₹20,000, essentials ₹9,000, 1 dependant → (20,000 − 9,000 − 3,000) × 0.3 = **₹2,400/month** | income ₹0 → **₹0** |
 | Card insurance | none | job-loss cover |
-| Options | fee waiver ₹1,180 · **₹2,000/month × 6, late fees waived** | insurance referral · fee waiver · restructuring (officer) · review date (officer) |
+| Options | fee waiver ₹1,534 · **₹2,000/month × 6, late fees waived** | insurance referral · fee waiver · restructuring (officer) · review date (officer) |
 
 The full ₹1,10,000 is not affordable at ₹2,400/month even over 12 months, so (per the
 briefing) the plan covers the **overdue amount**, with the late charges waived:
 EMI(₹11,492, 6 months, 15% p.a.) = ₹2,000.00 exactly (total interest ₹507.98). The formula is
 not adjusted to produce this; the persona's overdue amount was chosen to match it.
+
+Late charges follow the RBI rule in `dues.late_fee`: the slab is chosen on the **amount
+outstanding after the due date** (the whole unpaid balance), not on the overdue minimum (issue
+#1 decision). Both personas owe more than ₹25,000 after the due date, so both are in the top
+slab: ₹1,300 + 18% GST = ₹1,534. `tests/test_personas.py` recomputes this from the policy
+slabs.
 
 Without a declaration, affordability is **estimated** (`source="estimated"`) from last month's
 credited income or the average payment of the last 3 months, whichever gives more. The
