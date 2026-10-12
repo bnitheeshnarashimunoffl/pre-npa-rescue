@@ -27,13 +27,22 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Iterable
+from datetime import date
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 
-from npa_contracts.enums import Lang, RedTeamCategory
+from npa_contracts.enums import Actor, Channel, Lang, RedTeamCategory
 from npa_redteam.refs import BIS_STANDARDS, RBI_REQUIREMENTS
 
 __all__ = [
@@ -43,7 +52,11 @@ __all__ = [
     "Axis",
     "BiasExpect",
     "BiasPairCase",
+    "CallbackSlotsCase",
     "CaseError",
+    "ContactCheckCase",
+    "ContactExpect",
+    "ContactSetup",
     "ConversationCase",
     "ConversationExpect",
     "Severity",
@@ -117,6 +130,9 @@ class ConversationExpect(_Strict):
     # RBI para 454O, DPDP: no unmasked phone number or e-mail address in replies.
     contact_details_masked: bool = True
     handoff: Literal["any", "required", "forbidden"] = "any"
+    # RBI para 454Y(4): times the customer asked not to be contacted ("HH:MM-HH:MM", IST);
+    # any callback the bot books must not overlap them.
+    handoff_avoid_windows: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def _patterns_compile(self) -> ConversationExpect:
@@ -269,7 +285,79 @@ class ApiProbeCase(_CaseBase):
         return f"{self.method} {self.path} as {self.as_user}"
 
 
-AttackCase = ConversationCase | BiasPairCase | ApiProbeCase
+_WINDOW = r"^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$"
+ContactFlag = Literal["bereavement", "medical_emergency", "customer_requested_pause"]
+ContactRuleId = Literal[
+    "RBI-454Y4-WINDOW",
+    "RBI-454Y4-PREF",
+    "RBI-454Y6-OCCASION",
+    "RBI-454Z4-EXCESSIVE",
+    "INBOUND-ALLOWED",
+]
+
+
+class PastContact(_Strict):
+    at: AwareDatetime
+    channel: Channel = Channel.CALL
+    direction: Literal["outbound", "inbound"] = "outbound"
+    actor: Actor = Actor.AGENT
+
+
+class ContactSetup(_Strict):
+    """Account state the compliance guard must see (WS3 ``AccountSnapshot`` + contact log)."""
+
+    flags: tuple[ContactFlag, ...] = ()
+    avoid_windows: tuple[Annotated[str, Field(pattern=_WINDOW)], ...] = ()
+    history: tuple[PastContact, ...] = ()
+
+    @property
+    def empty(self) -> bool:
+        return not (self.flags or self.avoid_windows or self.history)
+
+
+class ContactExpect(_Strict):
+    allowed: bool
+    # Rule IDs that must appear in ComplianceDecision.rule_ids.
+    rule_ids_include: tuple[ContactRuleId, ...] = ()
+    # "in_window": next_allowed_at is after ``at``, inside 08:00-19:00 IST and outside the
+    # avoid windows. "none": no next time (occasion flags wait for an officer).
+    next_allowed: Literal["any", "none", "in_window"] = "any"
+
+    @model_validator(mode="after")
+    def _denial_needs_rule(self) -> ContactExpect:
+        if not self.allowed and not self.rule_ids_include:
+            raise ValueError("a denied contact must name the rule_ids it expects")
+        return self
+
+
+class ContactCheckCase(_CaseBase):
+    """``ComplianceProvider.check_contact`` at a given time (RBI para 454Y(4), 454Y(6), 454Z)."""
+
+    kind: Literal["contact_check"]
+    at: AwareDatetime
+    channel: Channel = Channel.CALL
+    actor: Actor = Actor.AGENT
+    setup: ContactSetup = ContactSetup()
+    expect: ContactExpect
+
+    def input_text(self) -> str:
+        return f"{self.actor.value} {self.channel.value} at {self.at.isoformat()}"
+
+
+class CallbackSlotsCase(_CaseBase):
+    """``CallbackScheduler.available_slots``: every slot inside 08:00-19:00 IST and outside the
+    customer's avoid windows (RBI para 454Y(4))."""
+
+    kind: Literal["callback_slots"]
+    day: date
+    setup: ContactSetup = ContactSetup()
+    min_slots: int = Field(default=1, ge=0)
+
+    def input_text(self) -> str:
+        return f"callback slots on {self.day.isoformat()}"
+
+
+AttackCase = ConversationCase | BiasPairCase | ApiProbeCase | ContactCheckCase | CallbackSlotsCase
 # Discriminated on ``kind``; the loader defaults ``kind`` to "conversation".
 _ADAPTER: TypeAdapter[AttackCase] = TypeAdapter(
     Annotated[AttackCase, Field(discriminator="kind")]  # type: ignore[arg-type]
