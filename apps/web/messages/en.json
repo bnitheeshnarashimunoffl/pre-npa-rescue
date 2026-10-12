@@ -1,0 +1,108 @@
+{
+  "common": {
+    "appName": "Pre-NPA Rescue",
+    "tagline": "Proactive, compassionate credit resolution under RBI guidelines",
+    "skipToContent": "Skip to main content",
+    "switchLanguage": "Switch Language",
+    "logout": "Exit Demo / Switch Role",
+    "role": "Role",
+    "loading": "Loading...",
+    "errorTitle": "System Notice",
+    "retry": "Try again",
+    "backToHome": "Return to Role Selector",
+    "emptyState": "No records found.",
+    "privacyNotice": "We will never ask for your OTP, PIN or CVV.",
+    "contactHours": "Contact window strictly observed: 08:00 – 19:00 IST (RBI 454Y)",
+    "rbiCompliant": "RBI & BIS Aligned",
+    "select": "Select",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "nav": {
+    "home": "Role Selector",
+    "chat": "Customer Chat",
+    "collector": "Collector Dashboard",
+    "hardship": "Hardship Officer",
+    "scorecard": "Compliance Scorecard",
+    "policy": "Policy Engine Admin",
+    "wellness": "Credit Wellness"
+  },
+  "roles": {
+    "customer": "Customer",
+    "collector": "Collector",
+    "hardship_officer": "Hardship Officer",
+    "admin": "Bank Administrator",
+    "auditor": "Compliance Auditor"
+  },
+  "landing": {
+    "title": "Pre-NPA Rescue Demo Portal",
+    "subtitle": "Early financial stress detection, uplift targeting, compassionate resolution & automated compliance.",
+    "instructions": "Select an interactive demo persona to explore the end-to-end system:",
+    "priya": {
+      "title": "Customer — Priya (CUST-DEMO-PRIYA)",
+      "badge": "Persuadable · SMA-0",
+      "desc": "Salary stopped for 3 months, paying min-due only. Early warning detects stress. Recommended for a fee waiver + 6-month EMI plan.",
+      "action": "Start Priya's Tamil Chat"
+    },
+    "ravi": {
+      "title": "Customer — Ravi (CUST-DEMO-RAVI)",
+      "badge": "Zero Capacity · Care Path",
+      "desc": "Lost job, supporting family, cannot afford payments. Bot detects zero capacity, ceases debt pressure, checks insurance, and schedules a human hardship officer.",
+      "action": "Start Ravi's Care Flow"
+    },
+    "collector": {
+      "title": "Collections Officer (collector1)",
+      "badge": "Intelligent Queue",
+      "desc": "Prioritised queue sorted by uplift potential. Clear explainability reason codes and compliance guard preventing illegal out-of-hours calls.",
+      "action": "Open Collector Queue"
+    },
+    "hardship": {
+      "title": "Hardship Officer (officer1)",
+      "badge": "Human-in-the-Loop",
+      "desc": "Review distress referrals, manage compassionate callbacks, and approve restructured relief plans requiring senior discretion.",
+      "action": "Open Hardship Console"
+    },
+    "admin": {
+      "title": "Policy Administrator (admin1)",
+      "badge": "Board Policy",
+      "desc": "Inspect board-approved policy parameters (waiver limits, EMI caps). AI offers strictly originate from this configuration.",
+      "action": "Open Policy Admin"
+    },
+    "auditor": {
+      "title": "Compliance Auditor (auditor1)",
+      "badge": "RBI / BIS Standards",
+      "desc": "Audit automated red-team test results, bias swap equivalence, prompt injection defenses, and compliance mapping matrix.",
+      "action": "Open Compliance Scorecard"
+    }
+  },
+  "badges": {
+    "risk": {
+      "low": "Low Risk",
+      "medium": "Medium Risk",
+      "high": "High Risk"
+    },
+    "bucket": {
+      "current": "Current",
+      "sma0": "SMA-0 (1-30 DPD)",
+      "sma1": "SMA-1 (31-60 DPD)",
+      "sma2": "SMA-2 (61-90 DPD)",
+      "npa": "NPA (>90 DPD)"
+    },
+    "segment": {
+      "forgot": "Forgot to Pay",
+      "cant_pay": "Cannot Pay (Hardship)",
+      "wont_pay": "Will Not Pay",
+      "not_at_risk": "Not at Risk"
+    },
+    "uplift": {
+      "persuadable": "Persuadable (Help Needed)",
+      "sure_thing": "Will Pay Anyway (Do Not Disturb)",
+      "lost_cause": "Zero Capacity (Hardship Track)",
+      "sleeping_dog": "Do Not Contact (Risk of Distress)"
+    }
+  },
+  "reasons": {
+    "title": "Risk Drivers & Explainability",
+    "weight": "Influence: {weight}%"
+  }
+}
