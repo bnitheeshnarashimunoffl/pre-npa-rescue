@@ -9,7 +9,10 @@ Multilingual (English, Tamil, Hindi) hardship chatbot library designed for empat
 - **State machine driven:** Conversation flow is strictly governed by `ConversationState` transitions.
 - **Privacy & Compliance:** Adheres to DPDP Act 2023, RBI Responsible Business Conduct Directions 2026 (Para 454P recording notice, Para 454Y contact windows, Para 454Z harsh practices prohibition, Para 454AA grievance redressal).
 
-## Components (Task 4.1 Skeleton)
+## Components (Task 4.1 Dialogue Engine & Skeleton)
+- `engine.py`: `ChatEngine` dialogue engine orchestrating turns and `build_engine` factory.
+- `nlu.py`: `NLU` intent and slot parser with multilingual amount extraction to paise (en/ta/hi).
+- `language.py`: Script-based language detection and dynamic switching across en/ta/hi.
 - `llm_client.py`: `AnthropicLLMClient` (lazy SDK loading) and `MockLLMClient` implementing `LLMClient` protocol.
 - `state.py`: `ConversationState` model and `InMemorySessionStore` implementing `SessionStore`.
 - `i18n/`: String bundles for `en`, `ta`, and `hi` with parameter interpolation and fallback.
