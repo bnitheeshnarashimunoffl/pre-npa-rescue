@@ -1,0 +1,55 @@
+{
+  "$id": "AuditChainStatus.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Result of verifying the hash-chained audit log (IS/ISO/IEC 27001:2022 A.8.15).",
+  "properties": {
+    "checked_at": {
+      "format": "date-time",
+      "title": "Checked At",
+      "type": "string"
+    },
+    "first_bad_id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "First row whose hash or link is wrong.",
+      "title": "First Bad Id"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Reason"
+    },
+    "rows_checked": {
+      "minimum": 0,
+      "title": "Rows Checked",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "ok",
+    "rows_checked",
+    "first_bad_id",
+    "reason",
+    "checked_at"
+  ],
+  "title": "AuditChainStatus",
+  "type": "object",
+  "x-contract-version": "0.2.0"
+}

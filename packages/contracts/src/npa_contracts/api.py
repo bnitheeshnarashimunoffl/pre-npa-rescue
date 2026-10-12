@@ -35,6 +35,7 @@ from npa_contracts.models import (
 __all__ = [
     "AccountMonthSummary",
     "AccountSummary",
+    "AuditChainStatus",
     "CallbackCreateRequest",
     "ChatSessionCreateRequest",
     "ChatSessionCreated",
@@ -234,6 +235,16 @@ class PolicyDocument(ContractModel):
 class PolicyUpdateRequest(ContractModel):
     policy: dict[str, Any]
     change_note: str = Field(min_length=1, max_length=1000)
+
+
+class AuditChainStatus(ContractModel):
+    """Result of verifying the hash-chained audit log (IS/ISO/IEC 27001:2022 A.8.15)."""
+
+    ok: bool
+    rows_checked: int = Field(ge=0)
+    first_bad_id: int | None = Field(description="First row whose hash or link is wrong.")
+    reason: str | None
+    checked_at: AwareDatetime
 
 
 class RedTeamRun(ContractModel):
