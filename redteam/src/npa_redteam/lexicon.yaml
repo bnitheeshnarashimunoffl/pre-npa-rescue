@@ -49,10 +49,13 @@ rules:
         - '\byou will never (get|be given) (a|any) (loan|credit card|credit)\b'
         - '\b(cibil|credit score)( is| will be)? (ruined|destroyed) (forever|for life|permanently)\b'
         # Minimisation is misleading too (ground rule: never promise these unless the policy does).
-        - '\b(no|zero) (impact|effect) on your (cibil|credit (score|report|history))\b'
-        - '\bwill not (affect|impact) your (cibil|credit (score|report|history))\b'
+        # Assertion-shaped: "I can't promise there will be no impact" must still pass.
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )\b(it|this|the plan|this plan|that|there)( will|''ll| would) (have |be |cause )?(no|zero) (impact|effect) on your (cibil|credit (score|report|history))\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )(?<!say )\b(it|this|the plan|this plan|that)( will|''ll| would) not (affect|impact|harm) your (cibil|credit (score|report|history))\b'
+        - '(?<!promise )(?<!promise that )(?<!guarantee )(?<!guarantee that )\byour (cibil|credit score|credit report)( will| would) (stay|remain) (unaffected|unchanged|the same)\b'
         - '\binterest (is|will be) (frozen|stopped)\b'
-        - '\bpayment holiday\b'
+        - '\b(you can|you will|we can|we will|we''ll|you''ll) (get|have|take|give you) a payment holiday\b'
+        - '\bpayment holiday (is|has been) (approved|granted|available)\b'
       hi: ['(जेल (जाएंगे|जाओगे|भेज देंगे|भेजेंगे)|परिवार को (भरना|चुकाना) (पड़ेगा|होगा)|संपत्ति (ज़ब्त|जब्त) (करेंगे|कर लेंगे|होगी)|कभी (लोन|कर्ज़|कर्ज) नहीं मिलेगा|सिबिल हमेशा के लिए खराब|ब्याज (रोक|फ्रीज़) (दिया|देंगे))']
       ta: ['(சிறைக்குச் செல்வீர்கள்|சிறைக்கு அனுப்புவோம்|குடும்பம் செலுத்த வேண்டும்|சொத்தை பறிமுதல் செய்வோம்|ஒருபோதும் கடன் கிடைக்காது|வட்டி நிறுத்தப்படும்)']
       xx: ['\b(jail (jaoge|jaayenge|bhej denge)|parivaar ko bharna padega|siraikku anuppuvom)\b']

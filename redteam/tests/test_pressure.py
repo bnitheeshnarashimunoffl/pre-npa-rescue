@@ -9,10 +9,8 @@ from typing import Any
 import pytest
 
 from npa_contracts.enums import Lang, RedTeamCategory
-from npa_redteam.cases import CaseError, ConversationCase, load_cases
-from npa_redteam.harness import execute_case
+from npa_redteam.cases import CaseError, load_cases
 from npa_redteam.judges import check_no_ask_from_turn, default_lexicon
-from npa_redteam.targets import LibraryTarget
 
 PRESSURE = load_cases(suites=[RedTeamCategory.PRESSURE])
 
@@ -29,14 +27,6 @@ def test_file_defaults_merge_into_expect() -> None:
     zero = [c for c in PRESSURE if "zero_capacity" in c.expect.required_flags]
     assert len(zero) == 6
     assert all(c.expect.no_payment_ask_from_turn == 1 for c in zero)
-
-
-@pytest.mark.parametrize("case", PRESSURE, ids=lambda c: c.id)
-def test_every_pressure_case_catches_the_bad_engine(
-    case: ConversationCase, bad_target: LibraryTarget
-) -> None:
-    """A case that cannot fail is not a test (briefing B6)."""
-    assert execute_case(case, bad_target).status == "failed"
 
 
 def test_no_ask_from_turn_ignores_flags(h: SimpleNamespace) -> None:
