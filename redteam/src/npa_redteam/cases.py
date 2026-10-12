@@ -27,23 +27,42 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Iterable
+from datetime import date
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 
-from npa_contracts.enums import Lang, RedTeamCategory
+from npa_contracts.enums import Actor, Channel, Lang, RedTeamCategory
 from npa_redteam.refs import BIS_STANDARDS, RBI_REQUIREMENTS
 
 __all__ = [
     "ID_PREFIX",
+    "ApiProbeCase",
     "AttackCase",
+    "Axis",
+    "BiasExpect",
+    "BiasPairCase",
+    "CallbackSlotsCase",
     "CaseError",
+    "ContactCheckCase",
+    "ContactExpect",
+    "ContactSetup",
     "ConversationCase",
     "ConversationExpect",
     "Severity",
+    "SwapSpec",
     "Turn",
+    "Variant",
     "default_cases_dir",
     "load_cases",
 ]
@@ -111,6 +130,9 @@ class ConversationExpect(_Strict):
     # RBI para 454O, DPDP: no unmasked phone number or e-mail address in replies.
     contact_details_masked: bool = True
     handoff: Literal["any", "required", "forbidden"] = "any"
+    # RBI para 454Y(4): times the customer asked not to be contacted ("HH:MM-HH:MM", IST);
+    # any callback the bot books must not overlap them.
+    handoff_avoid_windows: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def _patterns_compile(self) -> ConversationExpect:
@@ -157,6 +179,9 @@ class ConversationCase(_CaseBase):
     def turn_lang(self, turn: Turn) -> Lang:
         return turn.lang or self.lang
 
+    def input_text(self) -> str:
+        return "\n---\n".join(t.text for t in self.turns)
+
     @model_validator(mode="after")
     def _turn_in_range(self) -> ConversationCase:
         turn = self.expect.no_payment_ask_from_turn
@@ -165,10 +190,178 @@ class ConversationCase(_CaseBase):
         return self
 
 
-# New case kinds (contact checks, bias pairs, API probes) join this alias as a discriminated
-# union on ``kind`` when their suite lands.
-AttackCase = ConversationCase
-_ADAPTER: TypeAdapter[AttackCase] = TypeAdapter(AttackCase)
+Axis = Literal["gender", "religion", "caste_category", "region"]
+
+
+class SwapSpec(_Strict):
+    """Generate ``count`` variants (the base persona plus ``count - 1`` swaps) from the name
+    pool, changing every attribute in ``axes``. Seeded by ``seed`` and the case ID, so a case
+    always produces the same variants."""
+
+    axes: tuple[Axis, ...] = Field(min_length=1)
+    count: int = Field(default=4, ge=2, le=12)
+    seed: int = 42
+
+
+class Variant(_Strict):
+    """Overrides of the base persona's profile. ``turns`` replaces the case turns (language
+    swap: the same story told in another language)."""
+
+    label: str = Field(min_length=1)
+    name: str | None = None
+    gender: str | None = None
+    religion: str | None = None
+    caste_category: str | None = None
+    state: str | None = None
+    region: str | None = None
+    city: str | None = None
+    lang: Lang | None = None
+    turns: tuple[Turn, ...] | None = None
+
+
+class BiasExpect(_Strict):
+    """What must be identical across variants (IS/ISO/IEC TR 24027:2021)."""
+
+    same_offers: bool = True  # offer type, amounts, tenure, waiver, human approval
+    same_flags: bool = True
+    same_handoff: bool = True
+    same_eligibility: bool = True  # relief options the policy would issue
+    same_next_action: bool = False  # NBA action, channel and reason codes
+    # Similarity of reply texts between same-language variants, names masked (0..1).
+    min_text_similarity: float = Field(default=0.8, ge=0.0, le=1.0)
+    # Baseline checks applied to every variant's conversation.
+    per_variant: ConversationExpect = ConversationExpect()
+
+
+class BiasPairCase(_CaseBase):
+    """Replay one story for several customers who differ only in name and protected attributes.
+
+    With no ``turns`` the case is model-level: only eligibility and next action are compared.
+    """
+
+    kind: Literal["bias_pair"]
+    turns: tuple[Turn, ...] = ()
+    swap: SwapSpec | None = None
+    variants: tuple[Variant, ...] = ()
+    expect: BiasExpect = BiasExpect()
+
+    def input_text(self) -> str:
+        return "\n---\n".join(t.text for t in self.turns) or self.title
+
+    @model_validator(mode="after")
+    def _variants_or_swap(self) -> BiasPairCase:
+        if (self.swap is None) == (not self.variants):
+            raise ValueError("give exactly one of 'swap' or 'variants'")
+        if self.variants and len(self.variants) < 2:
+            raise ValueError("explicit variants need at least two entries")
+        model_level = not self.turns and not any(v.turns for v in self.variants)
+        if model_level and not (self.expect.same_eligibility or self.expect.same_next_action):
+            raise ValueError("a model-level case must compare eligibility or next action")
+        for turn in self.turns:
+            try:
+                turn.text.format(name="x")
+            except (KeyError, IndexError, ValueError) as exc:
+                raise ValueError(f"turn text may only use the {{name}} placeholder: {exc}") from exc
+        return self
+
+
+class ApiProbeCase(_CaseBase):
+    """One HTTP call to the API as a demo user (API mode only; skipped in library mode).
+
+    ``persona`` is the attacker's own customer_id. Example: Priya fetching Ravi's profile must
+    get 404, so the route does not even confirm that the customer exists (RBI para 454O).
+    """
+
+    kind: Literal["api_probe"]
+    as_user: str = Field(min_length=1, description="demo username (A7.4), e.g. priya")
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "GET"
+    path: str = Field(pattern=r"^/", description="path under /api/v1")
+    body: dict[str, Any] | None = None
+    expect_status: tuple[int, ...] = Field(min_length=1)
+    # Strings (another customer's ID, name, ...) that must not appear in the response body.
+    forbidden_in_body: tuple[str, ...] = ()
+
+    def input_text(self) -> str:
+        return f"{self.method} {self.path} as {self.as_user}"
+
+
+_WINDOW = r"^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$"
+ContactFlag = Literal["bereavement", "medical_emergency", "customer_requested_pause"]
+ContactRuleId = Literal[
+    "RBI-454Y4-WINDOW",
+    "RBI-454Y4-PREF",
+    "RBI-454Y6-OCCASION",
+    "RBI-454Z4-EXCESSIVE",
+    "INBOUND-ALLOWED",
+]
+
+
+class PastContact(_Strict):
+    at: AwareDatetime
+    channel: Channel = Channel.CALL
+    direction: Literal["outbound", "inbound"] = "outbound"
+    actor: Actor = Actor.AGENT
+
+
+class ContactSetup(_Strict):
+    """Account state the compliance guard must see (WS3 ``AccountSnapshot`` + contact log)."""
+
+    flags: tuple[ContactFlag, ...] = ()
+    avoid_windows: tuple[Annotated[str, Field(pattern=_WINDOW)], ...] = ()
+    history: tuple[PastContact, ...] = ()
+
+    @property
+    def empty(self) -> bool:
+        return not (self.flags or self.avoid_windows or self.history)
+
+
+class ContactExpect(_Strict):
+    allowed: bool
+    # Rule IDs that must appear in ComplianceDecision.rule_ids.
+    rule_ids_include: tuple[ContactRuleId, ...] = ()
+    # "in_window": next_allowed_at is after ``at``, inside 08:00-19:00 IST and outside the
+    # avoid windows. "none": no next time (occasion flags wait for an officer).
+    next_allowed: Literal["any", "none", "in_window"] = "any"
+
+    @model_validator(mode="after")
+    def _denial_needs_rule(self) -> ContactExpect:
+        if not self.allowed and not self.rule_ids_include:
+            raise ValueError("a denied contact must name the rule_ids it expects")
+        return self
+
+
+class ContactCheckCase(_CaseBase):
+    """``ComplianceProvider.check_contact`` at a given time (RBI para 454Y(4), 454Y(6), 454Z)."""
+
+    kind: Literal["contact_check"]
+    at: AwareDatetime
+    channel: Channel = Channel.CALL
+    actor: Actor = Actor.AGENT
+    setup: ContactSetup = ContactSetup()
+    expect: ContactExpect
+
+    def input_text(self) -> str:
+        return f"{self.actor.value} {self.channel.value} at {self.at.isoformat()}"
+
+
+class CallbackSlotsCase(_CaseBase):
+    """``CallbackScheduler.available_slots``: every slot inside 08:00-19:00 IST and outside the
+    customer's avoid windows (RBI para 454Y(4))."""
+
+    kind: Literal["callback_slots"]
+    day: date
+    setup: ContactSetup = ContactSetup()
+    min_slots: int = Field(default=1, ge=0)
+
+    def input_text(self) -> str:
+        return f"callback slots on {self.day.isoformat()}"
+
+
+AttackCase = ConversationCase | BiasPairCase | ApiProbeCase | ContactCheckCase | CallbackSlotsCase
+# Discriminated on ``kind``; the loader defaults ``kind`` to "conversation".
+_ADAPTER: TypeAdapter[AttackCase] = TypeAdapter(
+    Annotated[AttackCase, Field(discriminator="kind")]  # type: ignore[arg-type]
+)
 _FILE_KEYS = {"defaults", "cases"}
 
 
@@ -196,7 +389,7 @@ def _load_file(path: Path) -> list[AttackCase]:
     for raw in data["cases"]:
         if not isinstance(raw, dict):
             raise CaseError(f"{path}: every case must be a mapping, got {raw!r}")
-        merged = {"suite": suite_dir, **defaults, **raw}
+        merged = {"suite": suite_dir, "kind": "conversation", **defaults, **raw}
         if isinstance(defaults.get("expect"), dict) and isinstance(raw.get("expect"), dict):
             merged["expect"] = {**defaults["expect"], **raw["expect"]}
         try:

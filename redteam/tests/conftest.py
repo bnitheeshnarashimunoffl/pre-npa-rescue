@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -16,14 +16,24 @@ from typing import Any
 import pytest
 import yaml
 
-from npa_contracts.enums import Actor, OfferStatus, Role
-from npa_contracts.models import BotReply, Callback, ChatTurnRequest, Offer, ReliefOption
+from npa_contracts.enums import Actor, Channel, NextAction, OfferStatus, Role
+from npa_contracts.models import (
+    BotReply,
+    Callback,
+    ChatTurnRequest,
+    ComplianceDecision,
+    NextBestAction,
+    Offer,
+    ReliefOption,
+)
 from npa_redteam.fakes import (
     FixtureComplianceProvider,
+    FixtureNBAProvider,
     FixturePolicyProvider,
     load_fixture,
 )
-from npa_redteam.targets import LibraryTarget
+from npa_redteam.targets import ApiResponse, LibraryTarget
+from npa_redteam.variants import PersonaRegistry, default_name_pool
 
 PRIYA = "CUST-DEMO-PRIYA"
 RAVI = "CUST-DEMO-RAVI"
@@ -85,9 +95,12 @@ def priya_plan() -> ReliefOption:
 class GoodEngine:
     """Kind, policy-bound, flags zero capacity and injections."""
 
+    def __init__(self, registry: PersonaRegistry | None = None) -> None:
+        self.registry = registry or PersonaRegistry()
+
     def handle(self, session_id: str, customer_id: str, req: ChatTurnRequest) -> BotReply:
         text = req.text.lower()
-        if customer_id == RAVI or "can't pay" in text:
+        if self.registry.base_of(customer_id) == RAVI or "can't pay" in text:
             return make_reply(
                 session_id,
                 "Thank you for telling me. You do not need to pay anything in this chat. "
@@ -125,18 +138,102 @@ class CrashingEngine:
         raise RuntimeError("engine down")
 
 
-def target_for(engine: Any) -> LibraryTarget:
-    return LibraryTarget(engine, FixturePolicyProvider(), FixtureComplianceProvider(), name="toy")
+class LeakyNBAProvider:
+    """NBA that (wrongly) reads protected attributes: any non-base profile gets a firm process."""
+
+    def __init__(self, registry: PersonaRegistry) -> None:
+        self.registry = registry
+        self.fair = FixtureNBAProvider(registry)
+
+    def next_best_action(self, account_id: str, as_of_month: str) -> NextBestAction:
+        nba = self.fair.next_best_action(account_id, as_of_month)
+        customer = self.registry.customer_of_account(account_id)
+        profile = self.registry.profile_of(customer)
+        if profile is not None and profile != default_name_pool().persona(
+            self.registry.base_of(customer)
+        ):
+            return nba.model_copy(update={"action": NextAction.FIRM_PROCESS})
+        return nba
+
+
+def target_for(
+    engine: Any,
+    *,
+    registry: PersonaRegistry | None = None,
+    nba: Any = "fixture",
+    compliance: Any = None,
+    scheduler: Any = None,
+) -> LibraryTarget:
+    """Toy target. ``engine`` may be an engine or a factory taking the registry."""
+    registry = registry or PersonaRegistry()
+    if isinstance(engine, type) or not hasattr(engine, "handle"):
+        engine = engine(registry)
+    return LibraryTarget(
+        engine,
+        FixturePolicyProvider(registry),
+        compliance or FixtureComplianceProvider(),
+        nba=FixtureNBAProvider(registry) if nba == "fixture" else nba,
+        scheduler=scheduler,
+        registry=registry,
+        name="toy",
+    )
+
+
+class InvertedGuard(FixtureComplianceProvider):
+    """Bad guard: allows outbound contact outside the window, blocks it inside the window and
+    blocks customer-initiated chats; ignores flags, quiet times and the contact log."""
+
+    def check_contact(
+        self, customer_id: str, channel: Channel, at: datetime, actor: Actor
+    ) -> ComplianceDecision:
+        fair = super().check_contact(customer_id, Channel.CALL, at, Actor.AGENT)
+        if actor is Actor.CUSTOMER or fair.allowed:
+            return fair.model_copy(update={"allowed": False, "rule_ids": ["RBI-454Y4-WINDOW"]})
+        return fair.model_copy(update={"allowed": True, "rule_ids": []})
+
+    def with_setup(self, customer_id: str, setup: Any) -> InvertedGuard:
+        return self
+
+
+class NightScheduler:
+    """Bad scheduler: offers a 22:00 IST slot."""
+
+    def available_slots(
+        self, customer_id: str, day: date, setup: Any
+    ) -> list[tuple[datetime, datetime]]:
+        start = datetime.combine(day, datetime.min.time(), tzinfo=UTC) + timedelta(
+            hours=16, minutes=30
+        )
+        return [(start, start + timedelta(minutes=30))]
 
 
 @pytest.fixture
 def good_target() -> LibraryTarget:
-    return target_for(GoodEngine())
+    return target_for(GoodEngine)
+
+
+class _OpenApiTarget(LibraryTarget):
+    """Bad target whose API answers 200 to everyone (no role or ownership checks)."""
+
+    def api_request(
+        self, method: str, path: str, *, as_user: str, body: dict[str, Any] | None = None
+    ) -> ApiResponse:
+        return ApiResponse(200, '{"customer_id": "CUST-DEMO-RAVI"}')
 
 
 @pytest.fixture
 def bad_target() -> LibraryTarget:
-    return target_for(BadEngine())
+    registry = PersonaRegistry()
+    base = target_for(
+        BadEngine(),
+        registry=registry,
+        nba=LeakyNBAProvider(registry),
+        compliance=InvertedGuard(),
+        scheduler=NightScheduler(),
+    )
+    bad = _OpenApiTarget.__new__(_OpenApiTarget)
+    bad.__dict__.update(base.__dict__)
+    return bad
 
 
 @pytest.fixture

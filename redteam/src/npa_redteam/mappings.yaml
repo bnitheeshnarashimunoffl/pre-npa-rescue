@@ -1,0 +1,281 @@
+# Requirement catalogue for the compliance scorecard (task 7.2).
+#
+# Single source of truth for the RBI requirement IDs and BIS standards the scorecard reports on;
+# npa_redteam.refs is derived from this file, and every case's rule_refs / bis_refs must appear
+# here (a test enforces both directions). Which case covers which requirement lives in the case
+# files themselves (rule_refs, bis_refs), so the mapping cannot drift from the cases.
+#
+# Evidence paths are relative to the repository root and are checked at scorecard time:
+#   docs / code / reports: the file exists;  tests: "file.py::test_name" exists in that file.
+# Present evidence never makes an RBI requirement "covered" on its own (that needs a passing
+# red-team case); for BIS standards, documents and reports count as evidence (briefing 7.2).
+#
+# redteam: in_scope     -> at least one red-team case must cite it
+#          planned      -> red-team cases still to be written (note says which)
+#          out_of_scope -> not attackable through chat/API; evidence comes from unit tests/docs
+#
+# BIS standards use the human-readable form, e.g. "IS/ISO/IEC 42001:2023". Described in our own
+# words: design alignment, not certification.
+
+version: "2026.10-v1"
+
+rbi:
+  RBI-CC-NPA-90:
+    title: Card account is an NPA when the minimum due is unpaid for more than 90 days
+    source: RBI card asset-classification circular, 16 Jul 2015
+    redteam: out_of_scope
+    note: Arithmetic, proven by property tests rather than attacks.
+    code: [packages/contracts/src/npa_contracts/constants.py, packages/rules/src/npa_rules/dues.py]
+    tests:
+      - packages/contracts/tests/test_constants_enums.py::test_bucket_for_dpd
+      - packages/rules/tests/test_dues.py::test_npa_only_after_ninety_days
+    docs: [governance/rbi_mapping.md]
+  RBI-CC-PAST-DUE-3D:
+    title: Past due and late charges only after more than 3 days past due
+    source: RBI Credit Card Directions 2025
+    redteam: out_of_scope
+    note: Arithmetic, proven by property tests rather than attacks.
+    code: [packages/rules/src/npa_rules/dues.py]
+    tests:
+      - packages/rules/tests/test_dues.py::test_past_due_needs_more_than_three_days
+      - packages/rules/tests/test_dues.py::test_no_late_fee_within_grace
+    docs: [governance/rbi_mapping.md]
+  RBI-CC-LATE-FEE-BASE:
+    title: Late charges only on post-due outstanding; no capitalisation; no negative amortisation
+    source: RBI Credit Card Directions 2025
+    redteam: out_of_scope
+    note: Arithmetic, proven by property tests rather than attacks.
+    code: [packages/rules/src/npa_rules/dues.py]
+    tests:
+      - packages/rules/tests/test_dues.py::test_late_fee_uses_post_due_outstanding_slab
+      - packages/rules/tests/test_dues.py::test_mad_no_negative_amortisation
+    docs: [governance/rbi_mapping.md]
+  RBI-CC-BUREAU-NOTICE:
+    title: Tell the cardholder before reporting a default; update the bureau within 30 days of settlement
+    source: RBI Credit Card Directions 2025
+    redteam: in_scope
+    code: [packages/rules/policies/bank_policy.yaml, packages/rules/src/npa_rules/policy_loader.py]
+    tests: [packages/rules/tests/test_policy_loader.py::test_rbi_cross_checks]
+    docs: [governance/rbi_mapping.md]
+  RBI-454D-DISTRESS:
+    title: Structured financial-distress framework; documented engagement before escalation
+    source: RBI RBC Directions para 454D
+    redteam: in_scope
+    code: [packages/rules/src/npa_rules/policy_engine.py, packages/rules/src/npa_rules/nba.py]
+    tests:
+      - packages/rules/tests/test_policy_engine.py::test_ravi_zero_capacity_set_insurance_first
+      - packages/rules/tests/test_nba.py::test_ravi_gets_hardship_officer
+    docs: [governance/rbi_mapping.md]
+  RBI-454Y4-WINDOW:
+    title: Contact only between 08:00 and 19:00
+    source: RBI RBC Directions para 454Y(4)
+    redteam: in_scope
+    code: [packages/rules/src/npa_rules/compliance_guard.py]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_contact_window_in_ist]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Y4-PREF:
+    title: Honour the borrower's request to avoid certain times
+    source: RBI RBC Directions para 454Y(4)
+    redteam: in_scope
+    code: [packages/rules/src/npa_rules/compliance_guard.py]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_customer_quiet_time_preference]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Y6-OCCASION:
+    title: Avoid bereavement, medical emergencies and similar occasions
+    source: RBI RBC Directions para 454Y(6)
+    redteam: in_scope
+    code: [packages/rules/src/npa_rules/compliance_guard.py]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_do_not_contact_flags]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Z4-EXCESSIVE:
+    title: No excessive calling or messaging
+    source: RBI RBC Directions para 454Z
+    redteam: in_scope
+    code: [packages/rules/src/npa_rules/compliance_guard.py]
+    tests:
+      - packages/rules/tests/test_compliance_guard.py::test_daily_cap
+      - packages/rules/tests/test_compliance_guard.py::test_weekly_cap
+    docs: [governance/rbi_mapping.md]
+  RBI-454Z-ABUSIVE:
+    title: No abusive language
+    source: RBI RBC Directions para 454Z
+    redteam: in_scope
+    code: [packages/rules/policies/compliance_lexicon.yaml]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_harsh_text_blocked]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Z-THREAT:
+    title: No threats or minatory language
+    source: RBI RBC Directions para 454Z
+    redteam: in_scope
+    code: [packages/rules/policies/compliance_lexicon.yaml]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_harsh_text_blocked]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Z-THIRD-PARTY:
+    title: No harassing or informing relatives, colleagues or others
+    source: RBI RBC Directions para 454Z
+    redteam: in_scope
+    code: [packages/rules/policies/compliance_lexicon.yaml]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_harsh_text_blocked]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Z-SHAMING:
+    title: No public or social-media shaming
+    source: RBI RBC Directions para 454Z
+    redteam: in_scope
+    code: [packages/rules/policies/compliance_lexicon.yaml]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_harsh_text_blocked]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Z-MISLEADING:
+    title: No false or misleading statements about the debt or consequences of non-payment
+    source: RBI RBC Directions para 454Z(8)
+    redteam: in_scope
+    code: [packages/rules/src/npa_rules/disclosures.py, packages/rules/policies/compliance_lexicon.yaml]
+    tests: [packages/rules/tests/test_policy_loader.py::test_disclosures_never_make_banned_promises]
+    docs: [governance/rbi_mapping.md]
+  RBI-454Z-ANONYMOUS:
+    title: No anonymous calls
+    source: RBI RBC Directions para 454Z
+    redteam: planned
+    note: Add chat cases asking "who is this?" once the bot's self-identification text exists.
+    docs: [governance/rbi_mapping.md]
+  RBI-454P-RECORDING:
+    title: Log and record contacts, keep 6 months, tell the borrower the call is recorded
+    source: RBI RBC Directions para 454P
+    redteam: planned
+    note: Add a check that every recovery reply carries the recording notice (required_footer).
+    code: [packages/rules/src/npa_rules/compliance_guard.py, services/api/app/audit.py]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_footer_has_grievance_officer_recording_and_ombudsman]
+    docs: [governance/rbi_mapping.md, governance/data_lifecycle.md]
+  RBI-454Q-INCENTIVES:
+    title: Recovery targets and incentives must not encourage harsh practices
+    source: RBI RBC Directions para 454Q
+    redteam: out_of_scope
+    note: Queue design, not a conversation; evidenced by WS3's priority tests.
+    code: [packages/rules/src/npa_rules/nba.py]
+    tests: [packages/rules/tests/test_nba.py::test_queue_priorities]
+    docs: [governance/rbi_mapping.md]
+  RBI-454O-DATA:
+    title: Share borrower data with staff or agents only as far as recovery needs
+    source: RBI RBC Directions para 454O
+    redteam: in_scope
+    code: [services/api/app/security.py]
+    docs: [governance/rbi_mapping.md, governance/data_lifecycle.md]
+  RBI-454AA-GRIEVANCE:
+    title: Grievance officer details on every recovery communication; Ombudsman after 30 days
+    source: RBI RBC Directions para 454AA; Credit Card Directions
+    redteam: planned
+    note: Add a check that replies carry the grievance officer or a grievance quick reply.
+    code: [packages/rules/src/npa_rules/compliance_guard.py]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_footer_has_grievance_officer_recording_and_ombudsman]
+    docs: [governance/rbi_mapping.md]
+  RBI-PF2019-RESTRUCTURE:
+    title: Restructuring only under board policy; restructured standard account is downgraded to NPA
+    source: RBI Prudential Framework, 7 Jun 2019
+    redteam: out_of_scope
+    note: Policy content (disclosure and human approval), evidenced by WS3 loader tests.
+    code: [packages/rules/policies/bank_policy.yaml]
+    tests:
+      - packages/rules/tests/test_policy_loader.py::test_restructuring_disclosure_text_is_the_briefed_wording
+      - packages/rules/tests/test_policy_engine.py::test_propose_offer_needs_human
+    docs: [governance/rbi_mapping.md]
+  RBI-CS2023-SETTLEMENT:
+    title: Settlement only under board policy; >3 months is restructuring; 12-month cooling period
+    source: RBI Compromise Settlement Framework, 8 Jun 2023
+    redteam: out_of_scope
+    note: Policy content, evidenced by WS3 loader and calculator tests.
+    code: [packages/contracts/src/npa_contracts/constants.py, packages/rules/src/npa_rules/relief_calc.py]
+    tests:
+      - packages/rules/tests/test_policy_loader.py::test_cooling_period_constant_matches_policy
+      - packages/rules/tests/test_policy_engine.py::test_npa_settlement_sized_within_window
+    docs: [governance/rbi_mapping.md]
+  DPDP-2023:
+    title: Consent, purpose limitation, data minimisation and breach notice
+    source: DPDP Act 2023 and DPDP Rules 2025
+    redteam: in_scope
+    docs: [governance/data_lifecycle.md]
+  RBI-FREEAI-GOV:
+    title: AI policy, AI inventory, explainability, consumer protection and fairness (non-binding)
+    source: RBI FREE-AI committee report, Aug 2025
+    redteam: in_scope
+    docs: [governance/ai_register.md, governance/risk_register.md]
+  BANK-POLICY-ONLY:
+    title: Every relief option exists in the board-approved policy; the AI never invents one
+    source: RBI Prudential Framework 2019; Settlement Framework 2023 (project ground rule)
+    redteam: in_scope
+    code: [packages/rules/src/npa_rules/policy_engine.py]
+    tests: [packages/rules/tests/test_policy_engine.py::test_propose_unknown_option_rejected]
+    docs: [governance/rbi_mapping.md]
+
+bis:
+  "IS/ISO/IEC 42001:2023":
+    area: Govern the AI
+    themes: AI management system - scope, policy, roles, risk-based planning, life-cycle controls, evaluation, improvement
+    docs: [governance/README.md, governance/ai_register.md, governance/risk_register.md]
+  "IS/ISO/IEC 23894:2023":
+    area: Govern the AI
+    themes: AI-specific risk identification, analysis, treatment and monitoring
+    docs: [governance/risk_register.md]
+  "IS/ISO 31000:2018":
+    area: Govern the AI
+    themes: Generic risk-management process the AI risk register follows
+    docs: [governance/risk_register.md]
+  "IS/ISO/IEC 38507:2022":
+    area: Govern the AI
+    themes: Accountability for AI-assisted decisions; human approval for high-impact actions
+    docs: [governance/ai_register.md]
+    tests: [packages/rules/tests/test_policy_engine.py::test_propose_offer_needs_human]
+  "IS/ISO/IEC 22989:2022":
+    area: Govern the AI
+    themes: Shared AI vocabulary used across the architecture and governance documents
+    docs: [governance/ai_register.md, docs/architecture.md]
+  "IS/ISO/IEC 23053:2022":
+    area: Govern the AI
+    themes: ML system life cycle - data, training, deployment, monitoring
+    docs: [governance/ai_register.md, docs/architecture.md]
+  "IS/ISO/IEC TR 24027:2021":
+    area: Prove it is fair and accurate
+    themes: Sources and measurement of unwanted bias; bias-swap tests; group fairness metrics
+    reports: [packages/models/reports/metrics.json]
+    docs: [governance/bis_mapping.md]
+  "IS/ISO/IEC TS 4213":
+    area: Prove it is fair and accurate
+    themes: Classifier performance reported with defined metrics on held-out data
+    reports: [packages/models/reports/metrics.json]
+  "IS/ISO/IEC 25059:2023":
+    area: Prove it is fair and accurate
+    themes: AI quality - transparency, controllability, intervenability, robustness
+    docs: [governance/bis_mapping.md]
+  "IS/ISO/IEC 27001:2022":
+    area: Protect customer data
+    themes: Risk-based information security management
+    code: [.github/workflows/ci.yml, services/api/app/security.py]
+    docs: [governance/data_lifecycle.md]
+  "IS/ISO/IEC 27002:2022":
+    area: Protect customer data
+    themes: Security controls - access, logging, secure development, supplier use
+    code: [.github/workflows/ci.yml, services/api/app/audit.py]
+    docs: [governance/data_lifecycle.md]
+  "IS/ISO/IEC 8183:2023":
+    area: Protect customer data
+    themes: Data life cycle from creation to disposal
+    docs: [governance/data_lifecycle.md]
+  "IS/ISO 10002:2018":
+    area: Treat customers well
+    themes: Accessible complaints, docket numbers, tracking, response times
+    code: [packages/chatbot/src/npa_chat/flows/complaint.py]
+    tests: [packages/rules/tests/test_compliance_guard.py::test_footer_has_grievance_officer_recording_and_ombudsman]
+  "IS/ISO 18295-1:2017":
+    area: Treat customers well
+    themes: Contact-centre service requirements for bot and human channels
+    code: [packages/rules/src/npa_rules/compliance_guard.py]
+  "IS/ISO 18295-2:2017":
+    area: Treat customers well
+    themes: Requirements the bank sets for its contact centre (policy file)
+    code: [packages/rules/policies/bank_policy.yaml]
+  "IS 17802 (Part 1):2021":
+    area: Include everyone
+    themes: Accessibility requirements for ICT products and services
+    code: [apps/web/messages/ta.json, apps/web/messages/hi.json]
+  "IS 17802 (Part 2):2022":
+    area: Include everyone
+    themes: Testing ICT accessibility conformance
+    code: [apps/web/e2e]
