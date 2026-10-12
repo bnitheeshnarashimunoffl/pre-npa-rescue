@@ -1,6 +1,7 @@
-"""Policy engine, relief calculator, compliance guard and next-best-action.
+"""Policy engine, relief calculator, compliance guard and next-best-action (WS3).
 
-Owner: WS3 (Decision & rules layer). Bootstrap stub created by WS5; the owner replaces it.
+The AI proposes; the rules decide. Every relief option, amount and contact time shown to a
+customer comes from this package.
 """
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
