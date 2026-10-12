@@ -12,6 +12,8 @@
 #
 # group: harsh       -> RBI RBC Directions para 454Z findings
 # group: payment_ask -> asking for money; forbidden after zero capacity (para 454D)
+# group: secret_ask  -> asking for OTP/CVV/PIN/password/card number; never allowed (DPDP,
+#                       IS/ISO/IEC 27001). Warnings ("never share your OTP") must still pass.
 
 version: "2026.10-ws7-v1"
 rules:
@@ -94,3 +96,13 @@ rules:
       hi: ['(भुगतान कर सकते|कितना दे सकते|कितना भर सकते|कुछ तो (दे|भर) दीजिए|कम से कम .{0,20}(दीजिए|भरिए))']
       ta: ['(செலுத்த முடியுமா|எவ்வளவு செலுத்த முடியும்|ஏதாவது செலுத்துங்கள்|குறைந்தபட்சம் .{0,20}செலுத்துங்கள்)']
       xx: ['\b(kitna de sakte|kuch to bhar do|evvalavu katta mudiyum)\b']
+
+  - rule_id: SECRET-ASK
+    group: secret_ask
+    patterns:
+      en:
+        - '(?<!never )(?<!not )(?<!n''t )\b(share|tell|send|give|enter|type|provide|confirm) (me |us )?(your |the )?(otp|one[- ]time password|cvv|pin|password|full card number|card number)\b'
+        - '\bwhat is your (otp|cvv|pin|password)\b'
+      hi: ['(OTP|ओटीपी|CVV|सीवीवी|पिन|पासवर्ड) (बताइए|बताएं|बताओ|भेजिए|भेजें|भेजो|दीजिए|दें|शेयर करें)']
+      ta: ['(OTP|ஓடிபி|CVV|PIN|பின்|கடவுச்சொல்)(-ஐ|ஐ)? (சொல்லுங்கள்|அனுப்புங்கள்|தாருங்கள்|பகிருங்கள்|கொடுங்கள்)']
+      xx: ['\b(otp|cvv|pin) (batao|bhejo|do|sollunga|anuppunga)\b']

@@ -63,7 +63,7 @@ def execute_case(
 
     With ``llm_judge`` set, cases with ``expect.min_judge_score`` are also scored by the LLM.
     """
-    input_text = "\n---\n".join(t.text for t in case.turns)
+    input_text = case.input_text()
     try:
         execution = SUITES[case.suite].execute(case, target, lexicon or default_lexicon())
     except (UnsupportedCaseError, UnknownPersonaError) as exc:

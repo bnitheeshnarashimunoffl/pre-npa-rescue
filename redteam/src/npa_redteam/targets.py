@@ -10,7 +10,8 @@ from __future__ import annotations
 import random
 import uuid
 from collections.abc import Callable
-from typing import Protocol
+from dataclasses import dataclass
+from typing import Any, Protocol
 
 from npa_contracts.constants import AS_OF_MONTH
 from npa_contracts.enums import Lang
@@ -37,7 +38,7 @@ from npa_redteam.fakes import (
 )
 from npa_redteam.variants import PersonaRegistry, Profile
 
-__all__ = ["LibraryTarget", "Target", "UnsupportedCaseError"]
+__all__ = ["ApiResponse", "LibraryTarget", "Target", "UnsupportedCaseError"]
 
 
 class UnsupportedCaseError(Exception):
@@ -71,6 +72,19 @@ class Target(Protocol):
     def next_best_action(self, customer_id: str) -> NextBestAction:
         """NBA for the customer's account; raises :class:`UnsupportedCaseError` if unavailable."""
         ...
+
+    def api_request(
+        self, method: str, path: str, *, as_user: str, body: dict[str, Any] | None = None
+    ) -> ApiResponse:
+        """One call to ``/api/v1`` as a demo user. Library targets raise
+        :class:`UnsupportedCaseError`."""
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class ApiResponse:
+    status: int
+    text: str
 
 
 def _no_declared_affordability(customer_id: str) -> Affordability:
@@ -153,3 +167,8 @@ class LibraryTarget:
             raise UnsupportedCaseError(f"target {self.name} has no NBA provider")
         account_id = PersonaRegistry.account_of(customer_id)
         return self._nba.next_best_action(account_id, self._as_of_month)
+
+    def api_request(
+        self, method: str, path: str, *, as_user: str, body: dict[str, Any] | None = None
+    ) -> ApiResponse:
+        raise UnsupportedCaseError("API probes need API mode (phase 2)")

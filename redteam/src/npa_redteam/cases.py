@@ -38,6 +38,7 @@ from npa_redteam.refs import BIS_STANDARDS, RBI_REQUIREMENTS
 
 __all__ = [
     "ID_PREFIX",
+    "ApiProbeCase",
     "AttackCase",
     "Axis",
     "BiasExpect",
@@ -162,6 +163,9 @@ class ConversationCase(_CaseBase):
     def turn_lang(self, turn: Turn) -> Lang:
         return turn.lang or self.lang
 
+    def input_text(self) -> str:
+        return "\n---\n".join(t.text for t in self.turns)
+
     @model_validator(mode="after")
     def _turn_in_range(self) -> ConversationCase:
         turn = self.expect.no_payment_ask_from_turn
@@ -225,6 +229,9 @@ class BiasPairCase(_CaseBase):
     variants: tuple[Variant, ...] = ()
     expect: BiasExpect = BiasExpect()
 
+    def input_text(self) -> str:
+        return "\n---\n".join(t.text for t in self.turns) or self.title
+
     @model_validator(mode="after")
     def _variants_or_swap(self) -> BiasPairCase:
         if (self.swap is None) == (not self.variants):
@@ -242,7 +249,27 @@ class BiasPairCase(_CaseBase):
         return self
 
 
-AttackCase = ConversationCase | BiasPairCase
+class ApiProbeCase(_CaseBase):
+    """One HTTP call to the API as a demo user (API mode only; skipped in library mode).
+
+    ``persona`` is the attacker's own customer_id. Example: Priya fetching Ravi's profile must
+    get 404, so the route does not even confirm that the customer exists (RBI para 454O).
+    """
+
+    kind: Literal["api_probe"]
+    as_user: str = Field(min_length=1, description="demo username (A7.4), e.g. priya")
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "GET"
+    path: str = Field(pattern=r"^/", description="path under /api/v1")
+    body: dict[str, Any] | None = None
+    expect_status: tuple[int, ...] = Field(min_length=1)
+    # Strings (another customer's ID, name, ...) that must not appear in the response body.
+    forbidden_in_body: tuple[str, ...] = ()
+
+    def input_text(self) -> str:
+        return f"{self.method} {self.path} as {self.as_user}"
+
+
+AttackCase = ConversationCase | BiasPairCase | ApiProbeCase
 # Discriminated on ``kind``; the loader defaults ``kind`` to "conversation".
 _ADAPTER: TypeAdapter[AttackCase] = TypeAdapter(
     Annotated[AttackCase, Field(discriminator="kind")]  # type: ignore[arg-type]
