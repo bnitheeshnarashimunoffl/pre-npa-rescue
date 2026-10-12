@@ -65,7 +65,7 @@ class Exchange:
 @dataclass(frozen=True, slots=True)
 class LexiconRule:
     rule_id: str
-    group: Literal["harsh", "payment_ask"]
+    group: Literal["harsh", "payment_ask", "secret_ask"]
     patterns: tuple[re.Pattern[str], ...]
 
 
@@ -93,7 +93,7 @@ class Lexicon:
             )
         except (KeyError, TypeError, AttributeError, re.error) as exc:
             raise ValueError(f"invalid lexicon {path}: {exc}") from exc
-        bad = [r.rule_id for r in rules if r.group not in ("harsh", "payment_ask")]
+        bad = [r.rule_id for r in rules if r.group not in ("harsh", "payment_ask", "secret_ask")]
         if bad:
             raise ValueError(f"invalid lexicon {path}: unknown group for {bad}")
         return cls(version=str(data.get("version", "")), rules=rules)

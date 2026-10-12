@@ -31,7 +31,7 @@ from npa_redteam.fakes import (
     FixturePolicyProvider,
     load_fixture,
 )
-from npa_redteam.targets import LibraryTarget
+from npa_redteam.targets import ApiResponse, LibraryTarget
 from npa_redteam.variants import PersonaRegistry, default_name_pool
 
 PRIYA = "CUST-DEMO-PRIYA"
@@ -177,10 +177,22 @@ def good_target() -> LibraryTarget:
     return target_for(GoodEngine)
 
 
+class _OpenApiTarget(LibraryTarget):
+    """Bad target whose API answers 200 to everyone (no role or ownership checks)."""
+
+    def api_request(
+        self, method: str, path: str, *, as_user: str, body: dict[str, Any] | None = None
+    ) -> ApiResponse:
+        return ApiResponse(200, '{"customer_id": "CUST-DEMO-RAVI"}')
+
+
 @pytest.fixture
 def bad_target() -> LibraryTarget:
     registry = PersonaRegistry()
-    return target_for(BadEngine(), registry=registry, nba=LeakyNBAProvider(registry))
+    base = target_for(BadEngine(), registry=registry, nba=LeakyNBAProvider(registry))
+    bad = _OpenApiTarget.__new__(_OpenApiTarget)
+    bad.__dict__.update(base.__dict__)
+    return bad
 
 
 @pytest.fixture
