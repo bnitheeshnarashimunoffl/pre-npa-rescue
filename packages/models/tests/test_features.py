@@ -99,3 +99,10 @@ def test_time_split_requires_month_column() -> None:
 def test_time_split_rejects_bad_boundaries(kwargs: dict[str, str]) -> None:
     with pytest.raises(ValueError):
         TimeSplit(**kwargs)
+
+
+def test_fake_data_round_trips_through_parquet(fake_data, tmp_path) -> None:
+    # Guards the pyarrow pin: pyarrow >= 21 needs numpy 2, but A6 pins numpy 1.26.
+    path = tmp_path / "features.parquet"
+    fake_data.features.to_parquet(path)
+    pd.testing.assert_frame_equal(pd.read_parquet(path), fake_data.features)
