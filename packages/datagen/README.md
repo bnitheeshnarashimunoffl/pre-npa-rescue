@@ -18,7 +18,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 | Generate tables (1.1) | `uv run datagen generate` | customers, protected attributes, statements, salary, shocks, transactions |
 | Demo personas (1.1 step 6) | part of `generate` | 10 fixed `CUST-DEMO-*` customers, `demo_personas.json` |
 | Features + labels (1.2) | `uv run datagen features [--samples data/samples]` | done |
-| Experiment (1.3) | `uv run datagen experiment` | not implemented yet |
+| Experiment (1.3) | `uv run datagen experiment [--month 2026-06]` | randomised experiment + `simulate_policy()` |
 | Everything | `uv run datagen all` | runs the steps in order |
 
 ## How to run
@@ -27,6 +27,8 @@ probability is documented in [`data/README.md`](../../data/README.md).
 uv run datagen generate --n 10000 --seed 42 --out data/generated   # ~17 s with transactions
 uv run datagen generate --no-transactions                          # large runs
 uv run datagen features                                            # ~2 s for 10,000 customers
+uv run datagen experiment                                          # task 1.3
+uv run datagen all --n 10000 --seed 42                             # everything, ~26 s
 uv run python data/scripts/sanity_report.py                        # NPA rate, leading indicators
 uv run datagen --help
 ```
@@ -53,9 +55,10 @@ Flags override environment variables; see `.env.example` (A11).
 
 Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_credits`,
 `shocks`, `transactions` (folder, one file per month), `features`, `labels`, plus
-`demo_personas.json`. Internal tables
-(not features, not contracts): `monthly_spend` (category totals per account-month) and
-`behaviour_types` (hidden ground truth). Same seed ⇒ byte-identical Parquet.
+`demo_personas.json` and `experiment`. Internal tables
+(not features, not contracts): `monthly_spend` (category totals per account-month),
+`behaviour_types` (hidden ground truth) and `experiment_potential` (hidden potential outcomes).
+Same seed ⇒ byte-identical Parquet.
 
 ## Public API
 
@@ -66,6 +69,7 @@ Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_
 | `datagen.features.build_features(...)` | task 1.2 features (no look-ahead) |
 | `datagen.labels.build_labels(...)` | task 1.2 labels |
 | `datagen.personas` | the ten demo personas (`PERSONAS`, `build_personas`, `persona_facts`) |
+| `datagen.experiment.simulate_policy(assignments)` | apply a targeting policy to the experiment population; `SimulationMetrics`-shaped dict vs "call everyone" |
 | `datagen.dues` | RBI dues rules as pure functions (+ vectorised twins) |
 | `datagen.validate` | pandera / Arrow schemas generated from `contracts/data/*.md` |
 
@@ -73,7 +77,7 @@ Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_
 
 `calibrate_uci` (UCI fits) · `customers`, `protected` (population) · `personas` (demo customers) · `behaviour` (UCI-driven
 repayment, spend plan) · `shocks` (hidden behaviour types and shocks) · `statements` (month loop)
-· `dues` (RBI arithmetic) · `salary` · `transactions` · `features` · `labels` · `pipeline`
+· `dues` (RBI arithmetic) · `salary` · `transactions` · `features` · `labels` · `experiment` · `pipeline`
 (features step + samples) · `validate` · `sanity` · `cli`.
 
 ## Regulations and standards

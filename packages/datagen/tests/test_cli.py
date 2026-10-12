@@ -29,8 +29,17 @@ def test_command_is_required() -> None:
         cli.build_parser().parse_args([])
 
 
-def test_unimplemented_step_exits_non_zero() -> None:
+def test_unimplemented_step_exits_non_zero(monkeypatch: pytest.MonkeyPatch) -> None:
+    def not_ready(cfg: DatagenConfig) -> None:
+        raise NotImplementedError("not implemented yet")
+
+    monkeypatch.setitem(cli.STEPS, "experiment", not_ready)
     assert cli.main(["experiment"]) == 2
+
+
+def test_experiment_month_flag() -> None:
+    args = cli.build_parser().parse_args(["experiment", "--month", "2026-03"])
+    assert cli.config_from_args(args).experiment_month == "2026-03"
 
 
 def test_all_runs_every_step_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
