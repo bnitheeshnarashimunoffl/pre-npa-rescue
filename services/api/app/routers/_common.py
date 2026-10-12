@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import Depends
 
 from app.deps import bearer
+from app.security import require_roles
 from npa_contracts.api import ErrorResponse
 
 ERRORS: dict[int | str, dict[str, Any]] = {
@@ -15,6 +16,13 @@ ERRORS: dict[int | str, dict[str, Any]] = {
 PROTECTED: dict[str, Any] = {"dependencies": [Depends(bearer)], "responses": ERRORS}
 
 
-def roles(*names: str) -> dict[str, Any]:
-    """OpenAPI extension listing the roles allowed on a route (enforced in task 5.3)."""
-    return {"x-roles": list(names)}
+def access(*roles: str) -> dict[str, Any]:
+    """Route kwargs: documents the allowed roles (``x-roles``) and enforces them (task 5.3).
+
+    ``"public"`` means no token is needed. Keeping both in one place stops the OpenAPI contract
+    and the enforced rule from drifting apart.
+    """
+    kwargs: dict[str, Any] = {"openapi_extra": {"x-roles": list(roles)}}
+    if "public" not in roles:
+        kwargs["dependencies"] = [Depends(require_roles(*roles))]
+    return kwargs

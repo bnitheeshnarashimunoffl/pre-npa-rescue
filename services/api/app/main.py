@@ -27,6 +27,7 @@ from app.routers import (
     redteam,
     wellness,
 )
+from app.security import check_secret
 from npa_contracts import CONTRACT_VERSION
 
 API_PREFIX = "/api/v1"
@@ -51,6 +52,7 @@ _ROUTERS = (
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    check_secret(settings)
     app = FastAPI(
         title="Pre-NPA Rescue API",
         version=CONTRACT_VERSION,

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 
 from app.errors import not_implemented
 from app.fixtures import load_fixture
-from app.routers._common import PROTECTED, roles
+from app.routers._common import PROTECTED, access
 from npa_contracts.api import AccountSummary, QueuePage
 from npa_contracts.constants import PAGE_LIMIT_DEFAULT, PAGE_LIMIT_MAX
 from npa_contracts.enums import Bucket, NextAction
@@ -12,7 +12,7 @@ from npa_contracts.enums import Bucket, NextAction
 router = APIRouter(prefix="/collector", tags=["collector"], **PROTECTED)
 
 
-@router.get("/queue", response_model=QueuePage, openapi_extra=roles("collector", "admin"))
+@router.get("/queue", response_model=QueuePage, **access("collector", "admin"))
 def queue(
     limit: Annotated[int, Query(ge=1, le=PAGE_LIMIT_MAX)] = PAGE_LIMIT_DEFAULT,
     cursor: Annotated[str | None, Query(description="Opaque pagination cursor")] = None,
@@ -32,7 +32,7 @@ def queue(
 @router.get(
     "/accounts/{account_id}/summary",
     response_model=AccountSummary,
-    openapi_extra=roles("collector", "hardship_officer"),
+    **access("collector", "hardship_officer"),
 )
 def account_summary(account_id: str) -> AccountSummary:
     """History, contacts, offers and reasons for one account."""

@@ -1,24 +1,37 @@
 """Standard error envelope (A7.4): ``{"error": {"code", "message", "details"}}``."""
 
+import logging
 from typing import Any, NoReturn
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from npa_contracts.api import ErrorBody, ErrorResponse
 
+log = logging.getLogger(__name__)
+
 
 class ApiError(Exception):
     def __init__(
-        self, status_code: int, code: str, message: str, details: dict[str, Any] | None = None
+        self,
+        status_code: int,
+        code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+        *,
+        headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
         self.code = code
         self.message = message
         self.details = details or {}
+        self.headers = dict(headers or {})
+        if status_code == 401:
+            self.headers.setdefault("WWW-Authenticate", "Bearer")
 
 
 def not_implemented(task: str) -> NoReturn:
@@ -30,9 +43,17 @@ def not_found(resource: str, resource_id: str) -> NoReturn:
     raise ApiError(404, "NOT_FOUND", f"{resource} not found.", {"id": resource_id})
 
 
-def _envelope(status_code: int, code: str, message: str, details: dict[str, Any]) -> JSONResponse:
+def _envelope(
+    status_code: int,
+    code: str,
+    message: str,
+    details: dict[str, Any],
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
     body = ErrorResponse(error=ErrorBody(code=code, message=message, details=details))
-    return JSONResponse(status_code=status_code, content=body.model_dump(mode="json"))
+    return JSONResponse(
+        status_code=status_code, content=body.model_dump(mode="json"), headers=headers
+    )
 
 
 _HTTP_CODES = {
@@ -48,7 +69,7 @@ _HTTP_CODES = {
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError) -> JSONResponse:
-        return _envelope(exc.status_code, exc.code, exc.message, exc.details)
+        return _envelope(exc.status_code, exc.code, exc.message, exc.details, exc.headers)
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
@@ -59,3 +80,9 @@ def install_error_handlers(app: FastAPI) -> None:
     async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
         errors = [{"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
         return _envelope(422, "VALIDATION_ERROR", "Request validation failed.", {"errors": errors})
+
+    @app.exception_handler(OperationalError)
+    async def _db_unavailable(_: Request, exc: OperationalError) -> JSONResponse:
+        # Never leak connection strings or SQL to the client.
+        log.error("database unavailable: %s", exc.__class__.__name__)
+        return _envelope(503, "DB_UNAVAILABLE", "The service is temporarily unavailable.", {})
