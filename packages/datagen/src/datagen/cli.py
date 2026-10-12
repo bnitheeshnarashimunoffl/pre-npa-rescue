@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from datagen.config import DatagenConfig
+from datagen.generate import run_generate
 
 logger = logging.getLogger("datagen")
 
@@ -24,7 +25,7 @@ def _not_implemented(task: str) -> Step:
 
 
 STEPS: dict[str, Step] = {
-    "generate": _not_implemented("1.1"),
+    "generate": run_generate,
     "features": _not_implemented("1.2"),
     "experiment": _not_implemented("1.3"),
 }

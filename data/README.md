@@ -61,9 +61,55 @@ customers. The resulting NPA rate is reported once shocks land (next PR).
 
 The demographic UCI columns (sex, education, marriage, age) are never read.
 
+## Population assumptions (task 1.1)
+
+| Item | Assumption |
+|---|---|
+| Occupation | salaried 55%, self-employed 20%, gig 15%, retired 5%, student 5% |
+| Age | 21–65; per occupation (students 21–25, retired 58–65), Beta(2,3) within the range |
+| Monthly income | log-normal (σ 0.45) around occupation medians (₹60k salaried, ₹65k self-employed, ₹28k gig, ₹38k retired, ₹15k student) × city tier (1: 1.3, 2: 1.0, 3: 0.8) |
+| Card limit | UCI log-normal, median ₹1,50,000, Gaussian copula with income (ρ = 0.8), kept within 1×–8× monthly income, rounded to ₹5,000, min ₹10,000 |
+| Dependants | 0–4 with p = 25/25/25/17/8% (students 0) |
+| Language | Tamil Nadu → `ta` 70%; Hindi-belt states → `hi` 65%; otherwise `en` |
+| Insurance | 35% of cards: job loss 40%, death/disability 35%, both 25% |
+| Contact window | 20% state a preferred window, always inside 08:00–19:00 (RBI 454Y(4), 454Y(6)) |
+| Card age | opened 6–120 months before `2024-10` |
+| Names | Faker `en_IN` name pools, sampled with the seeded RNG; phone `+91-98XXXXX123`, email `p****@example.com` |
+
+**Protected attributes** (gender, religion, caste category, state, region) are drawn
+independently of each other and of the hardship process, and live only in
+`protected_attributes.parquet` (IS/ISO/IEC TR 24027:2021). Proportions are rough population
+shares (assumption). City and language follow state, as in real data; no feature uses them.
+
+## Statement rules (RBI) and bank-policy assumptions
+
+RBI rules implemented in `dues.py` / `statements.py` (Credit Card Directions 2025; asset
+classification circular 16 July 2015):
+
+- DPD counted from the due date of the **oldest unpaid minimum amount due** (payments clear the
+  oldest dues first). Buckets via `npa_contracts.constants.bucket_for_dpd`; NPA at DPD > 90.
+- Late fee only when past due for **more than 3 days**, on the **amount outstanding after the
+  due date** (total due − paid by the due date), never on the total amount due.
+- Interest on **principal only**: unpaid interest, fees and GST never earn interest.
+- MAD = all interest, fees and GST + max(5% of principal, ₹200), plus any overdue MAD, capped at
+  the total due ⇒ no negative amortisation.
+
+Bank-policy assumptions (mirroring `packages/rules/policies/bank_policy.yaml`, not RBI numbers):
+statement day 1/5/10/15/20/25; due 15 days after the statement; 42% p.a. interest (actual/365);
+late-fee slabs nil ≤ ₹500, ₹500 ≤ ₹5,000, ₹750 ≤ ₹10,000, ₹1,000 ≤ ₹25,000, ₹1,300 above;
+18% GST on interest and fees; interest-free when the last statement was paid in full by its due
+date; cash advances earn interest from withdrawal (half a cycle); new spend blocked from DPD 31;
+no interest or fees once NPA (income-recognition norms).
+
+Ledger identity on every row: `closing = opening + purchases + cash_advance − payments +
+interest + late_fee + GST`, with `GST = round_half_up(18% × (interest + late_fee))`; GST is not a
+separate column, it is derivable.
+
+**DPD at the statement date.** With a 15-day due period, one missed payment shows DPD ≈ 15
+(SMA-0) at the next statement, two ≈ 45 (SMA-1), three ≈ 76 (SMA-2), four ≈ 106 (NPA).
+
 ## Still to come
 
-- **Population and statement rules** (task 1.1).
 - **Shocks, behaviour types, salary and transactions** (task 1.1).
 - **Features, labels and samples** (task 1.2).
 - **Demo persona numbers** (task 1.1 step 6, agreed with WS3).
