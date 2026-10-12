@@ -236,8 +236,14 @@ needed if a workflow deploys (none does yet).
 ### Performance targets
 
 API p95 < 300 ms for non-chat routes on 5 lakh customers; chat turn p95 < 4 s with the real LLM.
-Measured so far: the 5 lakh seed loads in about 4 minutes; route latency at that size is measured
-after the real providers are wired (phase-2 integration).
+Measured so far (laptop, Postgres 16):
+- the 5 lakh seed loads in about 4 minutes;
+- `GET /collector/queue` at 5 lakh queue rows: p95 19.8 ms over 30 calls (first and deep
+  cursor pages, bucket/action filters, `limit=200`). Every page is an index range scan
+  (`ix_nba_queue*`, migration 0003). Re-run with
+  `QUEUE_SCALE_ROWS=500000 TEST_DATABASE_URL=... uv run pytest services/api/tests/test_queue_scale.py -s`
+  (CI runs it at 200k rows against the 300 ms budget);
+- the other routes are measured once the real providers are wired (phase-2 integration).
 
 ---
 

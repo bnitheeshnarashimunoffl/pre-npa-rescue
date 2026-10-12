@@ -1,8 +1,10 @@
 """Read queries shared by routers (task 5.2).
 
-Collector queue: keyset pagination on ``(priority DESC, account_id ASC)`` within one
-``as_of_month``, served by the ``ix_nba_queue`` index. The cursor is opaque to clients
-(base64url JSON of the last row's sort key).
+Collector queue: keyset pagination on ``(priority DESC, account_id DESC)`` within one
+``as_of_month``. Both keys descend, so the cursor is a single row-value comparison
+``(priority, account_id) < (:p, :a)`` that Postgres uses as an index range bound: any page,
+however deep, reads ~``limit`` index entries (indexes ``ix_nba_queue*``, migration 0003).
+The cursor is opaque to clients (base64url JSON of the last row's sort key).
 """
 
 import base64
@@ -10,7 +12,7 @@ import binascii
 import json
 from dataclasses import dataclass
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import literal, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.orm import NBA
@@ -65,12 +67,10 @@ def queue_page(
     if cursor is not None:
         c = QueueCursor.decode(cursor)
         stmt = stmt.where(
-            or_(
-                NBA.priority < c.priority,
-                and_(NBA.priority == c.priority, NBA.account_id > c.account_id),
-            )
+            tuple_(NBA.priority, NBA.account_id)
+            < tuple_(literal(c.priority), literal(c.account_id))
         )
-    stmt = stmt.order_by(NBA.priority.desc(), NBA.account_id).limit(limit + 1)
+    stmt = stmt.order_by(NBA.priority.desc(), NBA.account_id.desc()).limit(limit + 1)
     rows = list(session.scalars(stmt))
     if len(rows) <= limit:
         return rows, None

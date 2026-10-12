@@ -265,8 +265,15 @@ class NBA(Base, TimestampMixin):
     __table_args__ = (CheckConstraint("total_due_paise >= 0", name="total_due_non_negative"),)
 
 
-# Collector queue: WHERE as_of_month = ? ORDER BY priority DESC, account_id (keyset cursor).
-Index("ix_nba_queue", NBA.as_of_month, NBA.priority.desc(), NBA.account_id)
+# Collector queue: WHERE as_of_month = ? [AND bucket/action = ?]
+#   AND (priority, account_id) < (cursor) ORDER BY priority DESC, account_id DESC  (app.queries)
+Index("ix_nba_queue", NBA.as_of_month, NBA.priority.desc(), NBA.account_id.desc())
+Index(
+    "ix_nba_queue_bucket", NBA.as_of_month, NBA.bucket, NBA.priority.desc(), NBA.account_id.desc()
+)
+Index(
+    "ix_nba_queue_action", NBA.as_of_month, NBA.action, NBA.priority.desc(), NBA.account_id.desc()
+)
 
 
 class Offer(Base, TimestampMixin):
