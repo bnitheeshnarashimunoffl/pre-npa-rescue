@@ -23,4 +23,7 @@ a router (enforced by a test). Commands: see `docs/setup.md` → Database.
 documented and enforced via `routers/_common.access(...)`; 404 instead of 403; rate limits in
 `app/ratelimit.py`; per-role profile minimisation in `app/minimise.py`.
 
+**Audit (5.4):** hash-chained append-only `audit_log` (`app/audit.py`, triggers in migration
+0002), `DbContactLogger`, `GET /admin/audit/verify`, 180-day purge job `python -m app.retention`.
+
 **Tasks:** 5.1 API layer · 5.2 database & data model · 5.3 auth & roles · 5.4 audit logging · 5.5 deployment

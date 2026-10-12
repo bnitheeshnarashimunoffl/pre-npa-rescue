@@ -117,6 +117,40 @@ components:
       - customer
       title: Actor
       type: string
+    AuditChainStatus:
+      additionalProperties: false
+      description: Result of verifying the hash-chained audit log (IS/ISO/IEC 27001:2022 A.8.15).
+      properties:
+        checked_at:
+          format: date-time
+          title: Checked At
+          type: string
+        first_bad_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: First row whose hash or link is wrong.
+          title: First Bad Id
+        ok:
+          title: Ok
+          type: boolean
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        rows_checked:
+          minimum: 0.0
+          title: Rows Checked
+          type: integer
+      required:
+      - ok
+      - rows_checked
+      - first_bad_id
+      - reason
+      - checked_at
+      title: AuditChainStatus
+      type: object
     BotReply:
       additionalProperties: false
       properties:
@@ -1670,9 +1704,9 @@ components:
       scheme: bearer
       type: http
 info:
-  summary: REST contract v0.1.0 (api 0.1.0). Synthetic data only.
+  summary: REST contract v0.2.0 (api 0.1.0). Synthetic data only.
   title: Pre-NPA Rescue API
-  version: 0.1.0
+  version: 0.2.0
 openapi: 3.1.0
 paths:
   /api/v1/accounts/{account_id}/nba:
@@ -1875,6 +1909,43 @@ paths:
       - collector
       - hardship_officer
       - admin
+  /api/v1/admin/audit/verify:
+    get:
+      description: 'Recompute the audit log''s hash chain; ``ok: false`` names the first tampered row.'
+      operationId: verify_audit_log_api_v1_admin_audit_verify_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditChainStatus'
+          description: Successful Response
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid token
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not found (also used instead of 403)
+        '501':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not implemented yet
+      security:
+      - HTTPBearer: []
+      summary: Verify Audit Log
+      tags:
+      - admin
+      x-roles:
+      - admin
+      - auditor
   /api/v1/admin/policy:
     get:
       description: Current bank policy (``bank_policy.yaml``) as JSON.

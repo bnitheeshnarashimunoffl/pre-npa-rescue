@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.audit import audit_login
 from app.config import Settings, get_settings
 from app.db import get_session
 from app.errors import ApiError
@@ -31,10 +32,13 @@ def login(
     user = session.scalars(select(User).where(User.username == body.username)).one_or_none()
     ok = verify_password(body.password, user.password_hash if user else None)
     if user is None or not ok or not user.is_active:
+        audit_login(session, body.username, success=False)  # IS/ISO/IEC 27001 A.8.15
+        session.commit()
         raise ApiError(401, "INVALID_CREDENTIALS", "Username or password is incorrect.")
     principal = Principal(user.username, Role(user.role), user.customer_id)
     token, expires_in = create_access_token(principal, settings)
-    # Task 5.4 records every login in the audit log.
+    audit_login(session, user.username, success=True)
+    session.commit()
     return TokenResponse(
         access_token=token,
         expires_in=expires_in,
