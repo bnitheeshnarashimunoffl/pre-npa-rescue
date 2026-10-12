@@ -138,8 +138,54 @@ their own level 4–6 months before the first missed payment; `t+0` = first miss
 | t−1 | 0.60 | 0.97 | 7.19 | 0.59 |
 | t+0 | 0.47 | 0.74 | 4.78 | 0.06 |
 
+## Features (task 1.2)
+
+All features at month `t` use only rows at or before `t` (tested by truncation). The payment in
+month `t` settles the statement of month `t−1`.
+
+| Feature | Definition |
+|---|---|
+| `utilisation` | closing balance / limit |
+| `utilisation_delta_3m` | utilisation now − 3 months ago (0.0 for the first 3 months) |
+| `min_due_only_streak` | consecutive cycles paying ≥ MAD but ≤ 110% of MAD and < total due |
+| `months_since_full_payment` | cycles since the statement was paid in full (nothing due counts as full); `t+1` if never in the window |
+| `payment_ratio_3m` | payments / MAD over the last 3 cycles (1.0 if nothing due, cap 10) |
+| `dpd`, `max_dpd_6m` | DPD at the statement date; max over the last 6 statements |
+| `broken_streak_flag` | missed or late this cycle after ≥ 3 on-time cycles |
+| `cash_advance_ratio_3m` | cash advance / (purchases + cash advance), last 3 months |
+| `essentials_spend_delta_3m`, `discretionary_spend_delta_3m`, `txn_count_delta_3m` | (last-3-month total − previous 3) / max(previous 3, floor) — floor ₹100 a month or 1 txn a month; capped at 10; 0.0 for the first 5 months |
+| `salary_missing_months_3m` | salaried: months in the last 3 with an expected salary and no credit; others 0 |
+| `salary_delta_3m` | salaried: same relative change on credited salary; others 0.0 |
+| `income_to_due_ratio` | onboarding monthly income / total due (100 if nothing due, cap 100) |
+| `tenure_months` | months since the card was opened |
+| `dependants`, `occupation_type`, `limit_paise` | from `customers` |
+
+`*_3m` sums use the shorter history in the first months. Never included: protected attributes,
+shocks, behaviour types (tested).
+
+## Labels (task 1.2)
+
+- `rolls_forward_60d`: bucket at `t+1` or `t+2` worse than at `t`.
+- `reaches_npa_90d`: NPA at `t+1`, `t+2` or `t+3` (already-NPA accounts that stay NPA are `True`).
+- `segment_truth` for accounts at risk at `t` (past due, rolling forward, paid late, active
+  shock, or won't-pay within 2 months of its start): active shock → `cant_pay`; won't pay →
+  `wont_pay`; forgetful → `forgot`; others → `forgot` if current again within 2 months else
+  `cant_pay`. Not at risk → `not_at_risk`.
+- Rows only for months with the full 3-month horizon: `2024-10` .. `2026-06`.
+
+## Samples
+
+`samples/features_sample.parquet` and `samples/labels_sample.parquet`: seed 42, 10,000
+customers, **200 accounts × the last 10 labelled months (`2025-09` .. `2026-06`) = 2,000 rows**
+with identical keys. Half the accounts were past due at some point in those months (so both label
+classes appear), half random. Regenerate:
+
+```bash
+uv run datagen generate --n 10000 --seed 42 --no-transactions
+uv run datagen features --samples data/samples
+```
+
 ## Still to come
 
-- **Features, labels and samples** (task 1.2).
 - **Demo persona numbers** (task 1.1 step 6, agreed with WS3).
 - **Experiment probabilities and contact costs** (task 1.3).

@@ -16,8 +16,8 @@ probability is documented in [`data/README.md`](../../data/README.md).
 | Step | Command | Status |
 |---|---|---|
 | Generate tables (1.1) | `uv run datagen generate` | customers, protected attributes, statements, salary, shocks, transactions |
-| Demo personas (1.1 step 6) | — | after features (task 1.2) |
-| Features + labels (1.2) | `uv run datagen features` | not implemented yet |
+| Demo personas (1.1 step 6) | — | next PR |
+| Features + labels (1.2) | `uv run datagen features [--samples data/samples]` | done |
 | Experiment (1.3) | `uv run datagen experiment` | not implemented yet |
 | Everything | `uv run datagen all` | runs the steps in order |
 
@@ -26,6 +26,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 ```bash
 uv run datagen generate --n 10000 --seed 42 --out data/generated   # ~17 s with transactions
 uv run datagen generate --no-transactions                          # large runs
+uv run datagen features                                            # ~2 s for 10,000 customers
 uv run python data/scripts/sanity_report.py                        # NPA rate, leading indicators
 uv run datagen --help
 ```
@@ -61,12 +62,17 @@ Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_
 |---|---|
 | `datagen.DatagenConfig` | pydantic-settings config; calendar and seed defaults from `npa_contracts.constants` |
 | `datagen.generate.build(cfg)` / `write(data, cfg)` | task 1.1 tables in memory / validated to disk |
+| `datagen.features.build_features(...)` | task 1.2 features (no look-ahead) |
+| `datagen.labels.build_labels(...)` | task 1.2 labels |
 | `datagen.dues` | RBI dues rules as pure functions (+ vectorised twins) |
 | `datagen.validate` | pandera / Arrow schemas generated from `contracts/data/*.md` |
 
 ## Module map
 
-`calibrate_uci` · `customers` · `protected` · `behaviour` · `shocks` · `statements` · `dues` · `salary` · `transactions` · `validate` · `sanity` · `cli`
+`calibrate_uci` (UCI fits) · `customers`, `protected` (population) · `behaviour` (UCI-driven
+repayment, spend plan) · `shocks` (hidden behaviour types and shocks) · `statements` (month loop)
+· `dues` (RBI arithmetic) · `salary` · `transactions` · `features` · `labels` · `pipeline`
+(features step + samples) · `validate` · `sanity` · `cli`.
 
 ## Regulations and standards
 

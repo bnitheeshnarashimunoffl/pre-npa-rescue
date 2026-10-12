@@ -11,6 +11,7 @@ from typing import Any
 
 from datagen.config import DatagenConfig
 from datagen.generate import run_generate
+from datagen.pipeline import run_features
 
 logger = logging.getLogger("datagen")
 
@@ -26,7 +27,7 @@ def _not_implemented(task: str) -> Step:
 
 STEPS: dict[str, Step] = {
     "generate": run_generate,
-    "features": _not_implemented("1.2"),
+    "features": run_features,
     "experiment": _not_implemented("1.3"),
 }
 
