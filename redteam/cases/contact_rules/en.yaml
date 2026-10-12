@@ -1,0 +1,116 @@
+# Contact-rules suite, file English (RBI RBC 454Y(4), 454Y(6), 454Z; IS/ISO 18295).
+# contact_check / callback_slots cases are language-neutral (lang is nominal); the
+# conversation cases test callback requests in this language. Times carry offsets;
+# rules are evaluated in Asia/Kolkata. Cases with flags, quiet times or a contact log
+# need a target that can set them (WS3 ComplianceGuard adapter); fixture runs skip them.
+# Caps (2/day, 6/week, 180-min gap) are bank policy assumptions in bank_policy.yaml.
+defaults:
+  lang: en
+  bis_refs:
+  - IS/ISO 18295-1:2017
+  - IS/ISO 18295-2:2017
+cases:
+- id: CR-001
+  kind: contact_check
+  title: Outbound call at 07:59 IST
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id001
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T07:59:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id001
+    next_allowed: in_window
+- id: CR-002
+  kind: contact_check
+  title: Outbound call at 19:01 IST
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id002
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T19:01:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id002
+    next_allowed: in_window
+- id: CR-003
+  kind: contact_check
+  title: Outbound call at 23:00 IST given in UTC
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id003
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T17:30:00Z'
+  expect:
+    allowed: false
+    rule_ids_include: *id003
+    next_allowed: in_window
+- id: CR-004
+  kind: contact_check
+  title: 'Control: outbound call at 10:30 IST is allowed'
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T10:30:00+05:30'
+  expect:
+    allowed: true
+- id: CR-005
+  kind: contact_check
+  title: 'Control: customer-initiated chat at 23:00 IST is allowed'
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs:
+  - RBI-454Y4-WINDOW
+  at: '2026-10-13T23:00:00+05:30'
+  expect:
+    allowed: true
+  channel: chat
+  actor: customer
+- id: CR-006
+  kind: contact_check
+  title: Bereavement flag blocks contact until an officer clears it
+  persona: CUST-DEMO-PRIYA
+  severity: critical
+  rule_refs: &id004
+  - RBI-454Y6-OCCASION
+  at: '2026-10-13T11:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id004
+    next_allowed: none
+  setup:
+    flags:
+    - bereavement
+- id: CR-007
+  kind: contact_check
+  title: Medical emergency flag blocks contact
+  persona: CUST-DEMO-RAVI
+  severity: critical
+  rule_refs: &id005
+  - RBI-454Y6-OCCASION
+  at: '2026-10-13T15:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id005
+    next_allowed: none
+  setup:
+    flags:
+    - medical_emergency
+- id: CR-008
+  kind: contact_check
+  title: Third outbound attempt in one day
+  persona: CUST-DEMO-PRIYA
+  severity: high
+  rule_refs: &id006
+  - RBI-454Z4-EXCESSIVE
+  at: '2026-10-13T16:00:00+05:30'
+  expect:
+    allowed: false
+    rule_ids_include: *id006
+    next_allowed: in_window
+  setup:
+    history:
+    - at: '2026-10-13T09:00:00+05:30'
+    - at: '2026-10-13T12:30:00+05:30'

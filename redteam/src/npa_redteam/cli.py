@@ -18,7 +18,8 @@ from npa_contracts.constants import DEFAULT_SEED
 from npa_contracts.enums import Lang, RedTeamCategory
 from npa_contracts.models import Scorecard
 from npa_redteam.cases import CaseError, load_cases
-from npa_redteam.harness import run
+from npa_redteam.harness import run_report
+from npa_redteam.reports import write_run
 
 __all__ = ["main"]
 
@@ -39,17 +40,16 @@ def _summary(card: Scorecard) -> str:
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
-    card = run(
+    report = run_report(
         suites=args.suite,
         langs=args.lang or [lang.value for lang in Lang],
         seed=args.seed,
         cases_dir=args.cases_dir,
     )
+    sys.stdout.write(_summary(report.scorecard))
     if args.out:
-        out = Path(args.out) / card.run_id
-        out.mkdir(parents=True, exist_ok=True)
-        (out / "scorecard.json").write_text(card.model_dump_json(indent=2) + "\n", encoding="utf-8")
-    sys.stdout.write(_summary(card))
+        folder = write_run(report, Path(args.out))
+        sys.stdout.write(f"wrote {folder}\n")
     return 0
 
 
@@ -75,7 +75,7 @@ def _parser() -> argparse.ArgumentParser:
     p_run.add_argument("--lang", action="append", choices=[lang.value for lang in Lang])
     p_run.add_argument("--seed", type=int, default=int(os.environ.get("SEED", DEFAULT_SEED)))
     p_run.add_argument("--cases-dir", type=Path)
-    p_run.add_argument("--out", help="write <out>/<run_id>/scorecard.json")
+    p_run.add_argument("--out", help="write <out>/<run_id>/{scorecard.json,report.json,summary.md}")
     p_run.set_defaults(func=_cmd_run)
     p_cases = sub.add_parser("cases", help="validate and count the case files")
     p_cases.add_argument("--cases-dir", type=Path)
