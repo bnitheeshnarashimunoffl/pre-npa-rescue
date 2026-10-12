@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from npa_chat.distress import detect_distress, handle_distress
 from npa_chat.flows import (
     handle_affordability_turn,
+    handle_complaint_turn,
     handle_hardship_turn,
     handle_offer_turn,
     handle_zero_capacity_turn,
@@ -183,28 +184,17 @@ class ChatEngine:
 
             # Global Interrupt: Complaint Capture (Task 4.5 / IS 10002)
             elif nlu_res.intent == Intent.COMPLAIN:
-                state.add_flag("complaint_reported")
-                state.transition_to(ChatState.COMPLAINT)
-                complaint = self.complaint_sink.open(
-                    customer_id=customer_id,
-                    category="customer_complaint",
+                complaint_res = handle_complaint_turn(
+                    state=state,
                     text=req.text,
-                    lang=state.lang,
+                    complaint_sink=self.complaint_sink,
+                    policy_provider=self.policy_provider,
                 )
-                state.complaint_docket_no = complaint.docket_no
-                grievance = self.policy_provider.grievance_officer()
-                footer = get_string(
-                    "grievance_footer",
-                    state.lang,
-                    name=grievance.name,
-                    email=grievance.email,
-                    phone=grievance.phone,
-                    address=grievance.address,
-                )
-                reply_text = (
-                    f"Your complaint has been registered with docket number {complaint.docket_no}. "
-                    f"Our grievance team will review it within 30 days.\n\n{footer}"
-                )
+                reply_text = complaint_res.reply_text
+                quick_replies = complaint_res.quick_replies
+                state.transition_to(complaint_res.next_state)
+                for f in complaint_res.flags:
+                    state.add_flag(f)
 
             # Consent turn / language selection transition
             elif state.current_state == ChatState.CONSENT_NOTICE:
@@ -290,6 +280,31 @@ class ChatEngine:
                 state.transition_to(zc_turn_res.next_state)
                 for f in zc_turn_res.flags:
                     state.add_flag(f)
+
+            # Active complaint state continuation
+            elif state.current_state == ChatState.COMPLAINT:
+                lower = req.text.lower()
+                if any(
+                    w in lower for w in ["officer", "human", "agent", "அதிகாரி", "மனிதர்", "अधिकारी"]
+                ):
+                    state.transition_to(ChatState.HANDOFF)
+                    reply_text = get_string("offer_item_human_review", state.lang)
+                elif any(
+                    w in lower
+                    for w in ["continue", "relief", "options", "சரி", "தொடர", "जारी", "योजना"]
+                ):
+                    prev = state.previous_state or ChatState.HARDSHIP_DISCLOSURE
+                    state.transition_to(prev)
+                    if prev == ChatState.HARDSHIP_DISCLOSURE:
+                        reply_text = get_string("hardship_prompt", state.lang)
+                    elif prev == ChatState.AFFORDABILITY:
+                        reply_text = get_string("affordability_income_prompt", state.lang)
+                    elif prev == ChatState.OPTIONS:
+                        reply_text = get_string("offer_intro", state.lang)
+                    else:
+                        reply_text = get_string("hardship_prompt", state.lang)
+                else:
+                    reply_text = get_string("fallback_safe", state.lang)
 
             else:
                 # Default safe conversational fallback

@@ -138,6 +138,19 @@ def test_complaint_interrupt_flow() -> None:
     assert len(complaints.complaints) == 1
     docket = complaints.complaints[0].docket_no
     assert docket in complaint_reply.text
+    assert "30" in complaint_reply.text
+    assert "cms.rbi.org.in" in complaint_reply.text
+
+    # Turn 3: Resume exploring relief options
+    resume_reply = engine.handle(
+        session_id="SESS-COMPLAINT-001",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="Let's continue exploring relief options"),
+    )
+    assert resume_reply.state in (
+        ChatState.CONSENT_NOTICE.value,
+        ChatState.HARDSHIP_DISCLOSURE.value,
+    )
 
 
 def test_engine_priya_hardship_and_affordability_flow() -> None:

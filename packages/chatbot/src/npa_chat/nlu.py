@@ -218,7 +218,26 @@ class NLU:
             )
 
         # 3. Complaint detection
-        if any(w in lower for w in ["complain", "complaint", "harass", "புகார்", "शिकायत"]):
+        if any(
+            w in lower
+            for w in [
+                "complain",
+                "complaint",
+                "harass",
+                "threat",
+                "abuse",
+                "abusive",
+                "wrong charge",
+                "illegal charge",
+                "dpdp violation",
+                "புகார்",
+                "துன்புறுத்தல்",
+                "அச்சுறுத்தல்",
+                "शिकायत",
+                "प्रताड़ना",
+                "धमकी",
+            ]
+        ):
             return NLUResult(
                 intent=Intent.COMPLAIN,
                 lang=detected_lang,

@@ -5,6 +5,12 @@ from npa_chat.flows.affordability import (
     estimate_affordability,
     handle_affordability_turn,
 )
+from npa_chat.flows.complaint import (
+    ComplaintCategory,
+    ComplaintTurnResult,
+    classify_complaint_category,
+    handle_complaint_turn,
+)
 from npa_chat.flows.hardship import (
     HardshipTurnResult,
     classify_hardship,
@@ -27,13 +33,17 @@ from npa_chat.flows.zero_capacity import (
 
 __all__ = [
     "AffordabilityTurnResult",
+    "ComplaintCategory",
+    "ComplaintTurnResult",
     "HardshipTurnResult",
     "OfferTurnResult",
     "ZeroCapacityResult",
+    "classify_complaint_category",
     "classify_hardship",
     "estimate_affordability",
     "format_option_summary",
     "handle_affordability_turn",
+    "handle_complaint_turn",
     "handle_hardship_turn",
     "handle_offer_turn",
     "handle_why_contacted",

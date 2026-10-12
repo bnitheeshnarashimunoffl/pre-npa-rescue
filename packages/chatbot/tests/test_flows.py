@@ -2,10 +2,13 @@
 
 from npa_chat.distress import detect_distress, handle_distress
 from npa_chat.flows import (
+    ComplaintCategory,
+    classify_complaint_category,
     classify_hardship,
     estimate_affordability,
     format_option_summary,
     handle_affordability_turn,
+    handle_complaint_turn,
     handle_hardship_turn,
     handle_offer_turn,
     handle_zero_capacity_turn,
@@ -29,6 +32,7 @@ from npa_contracts.models import Affordability, ReliefOption
 
 from .fakes import (
     FakeCallbackScheduler,
+    FakeComplaintSink,
     FakeCustomerContextProvider,
     FakePolicyProvider,
     FakeRiskProvider,
@@ -401,3 +405,111 @@ def test_handle_zero_capacity_turn_booking() -> None:
     # Confirmation details
     assert "11:00 AM" in res.reply_text
     assert "@" in res.reply_text  # Grievance officer email in footer
+
+
+def test_classify_complaint_category() -> None:
+    # Harassment (threat, abusive words, calling at night)
+    cat, is_h = classify_complaint_category("Your recovery agent is threatening my family!")
+    assert cat == ComplaintCategory.HARASSMENT
+    assert is_h is True
+
+    cat_ta, is_h_ta = classify_complaint_category("கடன் வசூல் முகவர் அச்சுறுத்தல் செய்கிறார்")
+    assert cat_ta == ComplaintCategory.HARASSMENT
+    assert is_h_ta is True
+
+    cat_hi, is_h_hi = classify_complaint_category("एजेंट मुझे धमकी दे रहा है और गाली दे रहा है")
+    assert cat_hi == ComplaintCategory.HARASSMENT
+    assert is_h_hi is True
+
+    # Wrong charges
+    cat_wc, is_h_wc = classify_complaint_category("You added wrong charges and penalty")
+    assert cat_wc == ComplaintCategory.WRONG_CHARGES
+    assert is_h_wc is False
+
+    # Privacy / DPDP
+    cat_dpdp, is_h_dpdp = classify_complaint_category("DPDP data breach, you shared my data")
+    assert cat_dpdp == ComplaintCategory.PRIVACY
+    assert is_h_dpdp is False
+
+    # Service
+    cat_srv, is_h_srv = classify_complaint_category("Terrible delay, bad service, no response")
+    assert cat_srv == ComplaintCategory.SERVICE
+    assert is_h_srv is False
+
+    # Other / general
+    cat_oth, is_h_oth = classify_complaint_category("I want to lodge a formal complaint")
+    assert cat_oth == ComplaintCategory.OTHER
+    assert is_h_oth is False
+
+
+def test_handle_complaint_turn_general() -> None:
+    sink = FakeComplaintSink()
+    policy = FakePolicyProvider()
+    state = ConversationState(session_id="SESS-CMP-GEN", customer_id="CUST-DEMO-01", lang=Lang.EN)
+
+    res = handle_complaint_turn(
+        state=state,
+        text="I have a complaint about unexpected charges on my card statement",
+        complaint_sink=sink,
+        policy_provider=policy,
+    )
+
+    assert res.next_state == ChatState.COMPLAINT
+    assert res.category == ComplaintCategory.WRONG_CHARGES
+    assert res.is_harassment is False
+    assert "complaint_reported" in res.flags
+    assert "harassment_reported" not in res.flags
+    assert len(sink.complaints) == 1
+    assert sink.complaints[0].category == "wrong_charges"
+    assert state.complaint_docket_no == res.docket_no
+    assert res.docket_no.startswith("CMP-")
+
+    # 30-day timeline per IS/ISO 10002:2018 and RBI RBC Directions
+    assert "30 days" in res.reply_text
+    assert "IS/ISO 10002:2018" in res.reply_text
+    # RBI Ombudsman escalation rights
+    assert "cms.rbi.org.in" in res.reply_text
+    assert "14448" in res.reply_text
+    # Grievance officer footer
+    assert policy.grievance_officer().email in res.reply_text
+
+
+def test_handle_complaint_turn_harassment_priority() -> None:
+    sink = FakeComplaintSink()
+    policy = FakePolicyProvider()
+    state = ConversationState(session_id="SESS-CMP-HAR", customer_id="CUST-DEMO-02", lang=Lang.EN)
+
+    res = handle_complaint_turn(
+        state=state,
+        text="The agent is harassing me with abusive calls at night",
+        complaint_sink=sink,
+        policy_provider=policy,
+    )
+
+    assert res.category == ComplaintCategory.HARASSMENT
+    assert res.is_harassment is True
+    assert "complaint_reported" in res.flags
+    assert "harassment_reported" in res.flags
+    assert "harassment_reported" in state.flags
+    # Priority note present
+    assert "priority review" in res.reply_text
+
+
+def test_handle_complaint_turn_multilingual_tamil() -> None:
+    sink = FakeComplaintSink()
+    policy = FakePolicyProvider()
+    state = ConversationState(session_id="SESS-CMP-TA", customer_id="CUST-PRIYA", lang=Lang.TA)
+
+    res = handle_complaint_turn(
+        state=state,
+        text="முகவர் என்னை மிரட்டுகிறார், உடனடி புகார் தேவை",
+        complaint_sink=sink,
+        policy_provider=policy,
+    )
+
+    assert res.category == ComplaintCategory.HARASSMENT
+    assert res.is_harassment is True
+    assert "30" in res.reply_text
+    assert "14448" in res.reply_text
+    assert "cms.rbi.org.in" in res.reply_text
+    assert "@" in res.reply_text

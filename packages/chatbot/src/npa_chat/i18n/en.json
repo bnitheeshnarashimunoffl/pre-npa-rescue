@@ -53,5 +53,14 @@
   "callback_slot_prompt": "To ensure you tell your story only once and agree on a realistic review date, please choose a convenient time for a hardship officer callback:",
   "callback_booked_confirm": "Your callback with a hardship officer has been booked for {time} on {date} (Ref: {callback_id}). We will call you directly at this time so you only need to tell your story once.",
   "zero_capacity_btn_insurance": "Submit Insurance Referral",
-  "zero_capacity_btn_callback": "Book Officer Callback"
+  "zero_capacity_btn_callback": "Book Officer Callback",
+  "complaint_registered_msg": "Your complaint has been formally registered under docket number {docket_no} (Category: {category}). In accordance with IS/ISO 10002:2018 and RBI RBC Directions 2026 (para 454AA), our Grievance Redressal team will investigate and resolve this within 30 days. If your issue is not resolved within 30 days, you have the statutory right to escalate directly to the RBI Integrated Ombudsman (https://cms.rbi.org.in | Toll-Free 14448).",
+  "complaint_harassment_note": "We take allegations of harassment very seriously. This complaint has been flagged for immediate priority review by our senior grievance authority.",
+  "complaint_btn_continue": "Continue exploring relief",
+  "complaint_btn_officer": "Speak with Grievance Officer",
+  "complaint_cat_harassment": "Agent Harassment / Code of Conduct",
+  "complaint_cat_wrong_charges": "Incorrect Charges / Penalties",
+  "complaint_cat_privacy": "Privacy & Data Protection (DPDP)",
+  "complaint_cat_service": "Customer Service Grievance",
+  "complaint_cat_other": "General Account Grievance"
 }

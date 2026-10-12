@@ -9,12 +9,13 @@ Multilingual (English, Tamil, Hindi) hardship chatbot library designed for empat
 - **State machine driven:** Conversation flow is strictly governed by `ConversationState` transitions.
 - **Privacy & Compliance:** Adheres to DPDP Act 2023, RBI Responsible Business Conduct Directions 2026 (Para 454P recording notice, Para 454Y contact windows, Para 454Z harsh practices prohibition, Para 454AA grievance redressal).
 
-## Components (Task 4.1 Dialogue Engine, Task 4.2 Flows, Task 4.3 Plan Offer, & Task 4.4 Zero Capacity / Distress)
+## Components (Tasks 4.1 - 4.5)
 - `engine.py`: `ChatEngine` dialogue engine orchestrating turns and `build_engine` factory.
 - `flows/hardship.py`: Hardship disclosure classifier (`job_loss`, `medical`, `family_bereavement`, `business_loss`, `prefer_not_to_say`), empathetic acknowledgment, and bereavement/medical outreach pause per RBI para 454Y(6).
 - `flows/affordability.py`: Household budget assessment, `estimate_affordability` surplus calculation, and capacity confirmation in INR.
 - `flows/offer.py`: Relief option presentation (at most 3 cards), dynamic regulatory disclosures (`disc.*`), plan acceptance/rejection, why-contacted explanations via `RiskScore.reasons`, and RBI para 454AA grievance officer contact footer.
 - `flows/zero_capacity.py`: Zero repayment capacity path, stopping payment asks, credit card insurance referral (`job_loss`), and hardship officer callback booking (`CallbackScheduler`) with single-story summary.
+- `flows/complaint.py`: Formal complaint capture (IS/ISO 10002:2018), category classification (`harassment`, `wrong_charges`, `privacy`, `service`, `other`), priority harassment escalation, 30-day SLA enforcement, and RBI Ombudsman escalation guidance (cms.rbi.org.in / 14448).
 - `distress.py`: Multilingual severe emotional distress detection and compassionate support routing with Tele-MANAS helpline (14416).
 - `nlu.py`: `NLU` intent and slot parser with multilingual amount extraction to paise (en/ta/hi).
 - `language.py`: Script-based language detection and dynamic switching across en/ta/hi.

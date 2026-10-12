@@ -3,9 +3,11 @@
 from npa_chat.distress import detect_distress, handle_distress
 from npa_chat.engine import ChatEngine, build_engine
 from npa_chat.flows import (
+    classify_complaint_category,
     classify_hardship,
     estimate_affordability,
     handle_affordability_turn,
+    handle_complaint_turn,
     handle_hardship_turn,
     handle_offer_turn,
     handle_zero_capacity_turn,
@@ -34,6 +36,7 @@ __all__ = [
     "SessionStore",
     "__version__",
     "build_engine",
+    "classify_complaint_category",
     "classify_hardship",
     "detect_distress",
     "detect_language_switch_request",
@@ -43,6 +46,7 @@ __all__ = [
     "get_llm_client",
     "get_string",
     "handle_affordability_turn",
+    "handle_complaint_turn",
     "handle_distress",
     "handle_hardship_turn",
     "handle_offer_turn",
