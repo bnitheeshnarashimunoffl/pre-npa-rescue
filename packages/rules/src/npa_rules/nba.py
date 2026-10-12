@@ -187,43 +187,66 @@ class QueueInput:
     customer_name: str
 
 
-def priority(nba: NextBestAction, outstanding_paise: int, policy: Policy) -> Decimal:
-    """Expected benefit of acting: ``p_roll_forward × max(uplift_score, 0) × outstanding``.
+def _is_hardship(nba: NextBestAction, policy: Policy) -> bool:
+    return policy.nba.hardship_first and nba.action is NextAction.HARDSHIP_OFFICER
 
-    Hardship cases (``hardship_officer`` or segment ``cant_pay``) are boosted and never fall
-    below ``p_roll_forward × outstanding × hardship_floor_weight``. ``no_contact`` is 0.
+
+def priority(nba: NextBestAction, outstanding_paise: int, policy: Policy) -> Decimal:
+    """Score of one queue item **within its band** (see :func:`prioritise`).
+
+    * ``no_contact``: 0.
+    * Hardship band (``hardship_officer`` when ``nba.hardship_first``): risk-weighted exposure
+      ``p_roll_forward × outstanding``. Uplift is not used here: it measures how much contact
+      raises the chance of a cure, which is close to 0 for a customer who cannot pay, yet these
+      customers need documented engagement with a person before any escalation
+      (RBI RBC Directions para 454D).
+    * Everyone else: expected benefit ``p_roll_forward × max(uplift_score, 0) × outstanding``.
+
     Never "ease of extraction": a collector's queue must not reward pressing the customers
-    easiest to squeeze (RBI RBC Directions para 454Q, incentives must not encourage harsh
-    practices).
+    easiest to squeeze (RBI RBC Directions para 454Q).
     """
     if nba.action is NextAction.NO_CONTACT:
         return Decimal(0)
     p = Decimal(str(nba.risk.p_roll_forward))
+    if _is_hardship(nba, policy):
+        return p * outstanding_paise
     u = max(Decimal(str(nba.uplift.uplift_score)), Decimal(0))
-    value = p * u * outstanding_paise
-    if nba.action is NextAction.HARDSHIP_OFFICER or nba.segment.segment is Segment.CANT_PAY:
-        floor = p * outstanding_paise * policy.nba.hardship_floor_weight
-        value = max(value * policy.nba.hardship_boost, floor)
-    return value
+    return p * u * outstanding_paise
 
 
 def prioritise(items: Sequence[QueueInput], policy: Policy) -> list[QueueItem]:
-    """Collector queue ordered by :func:`priority`, scaled to 0..1 within the batch."""
-    raw = [priority(i.nba, i.account.total_outstanding_paise, policy) for i in items]
-    top = max(raw, default=Decimal(0)) or Decimal(1)
-    queue = [
-        QueueItem(
-            account_id=i.account.account_id,
-            customer_name=i.customer_name,
-            bucket=i.account.bucket,
-            dpd=i.account.dpd,
-            total_due_paise=i.account.total_outstanding_paise,
-            nba=i.nba,
-            priority=float(round(r / top, 4)),
-        )
-        for i, r in zip(items, raw, strict=True)
+    """Collector queue: hardship band first, then everyone else, each by :func:`priority`.
+
+    ``QueueItem.priority`` is in 0..1: the hardship band is scaled into (0.5, 1], the rest into
+    [0, 0.5], each relative to the top score of its band in this batch. So a value above 0.5
+    always means "hardship case" and the float order matches the queue order.
+    """
+    scored = [
+        (i, _is_hardship(i.nba, policy), priority(i.nba, i.account.total_outstanding_paise, policy))
+        for i in items
     ]
-    return sorted(queue, key=lambda q: (-q.priority, q.account_id))
+    top = {
+        band: max((s for _, h, s in scored if h is band), default=Decimal(0)) or Decimal(1)
+        for band in (True, False)
+    }
+    half = Decimal("0.5")
+    queue = [
+        (
+            hardship,
+            QueueItem(
+                account_id=i.account.account_id,
+                customer_name=i.customer_name,
+                bucket=i.account.bucket,
+                dpd=i.account.dpd,
+                total_due_paise=i.account.total_outstanding_paise,
+                nba=i.nba,
+                priority=float(round((half if hardship else 0) + half * score / top[hardship], 4)),
+            ),
+        )
+        for i, hardship, score in scored
+    ]
+    queue.sort(key=lambda hq: (not hq[0], -hq[1].priority, hq[1].account_id))
+    return [q for _, q in queue]
 
 
 # --- fixture-backed RiskProvider (until WS2 ships, A10.1) ------------------------------------

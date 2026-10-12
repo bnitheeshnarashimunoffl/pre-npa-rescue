@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from npa_contracts.enums import Bucket, Channel, NextAction, RiskBand, Segment, UpliftGroup
+from npa_contracts.models import QueueItem
 from npa_contracts.providers import NBAProvider
 from npa_rules.compliance_guard import ComplianceGuard
 from npa_rules.nba import NextBestActionService, QueueInput, StaticRiskProvider, prioritise
@@ -171,20 +172,66 @@ def test_persuadable_escalates_to_agent_call_after_ignored_invites(policy: Polic
 # --- queue -----------------------------------------------------------------------------------
 
 
-def test_queue_priorities(policy: Policy) -> None:
+def fixture_queue(policy: Policy) -> list[QueueItem]:
     accts = snapshots()
     svc = service(policy, datetime(2026, 10, 12, 11, tzinfo=IST), accts)
     names = {i["account_id"]: i["customer_name"] for i in queue_data()["items"]}
     items = [QueueInput(svc.next_best_action(a, MONTH), accts[a], names[a]) for a in names]
-    queue = prioritise(items, policy)
+    return prioritise(items, policy)
+
+
+def test_queue_priorities(policy: Policy) -> None:
+    queue = fixture_queue(policy)
     assert len(queue) == 10
     assert queue[0].priority == 1.0
     assert [q.priority for q in queue] == sorted((q.priority for q in queue), reverse=True)
     by_id = {q.account_id: q for q in queue}
     assert by_id["ACC-000778"].priority == 0.0  # no_contact
-    # Hardship cases are never deprioritised to zero even with ~0 uplift.
-    assert by_id[RAVI.account_id].priority > by_id["ACC-000117"].priority
     assert by_id[PRIYA.account_id].bucket is Bucket.SMA0
+    # Among non-hardship cases, order is expected benefit: Priya has the highest.
+    rest = [q for q in queue if q.nba.action is not NextAction.HARDSHIP_OFFICER]
+    assert rest[0].account_id == PRIYA.account_id and rest[0].priority == 0.5
+
+
+def test_hardship_cases_rank_first(policy: Policy) -> None:
+    # Ravi's uplift is 0.03, so on expected benefit alone he ranked 5th of 10.
+    queue = fixture_queue(policy)
+    assert queue[0].account_id == RAVI.account_id
+    assert queue[0].nba.action is NextAction.HARDSHIP_OFFICER
+    assert all((q.priority > 0.5) == (q.nba.action is NextAction.HARDSHIP_OFFICER) for q in queue)
+
+
+def test_hardship_band_ordered_by_risk_weighted_exposure(policy: Policy) -> None:
+    accts = snapshots()
+    svc = service(policy, datetime(2026, 10, 12, 11, tzinfo=IST), accts)
+    ravi_nba = svc.next_best_action(RAVI.account_id, MONTH)
+    bigger = RAVI.model_copy(
+        update={
+            "account_id": "ACC-BIG",
+            "total_outstanding_paise": 2 * RAVI.total_outstanding_paise,
+        }
+    )
+    queue = prioritise(
+        [
+            QueueInput(ravi_nba, RAVI, "Ravi"),
+            QueueInput(ravi_nba.model_copy(update={"account_id": "ACC-BIG"}), bigger, "Big"),
+        ],
+        policy,
+    )
+    assert [q.account_id for q in queue] == ["ACC-BIG", RAVI.account_id]
+    assert queue[0].priority == 1.0 and queue[1].priority == 0.75
+
+
+def test_hardship_first_can_be_switched_off(policy: Policy) -> None:
+    data = policy.model_dump()
+    data["nba"]["hardship_first"] = False
+    plain = Policy.model_validate(data)
+    queue = fixture_queue(plain)
+    order = [q.account_id for q in queue]
+    # Pure expected benefit: Ravi's 0.03 uplift puts him below every persuadable chat invite.
+    assert order.index(RAVI.account_id) > order.index("ACC-000611")
+    assert queue[0].account_id == PRIYA.account_id
+    assert max(q.priority for q in queue) == 0.5
 
 
 def test_queue_empty(policy: Policy) -> None:

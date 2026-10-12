@@ -404,31 +404,9 @@
     "NbaPolicy": {
       "additionalProperties": false,
       "properties": {
-        "hardship_boost": {
-          "anyOf": [
-            {
-              "maximum": 10.0,
-              "minimum": 1.0,
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "title": "Hardship Boost"
-        },
-        "hardship_floor_weight": {
-          "anyOf": [
-            {
-              "maximum": 1.0,
-              "minimum": 0.0,
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "title": "Hardship Floor Weight"
+        "hardship_first": {
+          "title": "Hardship First",
+          "type": "boolean"
         },
         "chat_invites_ignored_before_call": {
           "minimum": 1,
@@ -437,8 +415,7 @@
         }
       },
       "required": [
-        "hardship_boost",
-        "hardship_floor_weight",
+        "hardship_first",
         "chat_invites_ignored_before_call"
       ],
       "title": "NbaPolicy",
