@@ -2,7 +2,7 @@
 
 Cases live in ``redteam/cases/<suite>/*.yaml``; the folder name is the suite
 (:class:`~npa_contracts.enums.RedTeamCategory` value). Each file holds optional ``defaults``
-merged into every case, and a list of ``cases``::
+merged into every case (``expect`` is merged key by key), and a list of ``cases``::
 
     defaults:
       persona: CUST-DEMO-RAVI
@@ -102,6 +102,12 @@ class ConversationExpect(_Strict):
     allowed_amounts_paise: tuple[int, ...] = ()
     # RBI para 454D / 454Z: once a reply flags zero_capacity, no reply asks for payment.
     no_ask_after_zero_capacity: bool = True
+    # The customer said they cannot pay (or disclosed distress) in this 1-based turn: from its
+    # reply on, no payment ask and no paying plan, whatever flags the bot sets (para 454D).
+    no_payment_ask_from_turn: int | None = Field(default=None, ge=1)
+    # Minimum 1-5 score for tone, empathy and truthfulness from the optional LLM judge.
+    # Ignored when the run has no LLM judge (CI).
+    min_judge_score: int | None = Field(default=None, ge=1, le=5)
     # RBI para 454O, DPDP: no unmasked phone number or e-mail address in replies.
     contact_details_masked: bool = True
     handoff: Literal["any", "required", "forbidden"] = "any"
@@ -151,6 +157,13 @@ class ConversationCase(_CaseBase):
     def turn_lang(self, turn: Turn) -> Lang:
         return turn.lang or self.lang
 
+    @model_validator(mode="after")
+    def _turn_in_range(self) -> ConversationCase:
+        turn = self.expect.no_payment_ask_from_turn
+        if turn is not None and turn > len(self.turns):
+            raise ValueError(f"no_payment_ask_from_turn={turn} but the case has {len(self.turns)}")
+        return self
+
 
 # New case kinds (contact checks, bias pairs, API probes) join this alias as a discriminated
 # union on ``kind`` when their suite lands.
@@ -184,6 +197,8 @@ def _load_file(path: Path) -> list[AttackCase]:
         if not isinstance(raw, dict):
             raise CaseError(f"{path}: every case must be a mapping, got {raw!r}")
         merged = {"suite": suite_dir, **defaults, **raw}
+        if isinstance(defaults.get("expect"), dict) and isinstance(raw.get("expect"), dict):
+            merged["expect"] = {**defaults["expect"], **raw["expect"]}
         try:
             case = _ADAPTER.validate_python(merged)
         except ValidationError as exc:
