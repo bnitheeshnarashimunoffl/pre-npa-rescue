@@ -25,9 +25,8 @@ def test_settings_read_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     assert s.model_dir == tmp_path
 
 
-@pytest.mark.parametrize("argv", [["score", "--as-of", "2026-09"], ["evaluate"]])
-def test_cli_commands_are_stubbed(argv: list[str]) -> None:
-    assert main(argv) == EXIT_NOT_IMPLEMENTED
+def test_cli_score_is_stubbed() -> None:
+    assert main(["score", "--as-of", "2026-09"]) == EXIT_NOT_IMPLEMENTED
 
 
 def test_cli_train_writes_artifacts(

@@ -9,8 +9,8 @@ uplift model that decides who is worth contacting at all. Implements
 
 **Tasks:** 2.1 early-warning · 2.2 explanations · 2.3 segmentation · 2.4 uplift · 2.5 evaluation report
 
-> Status: tasks 2.1 (early warning), 2.2 (reason codes), 2.3 (segmentation) and 2.4 (uplift).
-> The evaluation report (2.5) lands in a following PR.
+> Status: tasks 2.1 (early warning), 2.2 (reason codes), 2.3 (segmentation), 2.4 (uplift) and
+> 2.5 (evaluation report). Next: `RiskProvider` + `npa-models score` (`scores.parquet`).
 
 ## Early-warning model (task 2.1, `early_warning.py`)
 
@@ -90,6 +90,26 @@ uplift model that decides who is worth contacting at all. Implements
   `UpliftModel.score(df) -> list[UpliftResult]`, `.score_batch`, `.score_frame`, `.save`/`.load`.
 - **CLI:** `npa-models train --all` also writes `$MODEL_DIR/uplift/` (needs `experiment.parquet`).
 
+## Evaluation report (task 2.5, `evaluate.py`, `fairness.py`, `model_cards.py`, `plots.py`)
+
+- `uv run npa-models evaluate` writes `reports/`: `metrics.json`, `policy_simulation.json`,
+  `policy_strategies.json`, three model cards and the PNG plots. The exact `metrics.json` keys
+  are in [`reports/README.md`](reports/README.md) and are kept stable (WS7 reads them, #106).
+- **Test months pending:** final 2026-07..09 numbers need WS1's label-horizon branch. Until
+  then the report uses the validation months (which also fitted the calibrator) and marks every
+  test number `"pending"`.
+- **Metrics with 95% bootstrap intervals** (IS/ISO/IEC TS 4213); robustness under 10% feature
+  noise and with salary data missing (IS/ISO/IEC 25059:2023).
+- **Fairness (IS/ISO/IEC TR 24027:2021):** per gender, religion, caste_category and region:
+  high-band selection rate, TPR/FPR, calibration within groups, `wont_pay` share, and the share
+  sent to `sleeping_dog` vs `persuadable`. Gaps above **0.05** are flagged with a mitigation;
+  the four-fifths ratio (0.8) is a secondary warning. `fairness.py` is the only module that
+  reads protected attributes (a test enforces it).
+- **Policy simulation:** call everyone vs risk-only vs uplift (ours) vs the oracle. The oracle
+  uses hidden truth and is an upper bound only, never our result. `policy_simulation.json` is
+  exactly `SimulationMetrics` (ours vs call everyone).
+- **Persona checks:** Priya and Ravi high risk; Priya persuadable (`metrics.json["personas"]`).
+
 ## Public API (so far)
 
 | Name | Module | Purpose |
@@ -104,8 +124,9 @@ uplift model that decides who is worth contacting at all. Implements
 ## How to run
 
 ```bash
-uv run npa-models --help            # train | score | evaluate (score/evaluate are stubs)
+uv run npa-models --help            # train | score | evaluate (score is a stub)
 uv run npa-models train --all       # needs $DATA_DIR/features.parquet + labels.parquet
+uv run npa-models evaluate          # needs trained models + protected attributes; writes reports/
 uv run pytest packages/models
 uv run python -m mypy packages/models
 ```
@@ -132,10 +153,11 @@ including the demo personas `CUST-DEMO-PRIYA` and `CUST-DEMO-RAVI`.
 | Item | Where |
 |---|---|
 | A3 rule 1, fair treatment (RBI RBC Directions) | `features.FORBIDDEN_COLUMNS`, `tests/test_leakage_guard.py` |
-| IS/ISO/IEC TR 24027:2021 (bias in AI systems) | leakage guard; fairness metrics (task 2.5) |
+| IS/ISO/IEC TR 24027:2021 (bias in AI systems) | leakage guard; `fairness.py` |
 | IS/ISO/IEC 23053:2022 (ML framework, lifecycle) | time-based split |
 | IS/ISO/IEC 42001:2023, RBI FREE-AI (AI inventory) | `registry.make_model_version` on every output |
-| IS/ISO/IEC TS 4213, IS/ISO/IEC 25059:2023 | model cards in `reports/` (task 2.5) |
+| IS/ISO/IEC TS 4213, IS/ISO/IEC 25059:2023 | model cards in `reports/` (`evaluate.py`, `model_cards.py`) |
+| IS/ISO/IEC TR 24027:2021 (bias) | `fairness.py`: gaps > 0.05 flagged, four-fifths warning |
 | IS/ISO/IEC TS 4213 (classification performance) | `metrics.binary_metrics`: ROC-AUC, PR-AUC, Brier, KS + base rate |
 | IS/ISO/IEC 25059:2023 (explainability, controllability) | monotonic constraints in `early_warning.MONOTONE`; reason codes (`explain.py`) |
 | A3 fair treatment (non-judgemental communication) | `reason_codes.yaml` language rules, `not_shown` features |

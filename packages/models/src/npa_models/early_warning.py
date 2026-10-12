@@ -190,6 +190,11 @@ class EarlyWarningModel:
         """Calibrated probability of reaching NPA (> 90 DPD) within 90 days."""
         return self._calibrated(df, "npa_90d", "npa_90d_calibrator")
 
+    def predict_baseline_proba(self, df: pd.DataFrame) -> npt.NDArray[np.float64]:
+        """Logistic-regression baseline probability (uncalibrated), for comparison only."""
+        x = _baseline_input(build_matrix(df, self.bundle.feature_columns))
+        return _proba(self.bundle.estimators["baseline"], x)
+
     def score_frame(self, df: pd.DataFrame) -> pd.DataFrame:
         """Vectorised scores: ``account_id, as_of_month, p_roll_forward, p_npa_90d, risk_band``."""
         p = self.predict_proba(df)

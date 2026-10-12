@@ -20,6 +20,7 @@ class ModelSettings(BaseSettings):
     seed: int = DEFAULT_SEED
     data_dir: Path = Path("data/generated")
     model_dir: Path = Path("packages/models/artifacts")
+    reports_dir: Path = Path("packages/models/reports")
     as_of_month: str = AS_OF_MONTH
     # Risk bands on calibrated p_roll_forward (task 2.1): high >= high, medium >= medium.
     risk_high_threshold: float = 0.35
