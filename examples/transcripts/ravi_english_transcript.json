@@ -1,0 +1,102 @@
+{
+  "title": "Ravi Kumar — English Zero-Capacity & Callback Demo",
+  "metadata": {
+    "Customer ID": "CUST-DEMO-RAVI",
+    "Account ID": "ACC-DEMO-RAVI",
+    "Customer Name": "Ravi Kumar",
+    "Profile Language Preference": "Tamil (ta)",
+    "Session Language Choice": "English (en) [chats in English]",
+    "Classification": "SMA-1, DPD 47",
+    "Repayment Capacity": "₹0 declared capacity (job loss)",
+    "Card Insurance Cover": "Job-loss cover (credit shield)",
+    "Stop-Ask Rule": "Enforced: No payment asked or demanded at any turn",
+    "Referrals": "Job-loss insurance claim referral + Hardship officer review date",
+    "Callback Booking": "11:00 AM IST with Hardship Officer",
+    "Statutory Grievance": "RBI RBC Directions 2026 Para 454AA Grievance Redressal details attached"
+  },
+  "turns": [
+    {
+      "turn": 1,
+      "speaker": "Customer (Ravi)",
+      "user_message": "Hi",
+      "bot_reply": "Hello Ravi, I am here to assist you with your account options with care and respect.\n\nThis conversation is recorded for quality, training and compliance purposes.\nYour personal details will only be used to explore account relief options in accordance with the DPDP Act.",
+      "state": "CONSENT_NOTICE",
+      "lang": "en",
+      "flags": [],
+      "quick_replies": [
+        "English",
+        "தமிழ்",
+        "हिन्दी"
+      ],
+      "offers_count": 0
+    },
+    {
+      "turn": 2,
+      "speaker": "Customer (Ravi)",
+      "user_message": "English",
+      "bot_reply": "Would you like to tell me what has been happening? There is no judgement here, and sharing is completely optional.",
+      "state": "HARDSHIP_DISCLOSURE",
+      "lang": "en",
+      "flags": [],
+      "quick_replies": [],
+      "offers_count": 0
+    },
+    {
+      "turn": 3,
+      "speaker": "Customer (Ravi)",
+      "user_message": "I lost my job 3 months ago and have zero income",
+      "bot_reply": "I am sorry to hear about your job loss. We appreciate you sharing this, and we will work to find an affordable path forward.\n\nTo help us identify relief options that fit your situation, what is your current monthly take-home income?",
+      "state": "AFFORDABILITY",
+      "lang": "en",
+      "flags": [
+        "hardship_classified_job_loss"
+      ],
+      "quick_replies": [
+        "₹0 (No income)",
+        "Up to ₹10,000",
+        "₹10,000 - ₹25,000",
+        "₹25,000 - ₹50,000"
+      ],
+      "offers_count": 0
+    },
+    {
+      "turn": 4,
+      "speaker": "Customer (Ravi)",
+      "user_message": "I can't pay even 500 rupees right now, I have zero capacity",
+      "bot_reply": "We hear you, and we will not ask you for payments right now. Your well-being comes first, and we will not pressure you.\n\n🛡️ Your credit card carries job_loss insurance cover. We can submit an insurance claim referral on your behalf to assist with your account.\n\nHere are the relief steps approved under bank policy for zero repayment capacity:\n• Option 1: Credit card insurance claim referral.\n   ℹ️ Insurance claims are assessed by the underwriter per policy terms and require supporting documentation; claim approval is not guaranteed.\n• Option 2: Documented engagement and agreed hardship review date. (Requires officer confirmation)\n   ℹ️ No immediate payment is demanded today while under hardship review.\n   ℹ️ Contractual interest continues to accrue under the credit card agreement until a formal relief plan is approved.\n\nTo ensure you tell your story only once and agree on a realistic review date, please choose a convenient time for a hardship officer callback:",
+      "state": "ZERO_CAPACITY",
+      "lang": "en",
+      "flags": [
+        "hardship_classified_job_loss",
+        "zero_capacity",
+        "zero_capacity_detected",
+        "zero_capacity_acknowledged",
+        "insurance_cover_referred"
+      ],
+      "quick_replies": [
+        "11:00 AM - 11:30 AM",
+        "03:00 PM - 03:30 PM"
+      ],
+      "offers_count": 2
+    },
+    {
+      "turn": 5,
+      "speaker": "Customer (Ravi)",
+      "user_message": "Please book the 11:00 AM slot with the hardship officer",
+      "bot_reply": "Your callback with a hardship officer has been booked for 11:00 AM on 12-10-2026 (Ref: CB-0001). We will call you directly at this time so you only need to tell your story once.\n\nGrievance Officer: Anjali Rao (fictional) | Email: grievance.officer@demo-bank.example | Phone: +91-44-0000-0000 | Address: Grievance Redressal Cell, Demo Bank Ltd (fictional), 1 Example Road, Chennai 600001. Unresolved complaints can be escalated to the RBI Ombudsman after 30 days.",
+      "state": "HANDOFF",
+      "lang": "en",
+      "flags": [
+        "hardship_classified_job_loss",
+        "zero_capacity",
+        "zero_capacity_detected",
+        "zero_capacity_acknowledged",
+        "insurance_cover_referred",
+        "callback_booked",
+        "rbi_454aa_grievance_attached"
+      ],
+      "quick_replies": [],
+      "offers_count": 2
+    }
+  ]
+}

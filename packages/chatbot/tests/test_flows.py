@@ -205,7 +205,7 @@ def test_format_option_summary() -> None:
         type=ReliefType.EMI_CONVERSION,
         monthly_amount_paise=200000,
         tenure_months=6,
-        waiver_paise=118000,
+        waiver_paise=153400,
         settlement_amount_paise=None,
         policy_ref="bank_policy.yaml#emi_conversion.v1",
         regulatory_refs=["RBI Prudential Framework 2019"],
@@ -216,7 +216,7 @@ def test_format_option_summary() -> None:
     summary_en = format_option_summary(opt_emi_waiver, Lang.EN, index=1)
     assert "₹2,000" in summary_en
     assert "6 months" in summary_en
-    assert "₹1,180" in summary_en
+    assert "₹1,534" in summary_en
 
     summary_ta = format_option_summary(opt_emi_waiver, Lang.TA, index=1)
     assert "₹2,000" in summary_ta

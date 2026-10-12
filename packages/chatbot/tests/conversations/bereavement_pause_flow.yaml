@@ -1,6 +1,7 @@
 scenario: "Bereavement Outreach Pause Flow"
 description: "Bereavement disclosure, compassionate condolence, and RBI para 454Y(6) outreach pause acceptance."
 customer_id: "CUST-DEMO-RAVI"
+lang: "en"
 turns:
   - user: "Hi"
     expected_state: "CONSENT_NOTICE"

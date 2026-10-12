@@ -78,9 +78,57 @@ class FakePolicyProvider:
     def __init__(self) -> None:
         priya_raw = _load_fixture("relief_options_priya.json")
         ravi_raw = _load_fixture("relief_options_ravi.json")
-        self._options_priya = [ReliefOption.model_validate(opt) for opt in priya_raw]
-        self._options_ravi = [ReliefOption.model_validate(opt) for opt in ravi_raw]
-        self._offer = Offer.model_validate(_load_fixture("offer.json"))
+        # Ensure canonical waiver ₹1,534 (153400 paise), disc.* keys,
+        # and OPT-<account_id>-<KIND> IDs
+        self._options_priya = [
+            ReliefOption.model_validate(
+                {
+                    **opt,
+                    "option_id": (
+                        f"OPT-ACC-DEMO-PRIYA-{opt['type'].upper()}"
+                        if not opt["option_id"].startswith("OPT-ACC-DEMO-PRIYA-")
+                        else opt["option_id"]
+                    ),
+                    "waiver_paise": 153400 if opt.get("waiver_paise") else None,
+                    "disclosure_keys": [
+                        f"disc.{k[len('disclosure.') :]}"
+                        if k.startswith("disclosure.")
+                        else (k if k.startswith("disc.") else f"disc.{k}")
+                        for k in opt.get("disclosure_keys", [])
+                    ],
+                }
+            )
+            for opt in priya_raw
+        ]
+        self._options_ravi = [
+            ReliefOption.model_validate(
+                {
+                    **opt,
+                    "option_id": (
+                        f"OPT-ACC-DEMO-RAVI-{opt['type'].upper()}"
+                        if not opt["option_id"].startswith("OPT-ACC-DEMO-RAVI-")
+                        else opt["option_id"]
+                    ),
+                    "disclosure_keys": [
+                        f"disc.{k[len('disclosure.') :]}"
+                        if k.startswith("disclosure.")
+                        else (k if k.startswith("disc.") else f"disc.{k}")
+                        for k in opt.get("disclosure_keys", [])
+                    ],
+                }
+            )
+            for opt in ravi_raw
+        ]
+        offer_raw = _load_fixture("offer.json")
+        offer_raw["option"]["waiver_paise"] = 153400
+        offer_raw["option"]["option_id"] = "OPT-ACC-DEMO-PRIYA-EMI_CONVERSION"
+        offer_raw["option"]["disclosure_keys"] = [
+            f"disc.{k[len('disclosure.') :]}"
+            if k.startswith("disclosure.")
+            else (k if k.startswith("disc.") else f"disc.{k}")
+            for k in offer_raw["option"].get("disclosure_keys", [])
+        ]
+        self._offer = Offer.model_validate(offer_raw)
         policy_raw = _load_fixture("policy.json")
         self._grievance = GrievanceOfficer.model_validate(policy_raw["policy"]["grievance_officer"])
 
@@ -207,13 +255,20 @@ class FakeCustomerContextProvider:
                 "has_card_insurance": False,
                 "insurance_cover_type": "none",
                 "preferred_contact_window": "10:00-13:00",
+                "total_due_paise": 10745200,
+                "overdue_paise": 1149200,
+                "outstanding_after_due_date_paise": 9251900,
+                "dpd": 16,
+                "sma_bucket": "SMA-0",
             }
         return {
             "customer_id": "CUST-DEMO-RAVI",
             "account_id": "ACC-DEMO-RAVI",
             "full_name": "Ravi Kumar",
-            "language_pref": "en",
+            "language_pref": "ta",  # Profile is ta, chats in English per session choice
             "has_card_insurance": True,
             "insurance_cover_type": "job_loss",
             "preferred_contact_window": "11:00-14:00",
+            "dpd": 47,
+            "sma_bucket": "SMA-1",
         }

@@ -133,6 +133,42 @@ def render_disclosure(key: str, lang: Lang) -> str:
     return f"[Disclosure: {key}]"
 
 
+def to_canonical_disc_key(key: str) -> str:
+    """Ensure canonical disc.* key. Maps legacy disclosure.* to disc.*."""
+    if key.startswith("disclosure."):
+        return f"disc.{key[len('disclosure.') :]}"
+    if not key.startswith("disc."):
+        return f"disc.{key}"
+    return key
+
+
+def to_canonical_option_id(option_id: str, account_id: str, relief_type: ReliefType | str) -> str:
+    """Ensure canonical OPT-<account_id>-<KIND> identifier."""
+    if option_id.startswith(f"OPT-{account_id}-"):
+        return option_id
+
+    kind = str(relief_type).upper()
+    if "." in kind:
+        kind = kind.split(".")[-1]
+    if option_id.startswith("OPT-"):
+        parts = option_id.split("-")
+        if len(parts) >= 3 and parts[1] not in account_id:
+            kind = "_".join(parts[2:])
+    return f"OPT-{account_id}-{kind}"
+
+
+def canonicalize_relief_option(opt: ReliefOption, account_id: str) -> ReliefOption:
+    """Return a ReliefOption with canonical disc.* keys and OPT-<account_id>-<KIND> id."""
+    canonical_keys = [to_canonical_disc_key(k) for k in opt.disclosure_keys]
+    canonical_id = to_canonical_option_id(opt.option_id, account_id, opt.type)
+    return opt.model_copy(
+        update={
+            "disclosure_keys": canonical_keys,
+            "option_id": canonical_id,
+        }
+    )
+
+
 def format_option_summary(option: ReliefOption, lang: Lang, index: int = 1) -> str:
     """Format clear, honest summary of a ReliefOption object in the requested language."""
     if option.type in (ReliefType.EMI_CONVERSION, "emi_conversion"):
@@ -202,6 +238,7 @@ def present_relief_options(
     lines: list[str] = [get_string("offer_intro", lang)]
 
     for idx, opt in enumerate(selected_options, start=1):
+        opt = canonicalize_relief_option(opt, account_id)
         offer_id = f"OFFER-{uuid.uuid4()}"
         offer = Offer(
             offer_id=offer_id,

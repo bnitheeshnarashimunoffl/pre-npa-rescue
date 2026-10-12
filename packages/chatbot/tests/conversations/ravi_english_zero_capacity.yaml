@@ -1,6 +1,7 @@
 scenario: "Ravi Zero-Capacity Full Demo Flow (English)"
 description: "Job loss disclosure, zero repayment capacity, stop-ask, insurance referral, zero-capacity options, and 11:00 AM hardship officer callback booking in English."
 customer_id: "CUST-DEMO-RAVI"
+lang: "en"
 turns:
   - user: "Hi"
     expected_state: "CONSENT_NOTICE"

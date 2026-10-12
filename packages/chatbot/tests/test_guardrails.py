@@ -127,9 +127,9 @@ def test_verify_output_guardrails_valid_numbers() -> None:
     state.presented_offers = [policy.propose_offer("CUST-01", "OPT-01", Actor.BOT)]
     comp_provider = FakeComplianceProvider()
 
-    # Priya's offer from offer.json has 2000 emi, 6 tenure, 1180 waiver
+    # Priya's offer from offer.json has 2000 emi, 6 tenure, 1534 waiver
     valid_text = (
-        "Here is Plan 1: ₹2,000 per month for 6 months. Late fees of ₹1,180 are waived. "
+        "Here is Plan 1: ₹2,000 per month for 6 months. Late fees of ₹1,534 are waived. "
         "Grievance resolution within 30 days per IS/ISO 10002:2018."
     )
     res = verify_output_guardrails(valid_text, state, comp_provider)

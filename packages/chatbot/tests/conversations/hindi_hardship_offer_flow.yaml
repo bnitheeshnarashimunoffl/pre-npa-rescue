@@ -31,7 +31,7 @@ turns:
     expected_reply_contains:
       - "योजना"
       - "2,000"
-      - "1,180"
+      - "1,534"
 
   - user: "स्वीकार"
     expected_state: "ACCEPTED"

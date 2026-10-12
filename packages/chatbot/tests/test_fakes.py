@@ -145,5 +145,5 @@ def test_fake_customer_context_provider() -> None:
     assert priya_ctx["has_card_insurance"] is False
 
     ravi_ctx = context_provider.context("CUST-DEMO-RAVI")
-    assert ravi_ctx["language_pref"] == "en"
+    assert ravi_ctx["language_pref"] == "ta"
     assert ravi_ctx["has_card_insurance"] is True

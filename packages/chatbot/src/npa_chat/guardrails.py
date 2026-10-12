@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Final
 
+from npa_chat.config import default_config
 from npa_chat.i18n import get_string
 from npa_chat.state import ConversationState
 from npa_contracts.enums import Lang
@@ -122,8 +123,8 @@ _SYSTEM_WHITELIST_NUMBERS: Final[set[int]] = set(range(1, 32)) | {
     2025,
     2026,
     10002,
-    14416,
-    14448,
+    default_config.tele_manas_int,
+    default_config.rbi_ombudsman_int,
     17802,
 }
 

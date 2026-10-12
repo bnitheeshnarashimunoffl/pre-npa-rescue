@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Final
 
+from npa_chat.config import default_config
 from npa_chat.i18n import get_string
 from npa_chat.state import ChatState, ConversationState
 from npa_contracts.models import QuickReply
@@ -78,7 +79,9 @@ def handle_distress(
     state.add_flag("distress_detected")
 
     distress_msg = get_string("distress_response", lang)
-    helpline_msg = get_string("tele_manas_notice", lang)
+    helpline_msg = get_string(
+        "tele_manas_notice", lang, helpline=default_config.tele_manas_helpline
+    )
     reply_text = f"{distress_msg}\n\n{helpline_msg}"
 
     quick_replies = [

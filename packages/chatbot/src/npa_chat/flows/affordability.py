@@ -166,7 +166,7 @@ def handle_affordability_turn(
             reply_text="",
             next_state=ChatState.ZERO_CAPACITY,
             affordability=affordability,
-            flags=["zero_capacity_detected"],
+            flags=["zero_capacity", "zero_capacity_detected"],
         )
 
     # Check for direct capacity declaration (e.g. "I can pay 2000",
@@ -263,7 +263,7 @@ def handle_affordability_turn(
             reply_text="",
             next_state=ChatState.ZERO_CAPACITY,
             affordability=affordability,
-            flags=["zero_capacity_detected"],
+            flags=["zero_capacity", "zero_capacity_detected"],
         )
 
     # Prompt borrower to confirm calculated monthly capacity
