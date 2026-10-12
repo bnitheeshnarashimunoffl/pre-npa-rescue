@@ -15,7 +15,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 
 | Step | Command | Status |
 |---|---|---|
-| Generate tables (1.1) | `uv run datagen generate` | not implemented yet (calibration ready) |
+| Generate tables (1.1) | `uv run datagen generate` | customers, protected attributes, statements (normal behaviour) |
 | Demo personas (1.1 step 6) | — | after features (task 1.2) |
 | Features + labels (1.2) | `uv run datagen features` | not implemented yet |
 | Experiment (1.3) | `uv run datagen experiment` | not implemented yet |
@@ -24,7 +24,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 ## How to run
 
 ```bash
-uv run datagen generate --n 10000 --seed 42 --out data/generated
+uv run datagen generate --n 10000 --seed 42 --out data/generated   # ~17 s with transactions
 uv run datagen generate --no-transactions                          # large runs
 uv run datagen --help
 ```
@@ -47,19 +47,27 @@ Flags override environment variables; see `.env.example` (A11).
 | `AS_OF_MONTH` | `2026-09` | — |
 | `CONTRACTS_DIR` | repo `contracts/` | — |
 
+## Outputs
+
+Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_credits`,
+`shocks`, `transactions` (folder, one file per month), `features`, `labels`. Internal tables
+(not features, not contracts): `monthly_spend` (category totals per account-month) and
+`behaviour_types` (hidden ground truth). Same seed ⇒ byte-identical Parquet.
+
 ## Public API
 
 | Module | What |
 |---|---|
 | `datagen.DatagenConfig` | pydantic-settings config; calendar and seed defaults from `npa_contracts.constants` |
+| `datagen.generate.build(cfg)` / `write(data, cfg)` | task 1.1 tables in memory / validated to disk |
+| `datagen.dues` | RBI dues rules as pure functions (+ vectorised twins) |
+| `datagen.validate` | pandera / Arrow schemas generated from `contracts/data/*.md` |
 
 ## Module map
 
-`calibrate_uci` · `cli`
+`calibrate_uci` · `customers` · `protected` · `behaviour` · `statements` · `dues` · `validate` · `cli`
 
 ## Regulations and standards
-
-Planned coverage (lands with the generator in the next PRs):
 
 | Reference | Where |
 |---|---|
@@ -70,8 +78,11 @@ Planned coverage (lands with the generator in the next PRs):
 | IS/ISO/IEC TR 24027:2021 bias | protected attributes independent of hardship, only in `protected_attributes.parquet`; tested never to reach features |
 | DPDP Act 2023 data minimisation | synthetic data only; masked phone/email |
 
+WS3's `npa_rules.dues` implements the same rules; `tests/test_rbi_rules_parity.py` checks the two
+agree (skipped until `npa_rules.dues` is on `main`).
+
 ## Tests
 
 ```bash
-uv run pytest packages/datagen
+uv run pytest packages/datagen        # ~6 s, 97% line coverage
 ```
