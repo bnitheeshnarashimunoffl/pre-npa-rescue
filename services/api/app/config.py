@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     model_dir: Path = REPO_ROOT / "packages" / "models" / "artifacts"
     policy_path: Path = REPO_ROOT / "packages" / "rules" / "policies" / "bank_policy.yaml"
     contracts_dir: Path = REPO_ROOT / "contracts"
+    reports_dir: Path = REPO_ROOT / "packages" / "models" / "reports"  # WS2 committed reports
+    api_base_url: str = "http://localhost:8000/api/v1"  # used by the red-team harness
     database_url: str = "postgresql+psycopg://npa:npa@localhost:5432/npa"
     # Dev default only; >= 32 bytes for HS256 (RFC 7518). Set a random secret anywhere shared.
     jwt_secret: str = "change-me-dev-only-0123456789abcdef"

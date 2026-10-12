@@ -7,10 +7,14 @@ task (5.1-5.4) lands.
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import Engine
+from sqlalchemy.orm import sessionmaker
 
 from app import __version__
 from app.config import get_settings
+from app.db import get_engine
 from app.errors import install_error_handlers
+from app.providers import build_providers
 from app.routers import (
     accounts,
     admin,
@@ -50,7 +54,9 @@ _ROUTERS = (
 )
 
 
-def create_app() -> FastAPI:
+def create_app(engine: Engine | None = None) -> FastAPI:
+    """Build the app. ``engine`` defaults to ``DATABASE_URL`` (connected lazily, so the API
+    starts and serves fixture-backed routes even when Postgres is down)."""
     settings = get_settings()
     check_secret(settings)
     app = FastAPI(
@@ -66,6 +72,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     install_error_handlers(app)
+    sessions = sessionmaker(bind=engine or get_engine(), expire_on_commit=False)
+    app.state.sessionmaker = sessions
+    app.state.providers = build_providers(settings, sessions)
     api = APIRouter(prefix=API_PREFIX)
     for module in _ROUTERS:
         api.include_router(module.router)
