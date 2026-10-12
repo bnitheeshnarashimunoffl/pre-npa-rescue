@@ -449,14 +449,20 @@ requires-dist = [{ name = "npa-contracts", editable = "packages/contracts" }]
 
 [[package]]
 name = "npa-rules"
-version = "0.0.1"
+version = "0.1.0"
 source = { editable = "packages/rules" }
 dependencies = [
+    { name = "jsonschema" },
     { name = "npa-contracts" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "npa-contracts", editable = "packages/contracts" }]
+requires-dist = [
+    { name = "jsonschema", specifier = ">=4.22" },
+    { name = "npa-contracts", editable = "packages/contracts" },
+    { name = "pyyaml", specifier = ">=6" },
+]
 
 [[package]]
 name = "openapi-schema-validator"
