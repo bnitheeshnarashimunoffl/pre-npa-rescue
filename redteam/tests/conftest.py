@@ -16,14 +16,23 @@ from typing import Any
 import pytest
 import yaml
 
-from npa_contracts.enums import Actor, OfferStatus, Role
-from npa_contracts.models import BotReply, Callback, ChatTurnRequest, Offer, ReliefOption
+from npa_contracts.enums import Actor, NextAction, OfferStatus, Role
+from npa_contracts.models import (
+    BotReply,
+    Callback,
+    ChatTurnRequest,
+    NextBestAction,
+    Offer,
+    ReliefOption,
+)
 from npa_redteam.fakes import (
     FixtureComplianceProvider,
+    FixtureNBAProvider,
     FixturePolicyProvider,
     load_fixture,
 )
 from npa_redteam.targets import LibraryTarget
+from npa_redteam.variants import PersonaRegistry, default_name_pool
 
 PRIYA = "CUST-DEMO-PRIYA"
 RAVI = "CUST-DEMO-RAVI"
@@ -85,9 +94,12 @@ def priya_plan() -> ReliefOption:
 class GoodEngine:
     """Kind, policy-bound, flags zero capacity and injections."""
 
+    def __init__(self, registry: PersonaRegistry | None = None) -> None:
+        self.registry = registry or PersonaRegistry()
+
     def handle(self, session_id: str, customer_id: str, req: ChatTurnRequest) -> BotReply:
         text = req.text.lower()
-        if customer_id == RAVI or "can't pay" in text:
+        if self.registry.base_of(customer_id) == RAVI or "can't pay" in text:
             return make_reply(
                 session_id,
                 "Thank you for telling me. You do not need to pay anything in this chat. "
@@ -125,18 +137,50 @@ class CrashingEngine:
         raise RuntimeError("engine down")
 
 
-def target_for(engine: Any) -> LibraryTarget:
-    return LibraryTarget(engine, FixturePolicyProvider(), FixtureComplianceProvider(), name="toy")
+class LeakyNBAProvider:
+    """NBA that (wrongly) reads protected attributes: any non-base profile gets a firm process."""
+
+    def __init__(self, registry: PersonaRegistry) -> None:
+        self.registry = registry
+        self.fair = FixtureNBAProvider(registry)
+
+    def next_best_action(self, account_id: str, as_of_month: str) -> NextBestAction:
+        nba = self.fair.next_best_action(account_id, as_of_month)
+        customer = self.registry.customer_of_account(account_id)
+        profile = self.registry.profile_of(customer)
+        if profile is not None and profile != default_name_pool().persona(
+            self.registry.base_of(customer)
+        ):
+            return nba.model_copy(update={"action": NextAction.FIRM_PROCESS})
+        return nba
+
+
+def target_for(
+    engine: Any, *, registry: PersonaRegistry | None = None, nba: Any = "fixture"
+) -> LibraryTarget:
+    """Toy target. ``engine`` may be an engine or a factory taking the registry."""
+    registry = registry or PersonaRegistry()
+    if isinstance(engine, type) or not hasattr(engine, "handle"):
+        engine = engine(registry)
+    return LibraryTarget(
+        engine,
+        FixturePolicyProvider(registry),
+        FixtureComplianceProvider(),
+        nba=FixtureNBAProvider(registry) if nba == "fixture" else nba,
+        registry=registry,
+        name="toy",
+    )
 
 
 @pytest.fixture
 def good_target() -> LibraryTarget:
-    return target_for(GoodEngine())
+    return target_for(GoodEngine)
 
 
 @pytest.fixture
 def bad_target() -> LibraryTarget:
-    return target_for(BadEngine())
+    registry = PersonaRegistry()
+    return target_for(BadEngine(), registry=registry, nba=LeakyNBAProvider(registry))
 
 
 @pytest.fixture

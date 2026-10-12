@@ -17,7 +17,7 @@ from npa_redteam.cases import AttackCase, ConversationCase
 from npa_redteam.judges import Exchange, Lexicon, judge_conversation
 from npa_redteam.targets import Target
 
-__all__ = ["ConversationSuite", "Execution", "Suite"]
+__all__ = ["ConversationSuite", "Execution", "Suite", "join_parts"]
 
 _OUTPUT_LIMIT = 4000
 
@@ -35,7 +35,7 @@ class Suite(Protocol):
     def execute(self, case: AttackCase, target: Target, lexicon: Lexicon) -> Execution: ...
 
 
-def _join(parts: Sequence[str]) -> str:
+def join_parts(parts: Sequence[str]) -> str:
     text = "\n---\n".join(parts)
     return text if len(text) <= _OUTPUT_LIMIT else text[: _OUTPUT_LIMIT - 1] + "…"
 
@@ -57,8 +57,8 @@ class ConversationSuite:
         failures = judge_conversation(case, exchanges, target, lexicon)
         failures += self.extra_checks(case, exchanges, target)
         return Execution(
-            input=_join([t.text for t in case.turns]),
-            output=_join([ex.reply.text for ex in exchanges]),
+            input=join_parts([t.text for t in case.turns]),
+            output=join_parts([ex.reply.text for ex in exchanges]),
             failures=failures,
         )
 

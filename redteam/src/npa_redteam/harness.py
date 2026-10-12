@@ -26,21 +26,17 @@ from zoneinfo import ZoneInfo
 from npa_contracts.constants import BUSINESS_TZ, DEFAULT_SEED
 from npa_contracts.enums import Lang, RedTeamCategory
 from npa_contracts.models import RedTeamResult, Scorecard
-from npa_redteam.cases import AttackCase, load_cases
+from npa_redteam.cases import AttackCase, ConversationCase, load_cases
 from npa_redteam.fakes import UnknownPersonaError
 from npa_redteam.judges import Lexicon, default_lexicon
 from npa_redteam.llm_judge import LlmJudge
 from npa_redteam.scorecard import build_scorecard
 from npa_redteam.suites import SUITES
-from npa_redteam.targets import LibraryTarget, Target
+from npa_redteam.targets import LibraryTarget, Target, UnsupportedCaseError
 
 __all__ = ["CaseOutcome", "UnsupportedCaseError", "execute_case", "new_run_id", "run"]
 
 log = logging.getLogger(__name__)
-
-
-class UnsupportedCaseError(Exception):
-    """The target cannot run this case (for example an API-only probe in library mode)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,7 +72,7 @@ def execute_case(
         log.warning("redteam case=%s error=%r", case.id, exc)
         return CaseOutcome(case, "failed", input_text, "", (f"error: {type(exc).__name__}: {exc}",))
     failures = list(execution.failures)
-    minimum = case.expect.min_judge_score
+    minimum = case.expect.min_judge_score if isinstance(case, ConversationCase) else None
     if llm_judge is not None and minimum is not None:
         failures += llm_judge.failures(
             title=case.title,
