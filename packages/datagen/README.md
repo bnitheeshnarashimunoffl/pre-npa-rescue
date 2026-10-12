@@ -82,6 +82,98 @@ repayment, spend plan) · `shocks` (hidden behaviour types and shocks) · `state
 · `dues` (RBI arithmetic) · `salary` · `transactions` · `features` · `labels` · `experiment` · `pipeline`
 (features step + samples) · `validate` · `sanity` · `cli`.
 
+## Data card
+
+**What it is.** A fully synthetic, reproducible panel of Indian credit-card customers (default
+10,000; up to 5 lakh) over 24 months (`2024-10` to `2026-09`, as-of month `2026-09`). It has
+statements that follow RBI rules, hidden hardship ground truth, features, labels and a
+randomised collections experiment. Built for the Pre-NPA Rescue hackathon prototype:
+early-warning, segmentation and uplift models (WS2), the rules engine and personas (WS3/WS4),
+API seeding (WS5) and bias tests (WS7).
+
+**Sources.**
+
+| Source | Use | Licence |
+|---|---|---|
+| UCI ML Repository dataset 350, *Default of Credit Card Clients* (Yeh, 2009; 30,000 Taiwanese cardholders, April–September 2005), https://doi.org/10.24432/C55S3H | Calibration only: limit spread, bill-to-limit and payment-to-bill ratios, repayment-status transitions, default rates | CC BY 4.0 (credited in `data/ATTRIBUTION.md`) |
+| Faker `en_IN` | Name pools for synthetic customers | MIT |
+| Our own assumptions | Population mix, income, shocks, behaviour types, experiment probabilities and costs, bank-policy numbers (mirroring WS3's `bank_policy.yaml`) | documented in `data/README.md` |
+
+No other dataset is used. The raw UCI file is downloaded to `data/raw/` (gitignored) and never
+committed. Only the fitted parameters (`calibration.json`, about 20 KB) are committed. The UCI
+demographic columns (sex, education, marriage, age) are never read.
+
+**Calibration.** `calibrate_uci.py` fits on all 30,000 rows:
+- a log-normal limit fit (σ = 0.94)
+- bill-to-limit quantiles (opening utilisation)
+- payment-to-bill quantiles by previous status (how much normal customers repay)
+- a 4×4 status transition matrix (cure / stay / roll once delinquent)
+- default rates by band (reference only)
+
+Money is converted **by ratio, not exchange rate**: limits are rescaled so the median card
+limit is ₹1,50,000. UCI's duly → late rate is scaled by 0.12 to Indian delinquency levels, so
+NPA at 2026-09 is 3.6% (10,000 customers) to 3.8% (5 lakh), inside the 3–6% target. The sparse
+UCI `late1` row (34 observations) borrows the `late2` row by role. Full detail: `data/README.md`.
+
+**Synthetic only.** Every person, account, transaction and number is generated. Names come
+from Faker pools; phone numbers and emails are masked (`+91-98XXXXX123`, `p****@example.com`).
+No row corresponds to a real individual, so no DPDP Act personal data is processed. Protected
+attributes (gender, religion, caste category, state, region) live only in
+`protected_attributes.parquet` and the separate `protected_attributes_sample.parquet`; tests
+check they never reach the features.
+
+**Intended use / out of scope.** Use it to develop and demonstrate models, rules and UI, to
+test fairness tooling, and for illustrative policy simulations (`simulate_policy` output is
+marked `illustrative: true`). Do **not** use it to estimate real Indian portfolio risk, to set
+credit policy, or to quote real-world effect sizes: every relationship below was designed by us.
+
+**Known biases and limitations in the synthetic data.**
+1. **Foreign, dated calibration.** Repayment behaviour comes from a stressed 2005 Taiwanese
+   portfolio (22% default), rescaled with assumed factors. Indian card behaviour (e.g. UPI-era
+   spend, EMI-on-card habits) is not learned from data.
+2. **Designed hardship signals.** Shock rates, severities, lead times (1–3 months) and their
+   leading indicators are our assumptions. They are cleaner and more regular than real life, so
+   model performance here will overstate real-world performance.
+3. **Protected attributes are independent of hardship by construction.** That makes bias tests
+   meaningful (any gap is the model's), but it is not how real data looks. **Proxy pathways
+   still exist**: state drives city, and city tier drives income (median monthly income by
+   region ranges from ₹49,900 (east) to ₹56,400 (north)), which drives limits and therefore
+   utilisation features. Language also follows state. Regional gaps in model outputs can
+   therefore appear through these proxies even though no protected attribute is a feature.
+4. **Assumed population shares.** Gender (61% male, 38% female, 1% non-binary), religion and
+   caste-category shares are rough population assumptions, not cardholder statistics.
+5. **Names carry gender.** Faker first names are gender-consistent; names are never features,
+   but anything that reads names (e.g. a chatbot) sees a gender proxy.
+6. **Simplified economics.** Income is log-normal by occupation and city tier, with no informal
+   income, seasonality in income, or multiple cards. There is one card per customer and no
+   bureau data.
+7. **Utilisation drift.** Median utilisation rises from 0.24 (2024-10) to 0.41 (2026-09) as
+   revolvers accumulate balances; the early months are not a steady state.
+8. **Label horizon.** Labels for 2026-07..09 use three simulated months after the window, in
+   which no new hardship shock starts.
+9. **Experiment.** Uplift groups and treatment effects are assumed probabilities. The
+   experiment "proves" signal only for the effects we put in.
+10. **Missing history.** Features needing more history than exists are 0.0 ("no change"),
+    because the contract columns are non-nullable.
+11. **Personas are hand-scripted** and solved to exact agreed numbers. They are illustrations,
+    not samples of the population.
+
+**How to regenerate.**
+
+```bash
+uv sync
+uv run datagen all --n 10000 --seed 42                          # everything (offline, ~26 s)
+uv run datagen features --samples data/samples                  # refresh committed samples
+uv run python data/scripts/sanity_report.py                     # NPA rate, leading indicators
+uv run datagen all --n 500000 --no-transactions                 # 5 lakh: ~3 min, ~10 GB peak
+# Optional, needs network: refresh the calibration from UCI
+uv run python data/scripts/download_public.py && uv run python -m datagen.calibrate_uci
+```
+
+Same seed ⇒ byte-identical Parquet. Lineage, every probability and every assumption are in
+[`data/README.md`](../../data/README.md) (IS/ISO/IEC 8183:2023 data life cycle, design alignment,
+not certification).
+
 ## Regulations and standards
 
 | Reference | Where |
