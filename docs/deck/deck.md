@@ -85,7 +85,8 @@ fairness value until the committed model report exists.
 
 **Speaker notes:** The model predicts roll-forward risk at a 30–60-day horizon and returns
 reasons, a risk band and version. Segmentation distinguishes `forgot`, `cant_pay`, `wont_pay`
-and `not_at_risk`. Say clearly whether the demo is using fixtures or a trained provider.
+and `not_at_risk`. Fairness gaps above 0.05 are flagged. Say clearly whether the demo is using
+fixtures or a trained provider.
 
 **Evidence:** `contracts/schemas/RiskScore.schema.json`;
 `contracts/schemas/SegmentResult.schema.json`; pending `packages/models/reports/metrics.json`.
@@ -117,9 +118,11 @@ insurance check, compliant human callback. English, Tamil and Hindi.
 **Visual:** Two phone frames. Priya’s frame shows an approved offer and disclosures. Ravi’s
 frame shows the zero-capacity handoff and callback confirmation.
 
-**Speaker notes:** Priya’s exact amount and waiver are fixture-backed today; disclose that if
-the real policy provider has not merged. Ravi’s path stops payment prompts after zero capacity,
-then offers a policy-defined insurance referral and hardship-officer handoff.
+**Speaker notes:** Priya’s canonical SMA-0 fixture is DPD 16: ₹1,07,452 total due, ₹11,492
+overdue and ₹92,519 outstanding after the due date. Option
+`OPT-ACC-DEMO-PRIYA-EMI6-WAIVER` is ₹2,000 monthly for 6 months with ₹1,534 waived; keys use
+`disc.*`. Ravi’s SMA-1 fixture is DPD 47 with zero capacity, job-loss insurance and an 11:00
+English callback path.
 
 **Evidence:** `contracts/fixtures/bot_reply_offer.json`;
 `contracts/fixtures/bot_reply_zero_capacity.json`; `contracts/schemas/BotReply.schema.json`.
@@ -128,15 +131,16 @@ then offers a policy-defined insurance referral and hardship-officer handoff.
 
 **Title:** Compliance is tested, not asserted
 
-**On-slide text (16 words):** Bias swaps. Pressure. Injection. Privacy. Contact rules.
-Pass rate: TBD – from `redteam/reports/<latest>/scorecard.json`.
+**On-slide text (18 words):** Case pass rate: N/144. Strict RBI coverage: X/15 in scope.
+Planned and out-of-scope counts shown separately. Values: TBD.
 
-**Visual:** Six attack tiles leading to an RBI/BIS coverage grid. Reserve clear red and green
-states for the real run, including failures and fixes.
+**Visual:** Six attack tiles leading to two measures: case pass rate and strict requirement
+coverage. Add separate planned and out-of-scope requirement counts.
 
-**Speaker notes:** The six fixture categories are pressure, bias swap, prompt injection,
-privacy extraction, contact rules and misleading consequences. Do not quote the fixture’s pass
-rate as a real test result. When evidence lands, report failures and remediation honestly.
+**Speaker notes:** Keep the denominators distinct. Report case pass rate as N of 144 cases.
+Report strict requirement coverage as X of 15 in-scope RBI requirements, followed by planned
+and out-of-scope counts. Do not convert a fixture result into either measure. When evidence
+lands, report failures and remediation honestly.
 
 **Evidence:** `redteam/README.md`; `contracts/schemas/Scorecard.schema.json`; pending
 `redteam/reports/<latest>/scorecard.json`.
@@ -161,18 +165,17 @@ future-effective design target, not a current-in-force claim.
 
 ## Slide 10 — BIS standards shape the design
 
-**Title:** Indian Standards mapped to concrete evidence
+**Title:** 17 Indian Standards (14 standard families)
 
-**On-slide text (16 words):** Govern AI. Prove fairness and quality. Protect data. Treat
-customers well. Include everyone. Design alignment—not certification.
+**On-slide text (22 words):** 17 Indian Standards (14 standard families). Govern AI. Prove
+fairness and quality. Protect data. Treat customers well. Include everyone. Not certification.
 
 **Visual:** Five columns with standard identifiers and one implementation evidence line per
 area. Keep the non-certification footnote visible.
 
-**Speaker notes:** Cover AI governance, AI risk, human oversight, bias, ML quality and
-vocabulary, data life cycle, security, complaints, contact centres and ICT accessibility. The
-brief calls for 14 standards; verify grouping and edition identifiers against the committed
-WS7 mapping before final export.
+**Speaker notes:** Say “17 Indian Standards (14 standard families).” Cover AI governance, AI
+risk, human oversight, bias, ML quality and vocabulary, data life cycle, security, complaints,
+contact centres and ICT accessibility. This is design alignment, not certification.
 
 **Evidence:** Copy-ready content in `docs/deck/bis_slide.md`; pending
 `governance/bis_mapping.md`.
@@ -181,15 +184,16 @@ WS7 mapping before final export.
 
 **Title:** Compare with “call everyone”
 
-**On-slide text (14 words):** NPA rate: TBD. Cure rate: TBD. Collection cost: TBD. Source:
-contracts/fixtures/simulation_metrics.json until replaced.
+**On-slide text (19 words):** Among at-risk accounts, in simulation: NPA rate TBD. Cure rate
+TBD. Collection cost TBD. Only WS2 results are quoted.
 
 **Visual:** Three paired bars: NPA rate, cure rate and collection cost. Add an “illustrative”
 watermark while fixture data is shown.
 
-**Speaker notes:** The current fixture is explicitly a placeholder. Before the final deck, use
-the real committed simulation output and state population, horizon, strategy definitions and
-whether uncertainty was measured. Never convert fixture results into a performance claim.
+**Speaker notes:** The current fixture is a layout placeholder. Frame every result “among
+at-risk accounts, in simulation.” The oracle is an upper bound, not an achievable strategy.
+Quote only WS2’s real committed numbers, with population, horizon, strategy definitions and
+uncertainty. Never convert fixture values into performance claims.
 
 **Evidence:** `contracts/fixtures/simulation_metrics.json`; final source pending
 `packages/models/reports/policy_simulation.json` or the committed replacement named by WS2.
@@ -276,12 +280,13 @@ implementation result.
 | Priya receives a Tamil, human-approved policy offer | `contracts/fixtures/bot_reply_offer.json` | verified as fixture only |
 | Ravi receives a zero-capacity insurance and callback path | `contracts/fixtures/bot_reply_zero_capacity.json` | verified as fixture only |
 | Live chatbot supports English, Tamil and Hindi | WS4 tests and integrated demo evidence | pending |
-| Red-team pass rate and fixes | `redteam/reports/<latest>/scorecard.json` | pending |
+| Red-team case pass rate, N/144 | `redteam/reports/<latest>/scorecard.json` | pending |
+| Strict coverage, X of 15 in-scope RBI requirements, plus planned and out-of-scope counts | `redteam/reports/<latest>/scorecard.json` | pending |
 | Paragraph 454 controls are designed for the 1 January 2027 effective date | `governance/rbi_mapping.md` | pending |
 | RBI controls map to implemented enforcement points | `governance/rbi_mapping.md` plus WS3/WS5 tests | pending |
-| Relevant BIS standards map to concrete project evidence | `governance/bis_mapping.md` | pending |
+| 17 Indian Standards (14 standard families) map to concrete project evidence | `governance/bis_mapping.md` | pending |
 | BIS relationship is design alignment, not certification | `docs/deck/bis_slide.md` | verified as positioning |
-| NPA rate, cure rate and collection cost improve over call-everyone | `packages/models/reports/policy_simulation.json` | pending |
+| Among at-risk accounts, in simulation, NPA rate, cure rate and cost compare with call-everyone; oracle is an upper bound | `packages/models/reports/policy_simulation.json` | pending |
 | Data calibration source and licence | `data/ATTRIBUTION.md` | pending |
 | Protected attributes are isolated from model features | `contracts/data/protected_attributes.md`; `contracts/data/features.md` | verified as contract; implementation pending |
 | Frontend screenshots represent the integrated demo | `apps/web/screenshots/` | pending |

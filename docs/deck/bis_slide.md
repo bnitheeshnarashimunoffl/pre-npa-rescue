@@ -2,7 +2,7 @@
 
 ## Title
 
-Indian Standards mapped to system evidence
+17 Indian Standards (14 standard families) mapped to system evidence
 
 ## On-slide grid
 
@@ -14,7 +14,7 @@ Indian Standards mapped to system evidence
 | **Treat customers well** | IS/ISO 10002:2018; 18295-1:2017; 18295-2:2017 | Complaint docket and escalation; shared service measures across bot and human channels |
 | **Include everyone** | IS 17802 Part 1:2021; Part 2:2022 | Keyboard and screen-reader support, contrast, multilingual plain language and accessibility tests |
 
-**Footer:** Design alignment with Indian Standards; not a certification claim.
+**Footer:** 17 Indian Standards (14 standard families). Design alignment, not certification.
 
 ## Visual direction
 
@@ -29,9 +29,9 @@ model and fairness reports, security controls, complaint handling, contact-centr
 accessible interaction. IS/ISO/IEC 22989 and 23053 also give the architecture consistent terms
 for AI system, ML model, training data, inference and human oversight.
 
-The briefing describes 14 standards across five areas, while some entries are multi-part or
-paired standards. Before final export, use WS7’s committed mapping as the authority for the
-display count and exact Indian editions. Never describe this prototype as certified.
+The mapping contains 17 Indian Standards (14 standard families) across five areas. Use WS7’s
+committed mapping as the authority for exact Indian editions. Never describe this prototype as
+certified.
 
 ## Evidence
 
@@ -48,5 +48,5 @@ display count and exact Indian editions. Never describe this prototype as certif
 
 - Check every identifier and edition against `governance/bis_mapping.md`.
 - Replace broad implementation phrases with links to committed artifacts and tests.
-- Confirm the aggregate count after deciding how paired and multi-part standards are grouped.
+- Confirm the rendered slide says “17 Indian Standards (14 standard families)”.
 - Retain the non-certification footnote on the rendered slide.

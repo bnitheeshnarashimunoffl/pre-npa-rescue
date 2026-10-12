@@ -15,7 +15,7 @@ RBI requirements become product controls
 | **Recorded engagement** | Contact events preserve time, channel, content, recording notice, rule decision and outcome. |
 | **Financial distress** | Zero capacity stops payment pressure and routes the customer to policy-defined options and human support. |
 | **Restructuring and settlement** | Board-policy eligibility, human approval and mandatory consequence disclosures gate presentation. |
-| **Grievance and privacy** | Communications provide grievance details; role-minimised data and audit boundaries limit disclosure. |
+| **Grievance and privacy** | Communications provide grievance details; role-minimised data and audit boundaries limit data exposure. |
 
 **Footer:** Paragraph 454 controls are designed for the RBI directions effective 1 January
 2027. This prototype is not a legal-compliance certification.

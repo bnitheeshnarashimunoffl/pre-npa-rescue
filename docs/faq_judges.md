@@ -57,10 +57,11 @@ training and inference.
 
 ## 7. How do you know the system is not biased?
 
-We do not claim bias has been eliminated. The design combines protected-attribute separation,
-model fairness reporting and counterfactual bias swaps; final results are
-`TBD – from packages/models/reports/metrics.json` and
-`redteam/reports/<latest>/scorecard.json`.
+We do not claim bias has been eliminated. Fairness gaps above 0.05 are flagged. Red-team
+results report case pass rate as N/144 and strict coverage as X of 15 in-scope RBI
+requirements, plus planned and out-of-scope counts. Final values are `TBD – from
+redteam/reports/<latest>/scorecard.json` and model fairness results are `TBD – from
+packages/models/reports/metrics.json`.
 
 **Evidence:** the two pending paths above; fixture shape in
 `contracts/fixtures/scorecard.json`.
@@ -104,10 +105,9 @@ that date explicitly and do not present future-effective directions as current l
 
 ## 12. Which BIS standards matter here, and how exactly?
 
-They cover AI governance and risk, human oversight, bias and model quality, data life cycle,
-information security, complaints, contact-centre service and ICT accessibility. Each standard
-must map to a concrete artifact or test; the authoritative list is
-`TBD – from governance/bis_mapping.md`.
+The mapping covers 17 Indian Standards (14 standard families): AI governance and risk, human
+oversight, bias and model quality, data life cycle, information security, complaints,
+contact-centre service and ICT accessibility. Each maps to a concrete artifact or test.
 
 **Evidence:** `docs/deck/bis_slide.md`; pending `governance/bis_mapping.md`.
 
@@ -130,9 +130,9 @@ pending `apps/web/screenshots/`.
 
 ## 15. What is the cost per account, and what business improvement do you achieve?
 
-We will answer from the committed simulation, not the placeholder fixture. NPA rate, cure rate,
-collection cost and contacts are `TBD – from packages/models/reports/policy_simulation.json`
-or the producer’s committed replacement.
+We will answer only from WS2’s committed results, framed “among at-risk accounts, in
+simulation.” The oracle is an upper bound, not an achievable strategy. NPA rate, cure rate,
+collection cost and contacts are `TBD – from packages/models/reports/policy_simulation.json`.
 
 **Evidence:** pending path above; illustrative schema fixture in
 `contracts/fixtures/simulation_metrics.json`.
@@ -185,7 +185,10 @@ pending `governance/risk_register.md`.
 ## Answer discipline
 
 - Say whether evidence is a contract, fixture, integrated test or measured result.
-- Never quote a fixture pass rate or simulation delta as achieved performance.
+- Report red-team case pass rate as N/144 and strict requirement coverage as X of 15 in-scope
+  RBI requirements, plus planned and out-of-scope counts.
+- Never quote a fixture pass rate or simulation delta as achieved performance; quote only WS2’s
+  real simulation numbers and call the oracle an upper bound.
 - Never say “RBI compliant” or “BIS certified.” Describe the exact control and evidence.
 - If a path is still pending, say so and explain what would verify it.
 - For policy or legal interpretation, point to the mapping and recommend bank legal/compliance

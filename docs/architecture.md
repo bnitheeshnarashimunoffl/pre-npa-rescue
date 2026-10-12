@@ -6,8 +6,8 @@ treatment effect, while deterministic bank-policy and compliance components deci
 actions are allowed. Human oversight is required for relief offers.
 
 This document uses the lifecycle vocabulary of IS/ISO/IEC 22989:2022 and the ML framework
-vocabulary of IS/ISO/IEC 23053:2022. The references indicate design alignment, not
-certification.
+vocabulary of IS/ISO/IEC 23053:2022. The system maps to 17 Indian Standards (14 standard
+families). The references indicate design alignment, not certification.
 
 ## Four-layer overview
 
@@ -115,9 +115,11 @@ sequenceDiagram
     Web-->>Priya: Display policy-approved plan
 ```
 
-The committed fixture illustrates an approved offer of ₹2,000 per month for 6 months with
-₹1,180 in late fees waived. These are fixture values, not measured results, and must be
-rechecked against the integrated rules provider before `demo-freeze`.
+The canonical SMA-0 fixture is DPD 16, with ₹1,07,452 total due, ₹11,492 overdue and ₹92,519
+outstanding after the due date. It illustrates approved option
+`OPT-ACC-DEMO-PRIYA-EMI6-WAIVER`: ₹2,000 per month for 6 months with ₹1,534 in late fees
+waived. Its keys use the `disc.*` convention. These are fixture values, not measured results,
+and must be rechecked against the integrated rules provider before `demo-freeze`.
 
 Evidence: [`contracts/fixtures/bot_reply_offer.json`](../contracts/fixtures/bot_reply_offer.json)
 and [`contracts/schemas/BotReply.schema.json`](../contracts/schemas/BotReply.schema.json).

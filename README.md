@@ -35,12 +35,12 @@ relief terms come from the policy engine, not from an LLM.
 ## Demo story
 
 - **Priya** has lost her salary credits and paid only the minimum for three months. The fixture
-  path classifies her as high risk, `cant_pay` and `persuadable`, then presents a
-  human-approved Tamil offer from bank policy.
+  path records ₹1,07,452 total due, classifies her as high risk, `cant_pay` and `persuadable`,
+  then presents a human-approved Tamil offer from bank policy.
 - **Ravi** cannot afford any payment. The conversation stops asking for money, checks his card
   insurance route and hands him to a hardship officer within the permitted contact window.
-- The compliance scorecard then replays adversarial cases, and the simulation compares the
-  strategy with a call-everyone baseline.
+- The compliance scorecard then replays adversarial cases. Among at-risk accounts, in
+  simulation, the strategy is compared with a call-everyone baseline.
 
 Demo values currently come from versioned [contract fixtures](contracts/fixtures/) and remain
 illustrative until the producing workstreams replace them with committed model and red-team
@@ -137,9 +137,9 @@ grievance handling and policy-controlled restructuring or settlement disclosures
 Responsible Business Conduct paragraph 454 requirements are treated as a design target that
 takes effect on **1 January 2027**, not as a claim that they are already in force.
 
-It also maps its controls and evidence to relevant Indian Standards for AI governance, risk,
-fairness, quality, data life cycle, information security, complaints, contact centres and ICT
-accessibility. This is **design alignment, not a certification claim**.
+It maps its controls and evidence to **17 Indian Standards (14 standard families)** spanning
+AI governance, risk, fairness, quality, data life cycle, information security, complaints,
+contact centres and ICT accessibility. This is **design alignment, not a certification claim**.
 
 - Current governance area: [`governance/`](governance/README.md)
 - Current adversarial testing area: [`redteam/`](redteam/README.md)
