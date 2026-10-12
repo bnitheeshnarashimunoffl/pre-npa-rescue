@@ -81,6 +81,28 @@ swapped as a protected attribute.
 Targets support this with `clone_customer(base, profile)` (a `PersonaRegistry` clone) and
 `next_best_action(customer_id)`.
 
+## Scorecard (task 7.2)
+
+`run(...)` returns the contract `Scorecard`. `run_report(...)` returns a `RunReport` that wraps
+the same scorecard together with WS7 extras, and `npa-redteam run --out DIR` writes both plus a
+`summary.md` (see `reports/README.md`).
+
+- **Catalogue:** `src/npa_redteam/mappings.yaml` lists the 24 RBI requirement IDs and the 17 BIS
+  standards (`IS/ISO/IEC 42001:2023` form). For each it gives the source or BIS area, the
+  red-team scope (`in_scope` / `planned` / `out_of_scope` with a note) and the evidence outside
+  the run: governance docs, WS3 unit tests, WS2 reports. Which case covers which requirement
+  stays in the case files (`rule_refs`, `bis_refs`). Tests keep the two consistent in both
+  directions, and `refs.py` is derived from the catalogue.
+- **Coverage:** every catalogue entry appears in `rbi_coverage` / `bis_coverage`. The status is
+  `failing` if any citing case failed, `covered` if a case passed (for BIS, a present governance
+  doc or WS2 report also counts), `partial` if only skipped cases, code or unrun unit tests
+  exist, and `gap` otherwise. The contract booleans are `status == "covered"`, so a failure is
+  never hidden by passes elsewhere. Evidence paths are checked on disk at scoring time.
+- **Fairness:** `fairness.py` reads WS2's `packages/models/reports/metrics.json` once it exists.
+  It takes any `*_diff` metric (pass if at most 0.1) and any `*_ratio` metric (pass if at least
+  0.8) per model and protected attribute. A gap marks IS/ISO/IEC TR 24027:2021 as failing; a
+  missing or unreadable file is "not available", never a pass.
+
 ## Outcomes
 
 - **passed / failed:** a target exception counts as a failure (`error: …`).
