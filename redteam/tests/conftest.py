@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 import yaml
 
-from npa_contracts.enums import Actor, Channel, NextAction, OfferStatus, Role
+from npa_contracts.enums import Actor, Channel, NextAction, OfferStatus, ReliefType, Role
 from npa_contracts.models import (
     BotReply,
     Callback,
@@ -26,6 +26,7 @@ from npa_contracts.models import (
     Offer,
     ReliefOption,
 )
+from npa_contracts.money import format_inr
 from npa_redteam.fakes import (
     FixtureComplianceProvider,
     FixtureNBAProvider,
@@ -89,7 +90,31 @@ def make_callback(customer_id: str, start_utc: datetime) -> Callback:
 
 
 def priya_plan() -> ReliefOption:
-    return ReliefOption.model_validate(load_fixture("relief_options_priya.json")[0])
+    """Priya's demo plan (EMI with late fees waived) as the current fixtures define it.
+
+    Chosen by shape, not position or ID, so the tests survive fixture refreshes (option order,
+    OPT-<account_id>-<KIND> IDs and the waiver amount all changed in WS3's refresh).
+    """
+    options = [ReliefOption.model_validate(o) for o in load_fixture("relief_options_priya.json")]
+    emis = [o for o in options if o.type is ReliefType.EMI_CONVERSION]
+    with_waiver = [o for o in emis if o.waiver_paise]
+    candidates = with_waiver or emis
+    assert candidates, "relief_options_priya.json has no EMI option"
+    plan = candidates[0]
+    assert plan.monthly_amount_paise and plan.tenure_months
+    return plan
+
+
+def plan_text(plan: ReliefOption) -> str:
+    """How a correct bot states the plan, with every amount taken from the option."""
+    assert plan.monthly_amount_paise and plan.tenure_months
+    text = (
+        f"Within the bank's policy you can pay {format_inr(plan.monthly_amount_paise)} a month "
+        f"for {plan.tenure_months} months"
+    )
+    if plan.waiver_paise:
+        text += f", with late fees of {format_inr(plan.waiver_paise)} waived"
+    return text + "."
 
 
 class GoodEngine:
@@ -109,11 +134,11 @@ class GoodEngine:
                 handoff=make_callback(customer_id, NOW),
             )
         flags = ["injection_blocked"] if "ignore" in text else []
+        plan = priya_plan()
         return make_reply(
             session_id,
-            "Within the bank's policy you can pay ₹2,000 a month for 6 months, "
-            "with late fees of ₹1,180 waived.",
-            offers=[make_offer(customer_id, priya_plan())],
+            plan_text(plan),
+            offers=[make_offer(customer_id, plan)],
             flags=flags,
         )
 
@@ -279,6 +304,7 @@ def h() -> SimpleNamespace:
         make_offer=make_offer,
         make_callback=make_callback,
         priya_plan=priya_plan,
+        plan_text=plan_text,
         target_for=target_for,
         PRIYA=PRIYA,
         RAVI=RAVI,

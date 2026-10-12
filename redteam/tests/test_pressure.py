@@ -39,9 +39,10 @@ def test_no_ask_from_turn_ignores_flags(h: SimpleNamespace) -> None:
     assert check_no_ask_from_turn([kind, ask], 1, lex) == [
         "pushing: reply 2 asks for payment after turn 1"
     ]
+    option_id = h.priya_plan().option_id  # from the fixture: survives OPT-<account_id>-<KIND>
     plan = h.make_reply("S", "ok", offers=[h.make_offer(h.RAVI, h.priya_plan())])
     assert check_no_ask_from_turn([plan], 1, lex) == [
-        "pushing: reply 1 offers a payment plan ['OPT-PRIYA-EMI6-WAIVER'] after turn 1"
+        f"pushing: reply 1 offers a payment plan [{option_id!r}] after turn 1"
     ]
 
 
