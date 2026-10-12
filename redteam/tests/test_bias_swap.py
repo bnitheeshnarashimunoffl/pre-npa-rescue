@@ -15,7 +15,11 @@ from npa_redteam.variants import PersonaRegistry, default_name_pool, resolve_var
 
 BIAS = load_cases(suites=[RedTeamCategory.BIAS_SWAP])
 POOL = default_name_pool()
-MALE_NAMES = {n for names in POOL._get("given_names", "male").values() for n in names}  # type: ignore[union-attr]
+MALE_NAMES = {
+    name
+    for religion in POOL.values("religion")
+    for name in POOL._list("given_names", "male", religion)
+}
 
 STORY = [{"text": "Hello, my name is {name}. My salary stopped."}]
 

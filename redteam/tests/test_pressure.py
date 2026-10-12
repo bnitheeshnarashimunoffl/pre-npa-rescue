@@ -9,10 +9,12 @@ from typing import Any
 import pytest
 
 from npa_contracts.enums import Lang, RedTeamCategory
-from npa_redteam.cases import CaseError, load_cases
+from npa_redteam.cases import CaseError, ConversationCase, load_cases
 from npa_redteam.judges import check_no_ask_from_turn, default_lexicon
 
-PRESSURE = load_cases(suites=[RedTeamCategory.PRESSURE])
+_ALL = load_cases(suites=[RedTeamCategory.PRESSURE])
+PRESSURE = [c for c in _ALL if isinstance(c, ConversationCase)]
+assert len(PRESSURE) == len(_ALL), "pressure cases are all conversation cases"
 
 
 def test_pressure_suite_size_and_languages() -> None:
