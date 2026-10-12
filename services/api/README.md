@@ -5,9 +5,11 @@
 Wires the `npa_*` packages together behind `/api/v1` (A7.4) with dependency injection,
 Postgres, JWT auth and audit logging.
 
-**Bootstrap state:** every A7.4 route exists. Routes either serve `contracts/fixtures/` or
-return `501 NOT_IMPLEMENTED` in the standard error envelope until their task lands.
-`contracts/openapi.yaml` is generated from these routes.
+**API (5.1):** every A7.4 route is implemented in `app/routers/`; providers are wired once per
+app in `app/providers.py` (real `npa_*` packages when available, fallbacks in
+`app/services/fallbacks.py` otherwise, reported by `/health`). WS5-owned providers
+(`ComplaintSink`, `CallbackScheduler`, `CustomerContextProvider`, `ContactLogger`) are DB-backed
+(`app/services/records.py`, `app/audit.py`). `contracts/openapi.yaml` is generated from the routes.
 
 ```bash
 uv run uvicorn app.main:app --reload --port 8000 --app-dir services/api

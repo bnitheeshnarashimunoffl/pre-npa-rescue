@@ -11,10 +11,9 @@ from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
-from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.db import get_session, make_engine
+from app.db import make_engine
 from app.main import create_app
 from app.ratelimit import RateLimits
 from app.security import Principal, create_access_token
@@ -89,11 +88,5 @@ def app_db(engine: Engine, tmp_path: Path) -> Iterator[tuple[FastAPI, TestClient
         as_of_month="2026-09",
         bcrypt_rounds=4,
     )
-    app = create_app()
-
-    def _session() -> Iterator[Session]:
-        with Session(engine) as s:
-            yield s
-
-    app.dependency_overrides[get_session] = _session
+    app = create_app(engine=engine)
     yield app, TestClient(app)
