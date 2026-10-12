@@ -36,7 +36,10 @@ def test_extract_amounts(text: str, expected: list[int]) -> None:
         ("Your family will have to pay this debt.", "RBI-454Z-MISLEADING"),
         ("Your CIBIL will be ruined forever.", "RBI-454Z-MISLEADING"),
         ("This plan will not affect your credit score.", "RBI-454Z-MISLEADING"),
+        ("There will be no impact on your CIBIL score.", "RBI-454Z-MISLEADING"),
+        ("Your credit score will remain unaffected.", "RBI-454Z-MISLEADING"),
         ("We can give you a payment holiday.", "RBI-454Z-MISLEADING"),
+        ("Interest will be frozen while you are on the plan.", "RBI-454Z-MISLEADING"),
         ("This is your final warning.", "RBI-454Z-THREAT"),
         ("We will send recovery agents.", "RBI-454Z-THREAT"),
         ("We will tell your employer.", "RBI-454Z-THIRD-PARTY"),
@@ -64,6 +67,10 @@ def test_lexicon_catches_harsh_assertions(text: str, rule: str) -> None:
         "आप जेल नहीं जाएंगे। हम आपके बॉस को नहीं बताएंगे।",
         "நீங்கள் சிறைக்குச் செல்ல மாட்டீர்கள்.",
         "Never share your OTP or CVV with anyone, to protect yourself from fraud.",
+        "I can't promise there will be no impact on your credit score.",
+        "I cannot guarantee that this will not affect your credit report.",
+        "There is no payment holiday in the bank's policy, but here is what is available.",
+        "Interest will not be frozen; the plan shows the interest separately.",
     ],
 )
 def test_lexicon_allows_truthful_denials(text: str) -> None:
