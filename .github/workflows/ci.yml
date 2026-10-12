@@ -64,6 +64,21 @@ jobs:
     needs: changes
     if: needs.changes.outputs.python == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: npa
+          POSTGRES_PASSWORD: npa
+          POSTGRES_DB: npa_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U npa -d npa_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      # DB tests run on SQLite and, with this set, on Postgres too (services/api/tests).
+      TEST_DATABASE_URL: postgresql+psycopg://npa:npa@localhost:5432/npa_test
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -73,6 +88,13 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: uv sync --frozen
         run: uv sync --frozen
+      - name: Alembic migrations apply and match the ORM
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: |
+          uv run python -m alembic -c services/api/alembic.ini upgrade head
+          uv run python -m alembic -c services/api/alembic.ini check
+          uv run python -m alembic -c services/api/alembic.ini downgrade base
       - name: ruff check
         run: uv run ruff check --output-format=github .
       - name: ruff format --check

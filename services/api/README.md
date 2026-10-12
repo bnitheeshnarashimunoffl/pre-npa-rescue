@@ -14,4 +14,9 @@ uv run uvicorn app.main:app --reload --port 8000 --app-dir services/api
 # docs: http://localhost:8000/docs
 ```
 
+**Database (5.2):** SQLAlchemy 2.0 ORM in `app/orm.py` (18 tables; money `BIGINT` paise,
+`TIMESTAMPTZ`, enum `CHECK`s), Alembic migrations in `alembic/`, seed loader in `seed/`,
+collector-queue keyset pagination in `app/queries.py`. `protected_attributes` is never read by
+a router (enforced by a test). Commands: see `docs/setup.md` → Database.
+
 **Tasks:** 5.1 API layer · 5.2 database & data model · 5.3 auth & roles · 5.4 audit logging · 5.5 deployment
