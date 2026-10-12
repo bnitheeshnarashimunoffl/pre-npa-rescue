@@ -10,6 +10,7 @@ import pytest
 from datagen import dues
 from datagen.config import DatagenConfig
 from datagen.generate import GeneratedData, build, write
+from datagen.personas import PERSONAS
 from datagen.validate import validate
 from npa_contracts.constants import NPA_DPD, bucket_for_dpd
 
@@ -55,7 +56,7 @@ def test_written_tables_match_contract(small_written: Path) -> None:
 
 
 def test_shapes(small_data: GeneratedData, small_cfg: DatagenConfig) -> None:
-    n = small_cfg.n_customers
+    n = small_cfg.n_customers + len(PERSONAS)
     assert len(small_data.customers) == n
     assert len(small_data.account_months) == n * 24
     assert set(small_data.account_months["month"]) == {

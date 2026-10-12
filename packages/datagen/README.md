@@ -16,7 +16,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 | Step | Command | Status |
 |---|---|---|
 | Generate tables (1.1) | `uv run datagen generate` | customers, protected attributes, statements, salary, shocks, transactions |
-| Demo personas (1.1 step 6) | — | next PR |
+| Demo personas (1.1 step 6) | part of `generate` | 10 fixed `CUST-DEMO-*` customers, `demo_personas.json` |
 | Features + labels (1.2) | `uv run datagen features [--samples data/samples]` | done |
 | Experiment (1.3) | `uv run datagen experiment` | not implemented yet |
 | Everything | `uv run datagen all` | runs the steps in order |
@@ -52,7 +52,8 @@ Flags override environment variables; see `.env.example` (A11).
 ## Outputs
 
 Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_credits`,
-`shocks`, `transactions` (folder, one file per month), `features`, `labels`. Internal tables
+`shocks`, `transactions` (folder, one file per month), `features`, `labels`, plus
+`demo_personas.json`. Internal tables
 (not features, not contracts): `monthly_spend` (category totals per account-month) and
 `behaviour_types` (hidden ground truth). Same seed ⇒ byte-identical Parquet.
 
@@ -64,12 +65,13 @@ Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_
 | `datagen.generate.build(cfg)` / `write(data, cfg)` | task 1.1 tables in memory / validated to disk |
 | `datagen.features.build_features(...)` | task 1.2 features (no look-ahead) |
 | `datagen.labels.build_labels(...)` | task 1.2 labels |
+| `datagen.personas` | the ten demo personas (`PERSONAS`, `build_personas`, `persona_facts`) |
 | `datagen.dues` | RBI dues rules as pure functions (+ vectorised twins) |
 | `datagen.validate` | pandera / Arrow schemas generated from `contracts/data/*.md` |
 
 ## Module map
 
-`calibrate_uci` (UCI fits) · `customers`, `protected` (population) · `behaviour` (UCI-driven
+`calibrate_uci` (UCI fits) · `customers`, `protected` (population) · `personas` (demo customers) · `behaviour` (UCI-driven
 repayment, spend plan) · `shocks` (hidden behaviour types and shocks) · `statements` (month loop)
 · `dues` (RBI arithmetic) · `salary` · `transactions` · `features` · `labels` · `pipeline`
 (features step + samples) · `validate` · `sanity` · `cli`.

@@ -1,14 +1,18 @@
 """``datagen features``: read the task 1.1 tables, write features, labels and samples."""
 
+import json
 import logging
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from datagen.config import DatagenConfig
 from datagen.features import build_features
+from datagen.generate import PERSONAS_JSON
 from datagen.labels import build_labels
+from datagen.personas import to_records, write_json
 from datagen.validate import arrow_schema, table_spec, validate, write_parquet, write_table
 
 logger = logging.getLogger(__name__)
@@ -62,7 +66,15 @@ def run_features(cfg: DatagenConfig) -> None:
     write_table(features, "features", cfg.data_dir)
     write_table(labels, "labels", cfg.data_dir)
     logger.info("features rows=%d labels rows=%d", len(features), len(labels))
+    personas = add_persona_features(cfg.data_dir / PERSONAS_JSON, features, labels)
     samples_dir = cfg.samples_dir
+    if samples_dir is not None and personas is not None:
+        # Committed copy without transactions (regenerate for those): keeps the sample small.
+        lean = {
+            cid: {k: v for k, v in entry.items() if k != "transactions"}
+            for cid, entry in personas.items()
+        }
+        write_json(lean, samples_dir / PERSONAS_JSON)
     if samples_dir is not None:
         f, lb = make_samples(features, labels, cfg.seed)
         validate(f, "features")
@@ -72,3 +84,18 @@ def run_features(cfg: DatagenConfig) -> None:
         )
         write_parquet(lb, samples_dir / "labels_sample.parquet", arrow_schema(table_spec("labels")))
         logger.info("samples rows=%d dir=%s", len(f), samples_dir)
+
+
+def add_persona_features(
+    path: Path, features: pd.DataFrame, labels: pd.DataFrame
+) -> dict[str, Any] | None:
+    """Add each persona's ``features`` and ``labels`` rows to ``demo_personas.json``."""
+    if not path.exists():
+        return None
+    doc: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    for cid, entry in doc.items():
+        acc = cid.replace("CUST-", "ACC-")
+        entry["features"] = to_records(features[features["account_id"] == acc])
+        entry["labels"] = to_records(labels[labels["account_id"] == acc])
+    write_json(doc, path)
+    return doc

@@ -14,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from datagen.protected import STATES
 from datagen.statements import PURCHASE_CATEGORIES
 from datagen.validate import arrow_schema, table_spec, validate, write_parquet
 
@@ -109,31 +110,54 @@ def write_transactions(
     customers: pd.DataFrame,
     out_dir: Path,
     rng: np.random.Generator,
-) -> int:
-    """Write ``transactions.parquet/<YYYY-MM>.parquet``; returns the number of rows."""
+    *,
+    fixed_rng: np.random.Generator | None = None,
+    fixed_accounts: set[str] | None = None,
+) -> tuple[int, pd.DataFrame]:
+    """Write ``transactions.parquet/<YYYY-MM>.parquet``.
+
+    Accounts in ``fixed_accounts`` (the demo personas) draw from ``fixed_rng`` so their
+    transactions do not depend on the seed (only their ``txn_id`` numbers do). Returns the row
+    count and those accounts' transactions.
+    """
     folder = out_dir / "transactions.parquet"
     folder.mkdir(parents=True, exist_ok=True)
     for old in folder.glob("*.parquet"):
         old.unlink()
     schema = arrow_schema(table_spec("transactions"))
     city_by_acc = customers.set_index("account_id")["city"]
-    other_cities = np.array(sorted(customers["city"].unique()), dtype=object)
+    other_cities = np.array(
+        sorted({c for _, _, cs in STATES.values() for c, _ in cs}), dtype=object
+    )
     stmt = account_months.set_index(["account_id", "month"])["statement_date"]
     id_width = max(8, len(str(int(monthly_spend["txn_count"].sum()) * 2)))
+    fixed = fixed_accounts or set()
+    groups = [(~monthly_spend["account_id"].isin(fixed), rng)]
+    if fixed:
+        groups.append((monthly_spend["account_id"].isin(fixed), fixed_rng or rng))
     next_id = 1
-    for _month, spend in monthly_spend.groupby("month", sort=True):
-        spend = spend.reset_index(drop=True)
-        keys = pd.MultiIndex.from_arrays([spend["account_id"], spend["month"]])
-        txns = month_transactions(
-            spend,
-            stmt.loc[keys].to_numpy("datetime64[ns]"),
-            city_by_acc.loc[spend["account_id"]].to_numpy(),
-            other_cities,
-            rng,
-            next_id,
-            id_width,
-        )
+    kept: list[pd.DataFrame] = []
+    for month in sorted(monthly_spend["month"].unique()):
+        parts = []
+        for mask, group_rng in groups:
+            spend = monthly_spend[mask & (monthly_spend["month"] == month)].reset_index(drop=True)
+            if spend.empty:
+                continue
+            keys = pd.MultiIndex.from_arrays([spend["account_id"], spend["month"]])
+            txns = month_transactions(
+                spend,
+                stmt.loc[keys].to_numpy("datetime64[ns]"),
+                city_by_acc.loc[spend["account_id"]].to_numpy(),
+                other_cities,
+                group_rng,
+                next_id,
+                id_width,
+            )
+            next_id += len(txns)
+            parts.append(txns)
+        txns = pd.concat(parts, ignore_index=True)
         validate(txns, "transactions")
-        write_parquet(txns, folder / f"{_month}.parquet", schema)
-        next_id += len(txns)
-    return next_id - 1
+        write_parquet(txns, folder / f"{month}.parquet", schema)
+        kept.append(txns[txns["account_id"].isin(fixed)])
+    persona_txns = pd.concat(kept, ignore_index=True) if kept else pd.DataFrame()
+    return next_id - 1, persona_txns
