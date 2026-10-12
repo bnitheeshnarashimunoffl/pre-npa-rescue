@@ -41,6 +41,7 @@ class FakeData:
     features: pd.DataFrame
     labels: pd.DataFrame
     protected: pd.DataFrame
+    hidden: pd.DataFrame  # hidden truth per account (habit, shock); experiment generation only
 
 
 @dataclass(frozen=True)
@@ -88,7 +89,8 @@ def make_fake_data(n_accounts: int = 1000, seed: int = DEFAULT_SEED) -> FakeData
     rng = np.random.default_rng(seed)
     feats: list[dict[str, object]] = []
     labels: list[dict[str, object]] = []
-    for acc in _accounts(n_accounts, rng):
+    accounts = _accounts(n_accounts, rng)
+    for acc in accounts:
         limit = int(rng.choice([50_000, 100_000, 200_000, 500_000])) * 100
         base_util = float(rng.uniform(0.05, 0.6)) + 0.3 * (acc.habit == "strategic")
         base_util = PERSONA_BASE_UTIL.get(acc.account_id, base_util)
@@ -195,7 +197,17 @@ def make_fake_data(n_accounts: int = 1000, seed: int = DEFAULT_SEED) -> FakeData
             "region": [REGIONS[s] for s in states],
         }
     )
-    return FakeData(features=features, labels=pd.DataFrame(labels), protected=protected)
+    hidden = pd.DataFrame(
+        {
+            "account_id": [a.account_id for a in accounts],
+            "habit": [a.habit for a in accounts],
+            "shock_t": [a.shock_t for a in accounts],
+            "shock_len": [a.shock_len for a in accounts],
+        }
+    )
+    return FakeData(
+        features=features, labels=pd.DataFrame(labels), protected=protected, hidden=hidden
+    )
 
 
 @pytest.fixture(scope="session")
@@ -206,3 +218,159 @@ def fake_data() -> FakeData:
 @pytest.fixture(scope="session")
 def fake_data_factory() -> Callable[..., FakeData]:
     return make_fake_data
+
+
+# --- Fake randomised experiment (mirrors WS1's datagen.experiment, PR #101) --------------------
+EXPERIMENT_MONTH = "2026-06"
+TREATMENTS = ("none", "reminder", "chat_invite", "agent_call", "relief_offer")
+GROUPS = ("persuadable", "sure_thing", "lost_cause", "sleeping_dog")
+CURE_BASE = {"persuadable": 0.20, "sure_thing": 0.85, "lost_cause": 0.05, "sleeping_dog": 0.60}
+CURE_LIFT = {
+    "persuadable": (0.0, 0.10, 0.35, 0.20, 0.50),
+    "sure_thing": (0.0, 0.03, 0.04, 0.04, 0.05),
+    "lost_cause": (0.0, 0.00, 0.02, 0.03, 0.05),
+    "sleeping_dog": (0.0, -0.05, -0.10, -0.35, -0.15),
+}
+NPA_IF_NOT_CURED = {"persuadable": 0.5, "sure_thing": 0.1, "lost_cause": 0.85, "sleeping_dog": 0.45}
+COST_PAISE = {
+    "none": 0,
+    "reminder": 200,
+    "chat_invite": 500,
+    "agent_call": 6000,
+    "relief_offer": 8000,
+}
+GROUP_MIX = {  # persuadable, sure_thing, lost_cause, sleeping_dog
+    "shock_partial": (0.75, 0.05, 0.12, 0.08),
+    "shock_severe": (0.30, 0.05, 0.60, 0.05),
+    "wont_pay": (0.10, 0.00, 0.80, 0.10),
+    "forgot": (0.10, 0.75, 0.00, 0.15),
+    "normal": (0.05, 0.80, 0.02, 0.13),  # only reached by personas (scripted anyway)
+}
+SCRIPTED_GROUP = {"ACC-DEMO-PRIYA": "persuadable", "ACC-DEMO-RAVI": "lost_cause"}
+
+
+@dataclass(frozen=True)
+class FakeExperiment:
+    data: FakeData
+    experiment: pd.DataFrame  # contracts/data/experiment.md
+    potential: pd.DataFrame  # WS1's experiment_potential.parquet shape (hidden)
+
+
+def make_fake_experiment(data: FakeData, seed: int = DEFAULT_SEED) -> FakeExperiment:
+    """Randomised experiment in ``EXPERIMENT_MONTH`` (20% per arm).
+
+    Population: every stressed, forgetful or strategic account plus the personas, like WS1's
+    at-risk population (whose behaviour context shows in the features).
+    """
+    rng = np.random.default_rng([seed, 30])
+    t_idx = MONTHS.index(EXPERIMENT_MONTH)
+    hid = data.hidden.sort_values("account_id").reset_index(drop=True)
+    shock_t = hid["shock_t"].astype(float).to_numpy()
+    in_shock = (shock_t <= t_idx) & (t_idx < shock_t + hid["shock_len"].to_numpy())
+    severe = rng.random(len(hid)) >= 2 / 3
+    ctx_all = np.select(
+        [in_shock & severe, in_shock, hid["habit"] == "strategic", hid["habit"] == "forgetful"],
+        ["shock_severe", "shock_partial", "wont_pay", "forgot"],
+        default="normal",
+    )
+    keep = (ctx_all != "normal") | hid["account_id"].str.startswith("ACC-DEMO-").to_numpy()
+    pop, context = hid[keep].reset_index(drop=True), ctx_all[keep]
+    n = len(pop)
+    u = rng.random(n)
+    groups = np.array(
+        [
+            GROUPS[min(int(np.searchsorted(np.cumsum(GROUP_MIX[c]), x, side="right")), 3)]
+            for c, x in zip(context, u, strict=True)
+        ],
+        dtype=object,
+    )
+    for i, acc in enumerate(pop["account_id"]):
+        groups[i] = SCRIPTED_GROUP.get(acc, groups[i])
+    assigned = rng.permutation(np.resize(np.array(TREATMENTS, dtype=object), n))
+    u_cure, u_npa = rng.random(n), rng.random(n)
+    customer = pop["account_id"].str.replace("ACC-", "CUST-", regex=False)
+    potential = pd.DataFrame(
+        {
+            "account_id": pop["account_id"],
+            "customer_id": customer,
+            "month": EXPERIMENT_MONTH,
+            "true_uplift_group": groups,
+        }
+    )
+    p_npa = np.array([NPA_IF_NOT_CURED[g] for g in groups])
+    for j, t in enumerate(TREATMENTS):
+        p_cure = np.clip([CURE_BASE[g] + CURE_LIFT[g][j] for g in groups], 0, 1)
+        cured = u_cure < p_cure
+        potential[f"cured_{t}"] = cured
+        potential[f"npa_{t}"] = ~cured & (u_npa < p_npa)
+        potential[f"cost_{t}"] = np.int64(COST_PAISE[t])
+    rows = np.arange(n)
+    pos = np.array([TREATMENTS.index(t) for t in assigned])
+
+    def take(prefix: str) -> np.ndarray:
+        return potential[[f"{prefix}_{t}" for t in TREATMENTS]].to_numpy()[rows, pos]
+
+    experiment = pd.DataFrame(
+        {
+            "customer_id": customer,
+            "account_id": pop["account_id"],
+            "month": EXPERIMENT_MONTH,
+            "treatment": assigned,
+            "outcome_cured_90d": take("cured").astype(bool),
+            "outcome_npa_90d": take("npa").astype(bool),
+            "contact_cost_paise": take("cost").astype(np.int64),
+            "true_uplift_group": groups,
+        }
+    )
+    return FakeExperiment(data=data, experiment=experiment, potential=potential)
+
+
+def fake_simulate_policy(
+    assignments: pd.DataFrame, *, potential: pd.DataFrame, strategy: str = "pre_npa_rescue"
+) -> dict[str, object]:
+    """Stand-in for ``datagen.experiment.simulate_policy`` (same signature and output shape)."""
+    chosen = (
+        assignments.set_index("account_id")["treatment"]
+        .reindex(potential["account_id"])
+        .fillna("none")
+        .to_numpy(dtype=object)
+    )
+    rows = np.arange(len(potential))
+
+    def metrics(treat: np.ndarray, name: str) -> dict[str, object]:
+        pos = np.array([TREATMENTS.index(t) for t in treat])
+
+        def take(prefix: str) -> np.ndarray:
+            return potential[[f"{prefix}_{t}" for t in TREATMENTS]].to_numpy()[rows, pos]
+
+        return {
+            "strategy": name,
+            "npa_rate": round(float(take("npa").mean()), 4),
+            "cure_rate": round(float(take("cured").mean()), 4),
+            "collection_cost_paise": int(take("cost").astype(np.int64).sum()),
+            "contacts_made": int((treat != "none").sum()),
+        }
+
+    base = metrics(np.full(len(potential), "agent_call", dtype=object), "call_everyone")
+    ours = metrics(chosen, strategy)
+    b, o = float(base["npa_rate"]), float(ours["npa_rate"])  # type: ignore[arg-type]
+    return {
+        "as_of_month": EXPERIMENT_MONTH,
+        "n_accounts": len(potential),
+        "horizon_days": 90,
+        "baseline": base,
+        "ours": ours,
+        "npa_reduction_pct": round(100 * (b - o) / b, 2) if b else 0.0,
+        "illustrative": True,
+        "source": "tests/conftest.fake_simulate_policy",
+    }
+
+
+@pytest.fixture(scope="session")
+def fake_experiment() -> FakeExperiment:
+    return make_fake_experiment(make_fake_data(6000))
+
+
+@pytest.fixture(scope="session")
+def fake_sim() -> Callable[..., dict[str, object]]:
+    return fake_simulate_policy

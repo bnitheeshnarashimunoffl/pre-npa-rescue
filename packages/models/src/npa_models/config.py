@@ -24,3 +24,7 @@ class ModelSettings(BaseSettings):
     # Risk bands on calibrated p_roll_forward (task 2.1): high >= high, medium >= medium.
     risk_high_threshold: float = 0.35
     risk_medium_threshold: float = 0.15
+    # Uplift (task 2.4): |uplift| < tau is "no effect"; cure value prices a cure against contact
+    # cost when choosing the treatment (assumption: Rs 5,000 avoided loss per cure).
+    uplift_tau: float = 0.05
+    uplift_cure_value_paise: int = 500_000

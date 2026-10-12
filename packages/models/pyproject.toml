@@ -14,6 +14,7 @@ dependencies = [
     "pydantic-settings>=2.3",
     "pyyaml>=6",
     "scikit-learn>=1.5,<1.6",
+    "scikit-uplift>=0.5",
 ]
 
 [project.scripts]
