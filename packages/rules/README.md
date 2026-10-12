@@ -205,19 +205,20 @@ footer = compliance.required_footer(Lang.HI)  # recording notice + grievance off
 
 ## Demo personas (task 3.2 demo requirement)
 
-`npa_rules.personas` holds WS3's numbers; WS1's persona generator should match them.
+`npa_rules.personas` follows the canonical demo values (WS1's `demo_personas.json`).
 
 | | Priya (`CUST-DEMO-PRIYA`) | Ravi (`CUST-DEMO-RAVI`) |
 |---|---|---|
-| DPD / bucket | 12 / sma0 | 45 / sma1 |
-| Outstanding | ₹1,10,000 | ₹64,800 |
+| DPD / bucket | 16 / sma0 | 47 / sma1 |
+| Total due | ₹1,07,452 | ₹64,800 |
+| Outstanding after the due date | ₹92,519 | ₹64,800 |
 | Overdue (unpaid MAD) | ₹11,492 | ₹9,000 |
-| Late charges (slab on post-due outstanding) | ₹1,534 (₹1,300 top slab on ₹1,10,000 + 18% GST) | ₹1,534 (₹1,300 top slab on ₹64,800 + 18% GST) |
+| Late charges (slab on post-due outstanding) | ₹1,534 (₹1,300 top slab on ₹92,519 + 18% GST) | ₹1,534 (₹1,300 top slab on ₹64,800 + 18% GST) |
 | Declared in chat | income ₹20,000, essentials ₹9,000, 1 dependant → (20,000 − 9,000 − 3,000) × 0.3 = **₹2,400/month** | income ₹0 → **₹0** |
 | Card insurance | none | job-loss cover |
 | Options | fee waiver ₹1,534 · **₹2,000/month × 6, late fees waived** | insurance referral · fee waiver · restructuring (officer) · review date (officer) |
 
-The full ₹1,10,000 is not affordable at ₹2,400/month even over 12 months, so (per the
+The full ₹1,07,452 is not affordable at ₹2,400/month even over 12 months, so (per the
 briefing) the plan covers the **overdue amount**, with the late charges waived:
 EMI(₹11,492, 6 months, 15% p.a.) = ₹2,000.00 exactly (total interest ₹507.98). The formula is
 not adjusted to produce this; the persona's overdue amount was chosen to match it.
