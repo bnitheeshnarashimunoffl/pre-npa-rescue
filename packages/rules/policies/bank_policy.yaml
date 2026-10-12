@@ -1,0 +1,125 @@
+# Demo Bank Ltd - card collections and hardship policy (SIMULATED board-approved policy).
+#
+# This file is THE source of every relief option the system may offer: the AI only chooses
+# among what is enabled here. It is data, not code: the admin UI edits it through
+# PUT /api/v1/admin/policy and npa_rules.load_policy() validates every change against
+# bank_policy.schema.json plus the RBI cross-checks in npa_rules/policy_loader.py.
+#
+# Two kinds of numbers live here:
+#   * RBI numbers   - must match RBI directions exactly (checked against npa_contracts.constants).
+#   * "bank policy assumption" - a simulated choice of Demo Bank, NOT an RBI number. RBI leaves
+#     these to each bank's board-approved policy.
+
+version: "2026.10-v1"
+bank_name: "Demo Bank Ltd (simulated)"
+board_approval_ref: "BOARD-RES-2026-04 (simulated)"
+
+# RBI RBC Directions para 454AA: every recovery communication names the grievance officer.
+grievance_officer:
+  name: "Grievance Redressal Officer"
+  email: "gro@demobank.example"
+  phone: "1800-000-0000"
+  address: "Demo Bank Ltd, Chennai 600001"
+
+contact:
+  window_local: {start: "08:00", end: "19:00", tz: "Asia/Kolkata"}  # RBI number: RBC para 454Y(4)
+  max_outbound_attempts_per_day: 2        # bank policy assumption (para 454Z forbids "excessive" contact)
+  max_outbound_attempts_per_week: 6       # bank policy assumption
+  min_gap_minutes_between_attempts: 180   # bank policy assumption
+  do_not_contact_flags: [bereavement, medical_emergency, customer_requested_pause]  # RBC para 454Y(6)
+
+# Card charges used by npa_rules.dues (RBI Credit Card Directions 2025 leave the amounts to the
+# board-approved charges policy; the RULES about when and on what they apply are in dues.py).
+charges:
+  # Late fee slabs on the amount outstanding after the due date. Bank policy assumption.
+  late_fee_slabs:
+    - {up_to_paise: 50000, fee_paise: 0}          # up to Rs 500: nil
+    - {up_to_paise: 500000, fee_paise: 50000}     # up to Rs 5,000: Rs 500
+    - {up_to_paise: 1000000, fee_paise: 75000}    # up to Rs 10,000: Rs 750
+    - {up_to_paise: 2500000, fee_paise: 100000}   # up to Rs 25,000: Rs 1,000
+    - {up_to_paise: null, fee_paise: 130000}      # above: Rs 1,300
+  card_interest_rate_annual_pct: "42.0"   # bank policy assumption
+  mad_principal_pct: "5.0"                # bank policy assumption: principal share of the minimum due
+  mad_floor_paise: 20000                  # bank policy assumption: Rs 200 minimum principal share
+
+# Affordability (task 3.2). Bank policy assumptions, not RBI numbers.
+affordability:
+  affordability_ratio: "0.3"              # share of monthly surplus a plan may take
+  dependant_allowance_paise: 300000       # Rs 3,000 per dependant per month
+  # Without a declaration, essentials are estimated as this share of income (source="estimated").
+  estimated_essentials_pct: "60"
+
+offers:
+  expiry_days: 7                          # bank policy assumption
+
+# Next-best-action and collector-queue weights (task 3.4). Bank policy assumptions.
+# Priority = expected benefit (p_roll_forward x max(uplift, 0) x outstanding), never "ease of
+# extraction"; collector incentives must not reward harsh practices (RBI RBC para 454Q).
+nba:
+  # Hardship-officer cases form a band at the top of the queue, ordered by p_roll_forward x
+  # outstanding: uplift is ~0 for customers who cannot pay, but RBC para 454D requires
+  # documented engagement before escalation.
+  hardship_first: true
+  chat_invites_ignored_before_call: 2     # after this many ignored chat invites, offer an agent call
+
+options:
+  fee_waiver:
+    enabled: true
+    max_waiver_paise: 500000              # bank policy assumption
+    max_times_per_12m: 1                  # bank policy assumption
+    eligible_buckets: [sma0, sma1, sma2]
+    requires_human_approval: false
+    policy_ref: "fee_waiver.v1"
+    regulatory_refs: ["RBI Credit Card Directions 2025 - charges per board policy"]
+    disclosure_keys: [disc.fee_waiver.stops_growth]
+  emi_conversion:
+    enabled: true
+    tenures_months: [3, 6, 9, 12]         # bank policy assumption
+    interest_rate_annual_pct: "15.0"      # bank policy assumption
+    min_emi_paise: 100000                 # bank policy assumption: Rs 1,000
+    eligible_buckets: [current, sma0, sma1]
+    requires_human_approval: false
+    policy_ref: "emi_conversion.v1"
+    regulatory_refs: ["RBI Credit Card Directions 2025 - EMI transparency"]
+    disclosure_keys: [disc.emi.principal_interest_shown]
+  restructuring:
+    enabled: true
+    max_tenure_months: 36                 # bank policy assumption
+    moratorium_months_max: 3              # bank policy assumption
+    interest_rate_annual_pct: "12.0"      # bank policy assumption
+    eligible_buckets: [sma1, sma2, npa]
+    requires_human_approval: true
+    policy_ref: "restructuring.v1"
+    regulatory_refs: ["RBI Prudential Framework for Resolution of Stressed Assets, 7 Jun 2019"]
+    disclosure_keys: [disc.restructuring.npa_downgrade, disc.restructuring.upgrade_after_performance]
+  compromise_settlement:
+    enabled: true
+    max_sacrifice_pct: "40"               # bank policy assumption
+    min_ageing_dpd: 60                    # bank policy assumption
+    payment_window_months_max: 3          # RBI number: > 3 months counts as restructuring (2023)
+    cooling_period_months: 12             # RBI number: at least 12 months (2023 framework)
+    eligible_buckets: [sma2, npa]
+    requires_human_approval: true
+    policy_ref: "settlement.v1"
+    regulatory_refs: ["RBI Framework for Compromise Settlements and Technical Write-offs, 8 Jun 2023"]
+    disclosure_keys:
+      - disc.settlement.cooling_period
+      - disc.settlement.over_3_months_is_restructuring
+      - disc.settlement.bureau_reporting
+  insurance_referral:
+    enabled: true
+    requires_human_approval: false
+    policy_ref: "insurance.v1"
+    regulatory_refs: ["RBI Credit Card Directions 2025 - insurance cover disclosure"]
+    disclosure_keys: [disc.insurance.claim_process]
+  review_date:
+    enabled: true
+    review_after_days: [30, 45, 60]       # bank policy assumption
+    requires_human_approval: true
+    policy_ref: "distress_framework.v1"
+    regulatory_refs: ["RBI RBC Directions para 454D (from 1 Jan 2027)"]
+    disclosure_keys: [disc.review.what_happens_next]
+
+credit_bureau:
+  notify_before_default_report: true      # RBI Credit Card Directions 2025
+  update_after_settlement_days: 30        # RBI number: Credit Card Directions 2025
