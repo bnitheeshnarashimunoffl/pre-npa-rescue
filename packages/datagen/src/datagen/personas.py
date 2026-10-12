@@ -5,14 +5,18 @@ statement engine as everyone else, so every number obeys the same RBI rules. The
 RNG (``PERSONA_SEED``), so they are identical whatever ``SEED`` is. Persona numbers agreed with
 WS3 on issue #1:
 
-* **Priya**: affordable Rs 2,000/month; overdue Rs 11,492 at ``2026-09`` (the 6 x Rs 2,000 plan
-  at the policy EMI rate of 15% p.a. covers it); late fee Rs 1,300 + GST = Rs 1,534 (waivable),
-  charged on the amount outstanding after the due date (RBI); SMA-0.
-* **Ravi**: affordable Rs 0; job-loss insurance; SMA-1.
+* **Priya**: total due Rs 1,07,452; capacity Rs 2,400/month, plan Rs 2,000/month; overdue
+  Rs 11,492 at ``2026-09`` (the 6 x Rs 2,000 plan at the policy EMI rate of 15% p.a. covers it);
+  late fee Rs 1,300 + GST = Rs 1,534 (waivable), charged on the Rs 92,519 outstanding after the
+  due date (RBI); SMA-0, DPD 16.
+* **Ravi**: total due Rs 64,800; affordable Rs 0 (zero capacity); job-loss insurance; SMA-1,
+  DPD 47. His overdue is Rs 14,385.13: Rs 9,000 is not reachable with two unpaid minimums plus
+  the current one at 42% p.a. (see ``data/README.md``).
 
 "Overdue" here is the minimum due on the as-of statement net of the waivable late fee and its
-GST: what Priya must pay to be current once the fee is waived. Her 2026-09 part-payment is
-solved at build time so that this is exactly Rs 11,492 (asserted in tests).
+GST: what Priya must pay to be current once the fee is waived. Priya's 2026-09 part-payment
+and a few scripted spend amounts are solved at build time so all these numbers come out to the
+paisa (asserted in ``test_personas.py``).
 """
 
 import json
@@ -26,6 +30,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from datagen import dues
+from datagen.calendar import add_months
 from datagen.statements import (
     PAY_AMOUNT,
     PAY_FULL,
@@ -48,7 +53,11 @@ PERSONA_SEED = 20_261_012  # fixed on purpose: personas never depend on SEED
 AS_OF = "2026-09"
 PRIYA_OVERDUE_PAISE = 1_149_200  # Rs 11,492
 PRIYA_LATE_FEE_PAISE = 130_000  # Rs 1,300 slab: post-due outstanding above Rs 25,000
-PRIYA_AFFORDABLE_PAISE = 200_000  # Rs 2,000 a month
+PRIYA_AFFORDABLE_PAISE = 200_000  # Rs 2,000 a month: the plan instalment
+PRIYA_CAPACITY_PAISE = 240_000  # Rs 2,400 a month: (20,000 - 9,000 - 3,000) x 0.3 from her budget
+PRIYA_TOTAL_DUE_PAISE = 10_745_200  # Rs 1,07,452 (canonical)
+PRIYA_POST_DUE_PAISE = 9_251_900  # Rs 92,519 outstanding after the 2026-08 due date (canonical)
+RAVI_TOTAL_DUE_PAISE = 6_480_000  # Rs 64,800
 
 Pay = tuple[int, float, int]  # (mode, frac, late_days)
 
@@ -143,6 +152,7 @@ PERSONAS: tuple[Persona, ...] = (
             "expected_risk_band": "high",
             "chat_lang": "ta",
             "affordable_monthly_paise": PRIYA_AFFORDABLE_PAISE,
+            "capacity_monthly_paise": PRIYA_CAPACITY_PAISE,
             "declared": {"income_paise": 2_000_000, "expenses_paise": 900_000, "dependants": 1},
             "offer": {
                 "type": "emi_conversion",
@@ -204,6 +214,7 @@ PERSONAS: tuple[Persona, ...] = (
             "expected_risk_band": "high",
             "chat_lang": "en",
             "affordable_monthly_paise": 0,
+            "capacity_monthly_paise": 0,
             "declared": {"income_paise": 0, "expenses_paise": 0, "dependants": 3},
             "zero_capacity": True,
             "insurance_referral": "job_loss",
@@ -717,21 +728,47 @@ def waivable_charges(late_fee_paise: int) -> int:
     return late_fee_paise + dues.gst(late_fee_paise, dues.DEFAULT_POLICY.gst_bp)
 
 
-def _solve_priya(run: Callable[[int, int], pd.DataFrame], months: list[str]) -> pd.DataFrame:
-    """Find Priya's 2026-09 part-payment so her overdue is exactly Rs 11,492."""
-    target = PRIYA_OVERDUE_PAISE + waivable_charges(PRIYA_LATE_FEE_PAISE)
-    for nudge in range(0, 50):  # rupees added to 2026-09 "other" spend if rounding skips
-        amount = 500_000
-        seen: set[int] = set()
-        while amount not in seen:
-            seen.add(amount)
-            am = run(amount, nudge)
-            row = am[(am["account_id"] == "ACC-DEMO-PRIYA") & (am["month"] == AS_OF)].iloc[0]
-            gap = int(row["min_due_paise"]) - target
-            if gap == 0:
-                return am
-            amount += gap
-    raise RuntimeError("could not solve Priya's 2026-09 payment")  # pragma: no cover
+Run = Callable[[int, int, int, int], pd.DataFrame]
+
+
+def _as_of_row(am: pd.DataFrame, account_id: str) -> pd.Series:
+    return am[(am["account_id"] == account_id) & (am["month"] == AS_OF)].iloc[0]
+
+
+def _solve(run: Run) -> pd.DataFrame:
+    """Solve the scripted knobs so the agreed as-of numbers come out exactly.
+
+    Knobs: Priya's 2026-09 part-payment, her 2026-08 and 2026-09 essentials spend (paise), and
+    Ravi's 2026-09 essentials spend. Targets: Priya's minimum due (overdue + waivable charges),
+    total due and outstanding after the 2026-08 due date (2026-08 total minus her payment, all
+    paid on time but short of the minimum), and Ravi's total due. Purchases in a cycle move
+    that statement's total 1:1 without touching its interest; the payment moves everything after
+    it. Iterates to the exact paisa.
+    """
+    target_min = PRIYA_OVERDUE_PAISE + waivable_charges(PRIYA_LATE_FEE_PAISE)
+    amount, priya_aug, priya_sep, ravi_sep = 500_000, 0, 0, 0
+    seen: set[tuple[int, int, int, int]] = set()
+    for _ in range(2_000):
+        am = run(amount, priya_aug, priya_sep, ravi_sep)
+        priya, ravi = _as_of_row(am, "ACC-DEMO-PRIYA"), _as_of_row(am, "ACC-DEMO-RAVI")
+        aug = am[(am["account_id"] == "ACC-DEMO-PRIYA") & (am["month"] == add_months(AS_OF, -1))]
+        post_due = int(aug["total_due_paise"].iloc[0]) - int(priya["payments_paise"])
+        gap_min = int(priya["min_due_paise"]) - target_min
+        gap_total = int(priya["total_due_paise"]) - PRIYA_TOTAL_DUE_PAISE
+        gap_post = post_due - PRIYA_POST_DUE_PAISE
+        gap_ravi = int(ravi["total_due_paise"]) - RAVI_TOTAL_DUE_PAISE
+        if gap_min == gap_total == gap_post == gap_ravi == 0:
+            return am
+        state = (amount, priya_aug, priya_sep, ravi_sep)
+        if state in seen:  # rounding cycle: nudge Priya's September spend by a paisa
+            priya_sep += 1
+            continue
+        seen.add(state)
+        amount += gap_min  # a higher payment lowers the minimum due ~1:1
+        priya_aug += gap_min - gap_post  # keep total(Aug) - payment on target
+        priya_sep -= gap_total - gap_min  # the payment lowers the total ~1:1: compensate
+        ravi_sep -= gap_ravi
+    raise RuntimeError("could not solve the persona as-of numbers")  # pragma: no cover
 
 
 def build_personas(months: list[str], extra: list[str] | None = None) -> dict[str, pd.DataFrame]:
@@ -747,19 +784,24 @@ def build_personas(months: list[str], extra: list[str] | None = None) -> dict[st
     all_months = months + extra
     priya = next(i for i, p in enumerate(personas) if p.key == "PRIYA")
     t_as_of = months.index(AS_OF)
-    k_other = PURCHASE_CATEGORIES.index("other")
+    ravi = next(i for i, p in enumerate(personas) if p.key == "RAVI")
+    k_ess = PURCHASE_CATEGORIES.index("essentials")
     spend_frames: dict[str, pd.DataFrame] = {}
 
-    def run(amount: int, nudge: int) -> pd.DataFrame:
+    def run(amount: int, priya_aug: int, priya_sep: int, ravi_sep: int) -> pd.DataFrame:
         policy.amount[priya, t_as_of] = amount
         purchases = plan.purchases.copy()
-        purchases[priya, t_as_of, k_other] += nudge * 100
+        purchases[priya, t_as_of - 1, k_ess] += priya_aug
+        purchases[priya, t_as_of, k_ess] += priya_sep
+        purchases[ravi, t_as_of, k_ess] += ravi_sep
+        if (purchases[:, t_as_of, k_ess] < 0).any():
+            raise RuntimeError("persona solve needs negative spend")  # pragma: no cover
         p2 = SpendPlan(purchases, plan.cash_advance, plan.txn_count)
         am, spend = simulate_statements(accounts, all_months, policy, p2)
         spend_frames["spend"] = spend
         return am
 
-    full = _solve_priya(run, months)
+    full = _solve(run)
     inside = full["month"] <= months[-1]
     account_months = full[inside].reset_index(drop=True)
     label_horizon = full.loc[~inside, ["account_id", "month", "dpd", "bucket"]].reset_index(

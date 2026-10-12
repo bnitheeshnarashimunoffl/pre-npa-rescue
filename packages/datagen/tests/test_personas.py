@@ -44,7 +44,7 @@ def test_priya_agreed_numbers(tables: dict[str, pd.DataFrame], facts: dict) -> N
     assert f["waivable_charges_paise"] == 153_400  # Rs 1,300 + 18% GST
     assert f["affordable_monthly_paise"] == PRIYA_AFFORDABLE_PAISE == 200_000
     assert f["bucket"] == "sma0"
-    assert 10_000_000 <= f["total_due_paise"] <= 11_500_000  # about Rs 1,10,000
+    assert f["total_due_paise"] == 10_745_200  # Rs 1,07,452 (canonical)
 
 
 def test_priya_story(tables: dict[str, pd.DataFrame]) -> None:
@@ -66,6 +66,7 @@ def test_ravi_agreed_numbers(tables: dict[str, pd.DataFrame], facts: dict) -> No
     f = facts["CUST-DEMO-RAVI"]
     assert f["affordable_monthly_paise"] == 0
     assert f["bucket"] == "sma1"
+    assert f["total_due_paise"] == 6_480_000  # Rs 64,800
     h = _history(tables, "RAVI")
     assert (h.loc[["2026-08", "2026-09"], "payments_paise"] == 0).all()
     c = tables["customers"].set_index("customer_id").loc["CUST-DEMO-RAVI"]
@@ -145,3 +146,64 @@ def test_committed_persona_sample() -> None:
     doc = json.loads((SAMPLES / PERSONAS_JSON).read_text(encoding="utf-8"))
     assert doc["CUST-DEMO-PRIYA"]["facts"]["overdue_paise"] == 1_149_200
     assert doc["CUST-DEMO-RAVI"]["facts"]["affordable_monthly_paise"] == 0
+
+
+# --- Drift guard: the agreed persona numbers, exactly, as the generator produces them ---------
+
+PRIYA_EXPECTED = {
+    "total_due_paise": 10_745_200,  # Rs 1,07,452 outstanding (canonical)
+    "overdue_paise": 1_149_200,  # Rs 11,492: covered by the 6 x Rs 2,000 plan
+    "waivable_charges_paise": 153_400,  # Rs 1,300 late fee + 18% GST
+    "late_fee_paise": 130_000,
+    "capacity_monthly_paise": 240_000,  # Rs 2,400 a month from her declared budget
+    "affordable_monthly_paise": 200_000,  # Rs 2,000 plan instalment
+    "dpd": 16,
+    "bucket": "sma0",
+}
+RAVI_EXPECTED = {
+    "total_due_paise": 6_480_000,  # Rs 64,800
+    # Rs 14,385.13, not the Rs 9,000 in the request: two unpaid minimums plus the current one on
+    # Rs 64,800 at 42% p.a. cannot be below ~Rs 12,000 (see data/README.md, "Demo personas").
+    "overdue_paise": 1_438_513,
+    "waivable_charges_paise": 153_400,
+    "late_fee_paise": 130_000,
+    "capacity_monthly_paise": 0,  # zero capacity
+    "affordable_monthly_paise": 0,
+    "dpd": 47,
+    "bucket": "sma1",
+}
+
+
+def _check(facts: dict, expected: dict) -> None:
+    got = {k: facts[k] for k in expected}
+    assert got == expected
+
+
+def test_persona_numbers_do_not_drift(facts: dict, tables: dict[str, pd.DataFrame]) -> None:
+    _check(facts["CUST-DEMO-PRIYA"], PRIYA_EXPECTED)
+    _check(facts["CUST-DEMO-RAVI"], RAVI_EXPECTED)
+    h = _history(tables, "PRIYA")
+    post_due = h.loc["2026-08", "total_due_paise"] - h.loc["2026-09", "payments_paise"]
+    assert post_due == 9_251_900  # Rs 92,519 outstanding after the due date (canonical)
+    assert facts["CUST-DEMO-PRIYA"]["offer"] == {
+        "type": "emi_conversion",
+        "monthly_amount_paise": 200_000,
+        "tenure_months": 6,
+        "fee_waiver": True,
+    }
+    c = tables["customers"].set_index("customer_id").loc["CUST-DEMO-RAVI"]
+    assert c["insurance_cover_type"] == "job_loss"
+
+
+def test_generator_output_has_the_persona_numbers(
+    small_written: Path, small_cfg: DatagenConfig, tmp_path: Path
+) -> None:
+    """Same numbers from the real pipeline (generate + features), not just build_personas."""
+    run_features(small_cfg.model_copy(update={"samples_dir": tmp_path}))
+    doc = json.loads((small_written / PERSONAS_JSON).read_text(encoding="utf-8"))
+    _check(doc["CUST-DEMO-PRIYA"]["facts"], PRIYA_EXPECTED)
+    _check(doc["CUST-DEMO-RAVI"]["facts"], RAVI_EXPECTED)
+    am = pd.read_parquet(small_written / "account_months.parquet")
+    last = am[am["month"] == "2026-09"].set_index("account_id")
+    assert last.loc["ACC-DEMO-PRIYA", "total_due_paise"] == 10_745_200
+    assert last.loc["ACC-DEMO-RAVI", "total_due_paise"] == 6_480_000

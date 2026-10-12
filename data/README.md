@@ -152,7 +152,7 @@ Numbers agreed with WS3 on issue #1:
 | Customer | Who | Story | Bucket (DPD) at 2026-09 | Total due ₹ | Late fee ₹ | Overdue ₹ | Segment / uplift group |
 |---|---|---|---|---|---|---|---|
 | `CUST-DEMO-PRIYA` | Priya Subramanian, 29, Chennai, `ta` | Salary stopped 2026-06; minimum only in 07 and 08; part of the minimum in 09 | sma0 (16) | 1,07,452 | 1,300 | **11,492** | cant_pay / persuadable |
-| `CUST-DEMO-RAVI` | Ravi Kumar, 41, Madurai, `ta` (chats in `en`) | Sole earner, job lost 2026-07, no payments since 2026-08, job-loss insurance | sma1 (47) | 65,541 | 1,300 | 14,422 | cant_pay / lost_cause |
+| `CUST-DEMO-RAVI` | Ravi Kumar, 41, Madurai, `ta` (chats in `en`) | Sole earner, job lost 2026-07, no payments since 2026-08, job-loss insurance | sma1 (47) | 64,800 | 1,300 | 14,385 | cant_pay / lost_cause |
 | `CUST-DEMO-ANITA` | Anita Reddy, 34, Hyderabad | Pays in full; once 6 days late; forgot 2026-09 | sma0 (16) | 67,443 | 1,300 | 6,061 | forgot / sure_thing |
 | `CUST-DEMO-VIKRAM` | Vikram Malhotra, 45, New Delhi | Income intact, spend up, stopped paying 2026-07 | sma2 (77) | 4,52,348 | 1,300 | 1,39,154 | wont_pay / lost_cause |
 | `CUST-DEMO-MEERA` | Meera Nair, 38, Kochi | Anxious; skips and self-cures; no calls at work | sma0 (16) | 1,63,611 | 1,300 | 27,077 | forgot / sleeping_dog |
@@ -162,16 +162,30 @@ Numbers agreed with WS3 on issue #1:
 | `CUST-DEMO-KAVYA` | Kavya Joshi, 26, Pune | Gig job lost 2025-11, recovered 2026-03, caught up | current (0) | 40,184 | 0 | 0 | not_at_risk / sure_thing |
 | `CUST-DEMO-JOSEPH` | Joseph Fernandes, 36, Mumbai | Pays in full on time (control) | current (0) | 25,264 | 0 | 0 | not_at_risk / — |
 
-- **Priya**: affordable **₹2,000/month** (declared income ₹20,000, expenses ₹9,000, one dependant).
-  **Overdue ₹11,492** is the minimum due on the 2026-09 statement net of the waivable late fee
-  and its GST, i.e. what she must pay to be current once the fee is waived. The 6 × ₹2,000 plan
-  at the policy EMI rate of 15% p.a. covers exactly this. Her 2026-09 part-payment (₹5,684 of an
-  ₹8,181 minimum) is solved at build time to hit it to the paisa. **Late fee ₹1,300 + 18% GST =
-  ₹1,534** (waivable): the slab is chosen on the amount outstanding after the due date (₹98,203
-  total due − ₹5,684 paid by the due date = ₹92,519), following the RBI text (decision on issue #1), and charged because she was more than
-  3 days past due. Limit ₹1,80,000, no insurance, one dependant.
-- **Ravi**: affordable **₹0** (zero capacity); **job-loss insurance** cover; preferred contact
+- **Priya** (canonical values, exact to the paisa, locked by `test_persona_numbers_do_not_drift`):
+  - **Total due ₹1,07,452** (10,745,200 paise).
+  - **Overdue ₹11,492** (1,149,200 paise): the minimum due on the 2026-09 statement net of the
+    waivable late fee and its GST, i.e. what she must pay to be current once the fee is waived.
+    The 6 × ₹2,000 plan at the policy EMI rate of 15% p.a. covers exactly this.
+  - **Late fee ₹1,300 + 18% GST = ₹1,534** (153,400 paise, waivable). The slab is chosen on the
+    **amount outstanding after the due date, ₹92,519** (₹98,203.42 total due on 2026-08 −
+    ₹5,684.42 paid on 2026-08-19, before the due date but short of the ₹8,180.92 minimum),
+    following the RBI text (decision on issue #1), and charged because she was more than 3 days
+    past due. DPD 16, SMA-0.
+  - **Capacity ₹2,400/month** (`capacity_monthly_paise`: declared income ₹20,000 − expenses
+    ₹9,000 − ₹3,000 dependant allowance, × 0.3) and **plan instalment ₹2,000/month**
+    (`affordable_monthly_paise`), which fits inside it.
+  - Her 2026-09 part-payment and her 2026-08/2026-09 essentials spend are solved at build time
+    so that all four numbers (total, overdue, post-due outstanding, charges) come out exactly.
+  - Limit ₹1,80,000, no insurance, one dependant.
+- **Ravi**: **total due ₹64,800** (6,480,000 paise, solved exactly via his 2026-09 spend);
+  charges ₹1,534; **zero capacity**; **job-loss insurance**; DPD 47, SMA-1; preferred contact
   window 10:00–13:00, so the 11:00 hardship-officer callback fits both it and 08:00–19:00.
+  **Overdue ₹14,385.13**, not the ₹9,000 in WS3's early snapshot. With DPD 47 he has two
+  unpaid minimum dues (2026-07: ₹3,619; 2026-08: ₹5,857 including a ₹1,534 late fee) plus the
+  current one. On ₹64,800 at 42% p.a., three cycles of 5% principal plus ₹1,560–1,770 a month
+  of interest cannot be below about ₹12,000 under the same definition that gives Priya her
+  ₹11,492. A "past-due only" definition would not reach ₹9,000 either, and would break Priya's.
 - "Overdue" is 0 for accounts that are not past due. "Segment / uplift group" are the intended
   hidden truths (in `facts`); `labels.segment_truth` is computed by the normal rules.
 
