@@ -79,7 +79,8 @@ def _hot_reload(providers: Providers, parsed: Any) -> None:
 def put_policy(
     body: PolicyUpdateRequest, principal: CurrentPrincipal, session: DbSession, providers: Deps
 ) -> PolicyDocument:
-    """Validate via ``npa_rules``, store a new version, hot-reload, audit (task 5.1/5.4)."""
+    """Validate the policy, store it as the new active version, reload the providers and
+    record the change (old and new version) in the audit log."""
     version, parsed = validate_policy(body.policy)
     if session.scalar(select(orm.PolicyVersion).where(orm.PolicyVersion.version == version)):
         conflict(f"Policy version {version} already exists; bump `version`.", {"version": version})

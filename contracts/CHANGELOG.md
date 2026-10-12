@@ -3,6 +3,16 @@
 Format: `## <version> — <YYYY-MM-DD>` then bullet points. Minor = additive, patch = docs/fixtures.
 Breaking changes are marked **BREAKING** and need the team lead's approval.
 
+## 0.2.1 — 2026-10-12
+
+Docs only (patch). No model, schema or endpoint change.
+
+- `openapi.yaml`: route descriptions no longer refer to build tasks ("fixture-backed until task
+  5.1", "(task 5.3)", "(task 5.1/5.4)"); they describe current behaviour for
+  `POST /auth/login`, `GET /collector/queue`, `POST /chat/sessions/{sid}/messages` and
+  `PUT /admin/policy`.
+- `CONTRACT_VERSION` 0.2.0 -> 0.2.1 (schemas and `openapi.yaml` regenerated).
+
 ## 0.2.0 — 2026-10-12
 
 Additive (minor). Task 5.4, required by the WS5 briefing ("Add a `GET /admin/audit/verify`

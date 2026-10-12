@@ -90,5 +90,5 @@
   ],
   "title": "ChatTranscript",
   "type": "object",
-  "x-contract-version": "0.2.0"
+  "x-contract-version": "0.2.1"
 }

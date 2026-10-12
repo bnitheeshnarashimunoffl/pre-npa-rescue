@@ -1704,9 +1704,9 @@ components:
       scheme: bearer
       type: http
 info:
-  summary: REST contract v0.2.0 (api 0.1.0). Synthetic data only.
+  summary: REST contract v0.2.1 (api 0.1.0). Synthetic data only.
   title: Pre-NPA Rescue API
-  version: 0.2.0
+  version: 0.2.1
 openapi: 3.1.0
 paths:
   /api/v1/accounts/{account_id}/nba:
@@ -1983,7 +1983,9 @@ paths:
       x-roles:
       - admin
     put:
-      description: Validate via ``npa_rules``, store a new version, hot-reload, audit (task 5.1/5.4).
+      description: 'Validate the policy, store it as the new active version, reload the providers and
+
+        record the change (old and new version) in the audit log.'
       operationId: put_policy_api_v1_admin_policy_put
       requestBody:
         content:
@@ -2031,7 +2033,7 @@ paths:
       - admin
   /api/v1/auth/login:
     post:
-      description: Demo login -> JWT (task 5.3).
+      description: Log in with a demo user; returns a JWT bearer token (HS256) and the user's role.
       operationId: login_api_v1_auth_login_post
       requestBody:
         content:
@@ -2279,7 +2281,9 @@ paths:
       - auditor
   /api/v1/chat/sessions/{sid}/messages:
     post:
-      description: 'One chat turn: ``ChatEngine.handle`` -> ``BotReply`` (fixture-backed until task 5.1).'
+      description: 'One chat turn: ``ChatEngine.handle`` -> ``BotReply``. The reply text passes the
+
+        compliance guard before it is sent; both turns are stored and logged as contacts.'
       operationId: post_message_api_v1_chat_sessions__sid__messages_post
       parameters:
       - in: path
@@ -2435,7 +2439,9 @@ paths:
       - hardship_officer
   /api/v1/collector/queue:
     get:
-      description: Prioritised collector queue (fixture-backed until task 5.1).
+      description: 'Prioritised collector queue for the as-of month, highest priority first; page with
+
+        ``limit`` and the opaque ``next_cursor``.'
       operationId: queue_api_v1_collector_queue_get
       parameters:
       - in: query

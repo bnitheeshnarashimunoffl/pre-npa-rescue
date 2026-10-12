@@ -136,7 +136,8 @@ def post_message(
     session: DbSession,
     providers: Deps,
 ) -> BotReply:
-    """One chat turn: ``ChatEngine.handle`` -> ``BotReply`` (fixture-backed until task 5.1)."""
+    """One chat turn: ``ChatEngine.handle`` -> ``BotReply``. The reply text passes the
+    compliance guard before it is sent; both turns are stored and logged as contacts."""
     row = _owned_session(session, sid, principal)
     if row.closed_at is not None:
         conflict("Chat session is closed.", {"session_id": sid})

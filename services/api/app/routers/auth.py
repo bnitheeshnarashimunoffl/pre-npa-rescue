@@ -25,7 +25,7 @@ def login(
     session: Annotated[Session, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> TokenResponse:
-    """Demo login -> JWT (task 5.3)."""
+    """Log in with a demo user; returns a JWT bearer token (HS256) and the user's role."""
     # One generic error for unknown user, wrong password or inactive user (no user
     # enumeration); rate-limited per client and username.
     enforce(RateLimits.login(), f"{client_key(request)}|{body.username.lower()}")

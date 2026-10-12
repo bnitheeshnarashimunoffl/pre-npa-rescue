@@ -30,7 +30,8 @@ def queue(
     bucket: Bucket | None = None,
     action: NextAction | None = None,
 ) -> QueuePage:
-    """Prioritised collector queue (fixture-backed until task 5.1)."""
+    """Prioritised collector queue for the as-of month, highest priority first; page with
+    ``limit`` and the opaque ``next_cursor``."""
     # Reads the per-month NBA cache (the `nba` table) with keyset pagination (task 5.2).
     try:
         rows, next_cursor = queue_page(
