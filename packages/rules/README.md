@@ -129,4 +129,10 @@ chatbot must confirm it with the customer before offering a plan.
 
 ```bash
 uv run pytest packages/rules/tests
+uv run python -m npa_rules.cli validate [--policy PATH]      # validate a policy file
+uv run python -m npa_rules.cli fixtures --out DIR            # WS3 contract fixtures (B4)
 ```
+
+`fixtures` writes `relief_options_priya.json`, `relief_options_ravi.json`, `offer.json`,
+`nba.json`, `queue.json` and `policy.json` deterministically (fixed clock 2026-10-12 11:00 IST).
+`contracts/fixtures/` is owned by WS5, so WS5 copies them in through a `contract` PR.
