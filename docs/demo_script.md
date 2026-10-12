@@ -91,16 +91,19 @@ architecture text diagram. Keep the same narration.
 2. Click **Priya Raman**.
 3. Point to **High risk**, then the reason codes for stopped salary, minimum-due streak and
    rising utilisation.
-4. Point to the `cant_pay` segment and `persuadable` uplift group.
-5. Return to the queue and point to at least one **No contact** action without opening it.
-6. Switch to the Priya chat tab by 1:12.
+4. Point to SMA-0, DPD 16, ₹1,07,452 total due, ₹11,492 overdue and ₹92,519 outstanding after
+   the due date.
+5. Point to the `cant_pay` segment and `persuadable` uplift group.
+6. Return to the queue and point to at least one **No contact** action without opening it.
+7. Switch to the Priya chat tab by 1:12.
 
 ### Say exactly
 
 “Priya is visible before default. The system explains why: salary credits stopped, she has
-paid only the minimum, and utilisation is rising. Risk tells us who may struggle. Uplift asks a
-different question: will contact improve the outcome? Priya is persuadable, while a sleeping
-dog receives no contact. We focus help where it can work and avoid unnecessary pressure.”
+paid only the minimum, utilisation is rising, and her total due is ₹1,07,452. Risk tells us who
+may struggle. Uplift asks a different question: will contact improve the outcome? Priya is
+persuadable, while a sleeping dog receives no contact. We focus help where it can work and
+avoid unnecessary pressure.”
 
 ### Evidence and fallback
 
@@ -128,8 +131,9 @@ dog receives no contact. We focus help where it can work and avoid unnecessary p
 “Priya can explain job loss in Tamil without facing a collections script. The language model
 understands the conversation, but it cannot invent money or promises. The rules engine returns
 the permitted terms, and a human approval is recorded. Here the merged fixture supports
-₹2,000 a month for 6 months with ₹1,180 in late fees waived. Priya sees the disclosures before
-she accepts. The AI proposes; the rules decide.”
+₹2,000 a month for 6 months with ₹1,534 in late fees waived. The canonical option is
+`OPT-ACC-DEMO-PRIYA-EMI6-WAIVER`, with `disc.*` disclosure keys. Priya sees the disclosures
+before she accepts. The AI proposes; the rules decide.”
 
 ### Evidence and fallback
 
@@ -147,18 +151,18 @@ she accepts. The AI proposes; the rules decide.”
 
 1. Confirm Ravi’s chat is in English.
 2. Use the prepared response: **I cannot pay anything right now**.
-3. Point out that no payment amount is requested after this disclosure.
+3. Point out that no payment amount is requested after this statement.
 4. Point to the job-loss insurance referral.
 5. Select the 11:00 hardship-officer slot and confirm the booking.
 6. Point to the recording and grievance notices; switch to scorecard at 2:57.
 
 ### Say exactly
 
-“Ravi cannot afford even a token payment. The bot stops asking. It checks the policy-defined
-insurance route and offers a human hardship callback. Ravi chooses 11:00, inside the permitted
-08:00 to 19:00 contact window. This is documented engagement before escalation, designed to
-the RBI financial-distress framework effective 1 January 2027—not a claim that the future
-paragraph is already in force.”
+“Ravi is SMA-1 at DPD 47 and cannot afford even a token payment. The English chat stops asking.
+It checks his job-loss insurance route and offers a human hardship callback. Ravi chooses
+11:00, inside the permitted 08:00 to 19:00 contact window. This is documented engagement
+before escalation, designed to the RBI financial-distress framework effective 1 January
+2027—not a claim that the future paragraph is already in force.”
 
 ### Evidence and fallback
 
@@ -177,23 +181,26 @@ paragraph is already in force.”
 2. Open one bias-swap pair and compare the decision or offer fields.
 3. Open one prompt-injection case and point to the blocked request.
 4. Open one contact-window case and point to the rule identifier.
-5. Show RBI and BIS coverage grids; do not hide failures.
-6. Move to the simulation tab at 3:42.
+5. Show case pass rate as N/144.
+6. Show strict requirement coverage as X of 15 in-scope RBI requirements, plus planned and
+   out-of-scope counts; do not hide failures.
+7. Move to the simulation tab at 3:42.
 
 ### Say exactly
 
 “We do not ask judges to trust a chatbot. We attack it. Bias swaps change gender, religion or
 region while holding the financial case constant. Prompt injection tries to invent a waiver.
 Contact tests request an out-of-hours call. The scorecard records the output, pass or failure,
-and the RBI and BIS evidence reference. Real pass rate: TBD – from the latest committed
-red-team scorecard.”
+and the RBI and BIS evidence reference. We report two different measures: case pass rate,
+N out of 144, and strict requirement coverage, X of 15 in-scope RBI requirements, followed by
+the planned and out-of-scope counts. Final values come from the latest committed scorecard.”
 
 ### Evidence and fallback
 
 - Final result: `TBD – from redteam/reports/<latest>/scorecard.json`.
 - Schema and layout fallback: `contracts/fixtures/scorecard.json`.
-- If the real run is missing, say: “This is the fixture layout, not a measured pass rate,” and
-  demonstrate one stored case only.
+- If the real run is missing, say: “This is the fixture layout, not a measured case pass rate or
+  strict requirement coverage result,” and demonstrate one stored case only.
 - If a test fails live, show it. Say: “The harness has found a release blocker; this is why the
   proof layer exists.”
 
@@ -210,10 +217,10 @@ red-team scorecard.”
 ### Say exactly
 
 “We compare targeted intervention with a call-everyone baseline on three outcomes: NPA rate,
-cure rate and collection cost. Final results are TBD – from
-packages/models/reports/policy_simulation.json. Until that committed run exists, this panel is
-illustrative. The business hypothesis is fewer harmful or wasted contacts, more cures, and
-lower cost—not a result we will claim without evidence.”
+cure rate and collection cost among at-risk accounts, in simulation. The oracle is an upper
+bound, not an achievable strategy. Only WS2’s real committed numbers may be quoted. Final
+results are TBD – from packages/models/reports/policy_simulation.json. Until that committed run
+exists, this panel is illustrative.”
 
 ### Evidence and fallback
 
@@ -227,7 +234,7 @@ lower cost—not a result we will claim without evidence.”
 
 ### Operator actions
 
-1. Show the five BIS control areas.
+1. Show “17 Indian Standards (14 standard families)” across the five BIS control areas.
 2. Sweep left to right: governance, fairness/quality, security, customer service,
    accessibility.
 3. Point to the non-certification footnote.
@@ -235,16 +242,16 @@ lower cost—not a result we will claim without evidence.”
 
 ### Say exactly
 
-“Relevant Indian Standards shape the evidence: govern the AI, test fairness and quality,
-protect data, treat customers well, and include everyone. Each area maps to an artifact or
-test, with final mapping TBD – from governance/bis_mapping.md. This is design alignment, not
-certification. We find customers who are about to struggle, work out who we can actually help,
-offer a kind and affordable plan within bank rules, and prove the whole thing is fair.”
+“17 Indian Standards (14 standard families) shape the evidence: govern the
+AI, test fairness and quality, protect data, treat customers well, and include everyone. Each
+area maps to an artifact or test. This is design alignment, not certification. We find
+customers who are about to struggle, work out who we can actually help, offer a kind and
+affordable plan within bank rules, and prove the whole thing is fair.”
 
 ### Fallback
 
 If the slide is unavailable, open `docs/deck/bis_slide.md`, show the five-row grid and keep the
-same narration. Do not quote an aggregate standards count until WS7 verifies the grouping.
+same narration: 17 Indian Standards (14 standard families), design alignment, not certification.
 
 ## Evidence freeze
 
