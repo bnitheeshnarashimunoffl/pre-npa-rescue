@@ -35,6 +35,7 @@ class DatagenConfig(BaseSettings):
     start_month: str = Field(default=SIM_START_MONTH, pattern=_MONTH_PATTERN)
     end_month: str = Field(default=SIM_END_MONTH, pattern=_MONTH_PATTERN)
     write_transactions: bool = True
+    experiment_month: str = Field(default="2026-06", pattern=_MONTH_PATTERN)
     samples_dir: Path | None = None  # if set, `features` also writes the committed samples
 
     @model_validator(mode="after")

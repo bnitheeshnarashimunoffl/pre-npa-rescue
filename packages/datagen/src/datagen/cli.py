@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from datagen.config import DatagenConfig
+from datagen.experiment import run_experiment
 from datagen.generate import run_generate
 from datagen.pipeline import run_features
 
@@ -18,17 +19,10 @@ logger = logging.getLogger("datagen")
 Step = Callable[[DatagenConfig], None]
 
 
-def _not_implemented(task: str) -> Step:
-    def run(cfg: DatagenConfig) -> None:
-        raise NotImplementedError(f"not implemented yet (task {task})")
-
-    return run
-
-
 STEPS: dict[str, Step] = {
     "generate": run_generate,
     "features": run_features,
-    "experiment": _not_implemented("1.3"),
+    "experiment": run_experiment,
 }
 
 
@@ -50,7 +44,8 @@ def build_parser() -> argparse.ArgumentParser:
         )
     feat = sub.add_parser("features", parents=[common], help="build features and labels (task 1.2)")
     feat.add_argument("--samples", type=Path, help="also write the small samples to this folder")
-    sub.add_parser("experiment", parents=[common], help="simulate the experiment (task 1.3)")
+    exp = sub.add_parser("experiment", parents=[common], help="simulate the experiment (task 1.3)")
+    exp.add_argument("--month", help="experiment month YYYY-MM (default 2026-06)")
     return parser
 
 
@@ -62,6 +57,8 @@ def config_from_args(args: argparse.Namespace) -> DatagenConfig:
         overrides["data_dir"] = args.out
     if getattr(args, "n", None) is not None:
         overrides["n_customers"] = args.n
+    if getattr(args, "month", None) is not None:
+        overrides["experiment_month"] = args.month
     if getattr(args, "samples", None) is not None:
         overrides["samples_dir"] = args.samples
     if getattr(args, "no_transactions", False):

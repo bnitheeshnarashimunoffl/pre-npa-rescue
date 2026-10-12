@@ -159,8 +159,9 @@ def validate(df: pd.DataFrame, table: str) -> pd.DataFrame:
     return pandera_schema(table, specs).validate(df, lazy=True)
 
 
-def write_parquet(df: pd.DataFrame, path: Path, schema: pa.Schema) -> None:
-    """Write ``df`` with an explicit Arrow schema; same input gives byte-identical files."""
+def write_parquet(df: pd.DataFrame, path: Path, schema: pa.Schema | None) -> None:
+    """Write ``df`` (explicit Arrow schema, or inferred if ``None``); same input gives
+    byte-identical files."""
     table = pa.Table.from_pandas(df, schema=schema, preserve_index=False)
     table = table.replace_schema_metadata(None)  # drop pandas metadata (version-dependent)
     path.parent.mkdir(parents=True, exist_ok=True)
