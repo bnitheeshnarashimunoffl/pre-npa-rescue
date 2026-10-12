@@ -46,6 +46,7 @@ PAY_MIN = 2  # pay exactly the minimum amount due (clears all overdue)
 PAY_OLDEST = 3  # pay only the oldest unpaid minimum due (stays delinquent, no roll)
 PAY_TOTAL_FRAC = 4  # pay max(minimum due, frac x total due)
 PAY_FULL = 5  # pay the total amount due
+PAY_AMOUNT = 6  # pay exactly ``amount`` paise (scripted demo personas)
 
 PURCHASE_CATEGORIES = ("essentials", "discretionary", "travel", "utilities", "emi", "other")
 
@@ -66,6 +67,7 @@ class PaymentDecision:
     mode: npt.NDArray[np.int8]
     frac: FloatArray
     late_days: IntArray  # payment day relative to the due date (negative = early)
+    amount: IntArray | None = None  # used by PAY_AMOUNT only
 
 
 Policy = Callable[[CycleState], PaymentDecision]
@@ -104,8 +106,16 @@ def _payment_amount(dec: PaymentDecision, st: CycleState) -> IntArray:
             mode == PAY_OLDEST,
             mode == PAY_TOTAL_FRAC,
             mode == PAY_FULL,
+            mode == PAY_AMOUNT,
         ],
-        [frac_min, st.min_due, st.oldest_unpaid, frac_total, st.total_due],
+        [
+            frac_min,
+            st.min_due,
+            st.oldest_unpaid,
+            frac_total,
+            st.total_due,
+            dec.amount if dec.amount is not None else np.zeros_like(st.min_due),
+        ],
         default=0,
     )
     return np.clip(amount, 0, st.total_due).astype(np.int64)

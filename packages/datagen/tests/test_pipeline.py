@@ -8,6 +8,7 @@ import pytest
 from datagen import cli
 from datagen.config import DatagenConfig
 from datagen.generate import GeneratedData
+from datagen.personas import PERSONAS
 from datagen.pipeline import run_features
 from datagen.sanity import report
 from datagen.validate import check_integrity, validate
@@ -20,7 +21,7 @@ def test_run_features_writes_tables_and_samples(
     run_features(cfg)
     features = pd.read_parquet(small_written / "features.parquet")
     labels = pd.read_parquet(small_written / "labels.parquet")
-    assert len(features) == small_cfg.n_customers * 24
+    assert len(features) == (small_cfg.n_customers + len(PERSONAS)) * 24
     validate(labels, "labels")
     sample = pd.read_parquet(tmp_path / "features_sample.parquet")
     assert len(sample) == 2_000  # 200 accounts x 10 months
