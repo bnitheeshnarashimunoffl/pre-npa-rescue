@@ -138,3 +138,94 @@ def test_complaint_interrupt_flow() -> None:
     assert len(complaints.complaints) == 1
     docket = complaints.complaints[0].docket_no
     assert docket in complaint_reply.text
+
+
+def test_engine_priya_hardship_and_affordability_flow() -> None:
+    engine, _, _ = _create_engine()
+
+    # Turn 1: Greeting
+    r1 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="Hello"),
+    )
+    assert r1.state == ChatState.CONSENT_NOTICE.value
+
+    # Turn 2: Switch to Tamil
+    r2 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="தமிழ்"),
+    )
+    assert r2.state == ChatState.HARDSHIP_DISCLOSURE.value
+
+    # Turn 3: Disclose job loss in Tamil ("வேலை போனது")
+    r3 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="எனக்கு வேலை போனது, வருமானம் இல்லை"),
+    )
+    assert r3.state == ChatState.AFFORDABILITY.value
+    assert "hardship_classified_job_loss" in r3.flags
+
+    # Turn 4: Provide income (35000)
+    r4 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="35000"),
+    )
+    assert r4.state == ChatState.AFFORDABILITY.value
+
+    # Turn 5: Provide expenses (32500) and dependants
+    r5 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="செலவு 32500, ஒருவர் என்னை சார்ந்துள்ளார்"),
+    )
+    assert "₹2,500" in r5.text or "2,500" in r5.text
+    assert "affordability_confirming" in r5.flags
+
+    # Turn 6: Confirm budget capacity
+    r6 = engine.handle(
+        session_id="SESS-PRIYA-FULL",
+        customer_id="CUST-DEMO-PRIYA",
+        req=ChatTurnRequest(text="ஆம்"),
+    )
+    assert r6.state == ChatState.OPTIONS.value
+    assert "affordability_confirmed" in r6.flags
+
+
+def test_engine_bereavement_pause_flow() -> None:
+    engine, _, _ = _create_engine()
+
+    # Turn 1: Greeting
+    engine.handle(
+        session_id="SESS-BEREAVEMENT-ENGINE",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="Hi"),
+    )
+
+    # Turn 2: Consent -> Hardship
+    engine.handle(
+        session_id="SESS-BEREAVEMENT-ENGINE",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="English"),
+    )
+
+    # Turn 3: Bereavement report
+    r3 = engine.handle(
+        session_id="SESS-BEREAVEMENT-ENGINE",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="There was a bereavement in my family recently"),
+    )
+    assert "pause_outreach_suggested" in r3.flags
+    assert "para 454Y(6)" in r3.text
+
+    # Turn 4: Accept pause
+    r4 = engine.handle(
+        session_id="SESS-BEREAVEMENT-ENGINE",
+        customer_id="CUST-DEMO-RAVI",
+        req=ChatTurnRequest(text="Yes pause"),
+    )
+    assert r4.state == ChatState.CLOSING.value
+    assert "outreach_paused" in r4.flags

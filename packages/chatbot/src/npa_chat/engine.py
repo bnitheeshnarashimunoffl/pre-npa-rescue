@@ -9,6 +9,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
+from npa_chat.flows import handle_affordability_turn, handle_hardship_turn
 from npa_chat.i18n import get_string
 from npa_chat.language import detect_language_switch_request, resolve_language
 from npa_chat.nlu import NLU, Intent
@@ -199,13 +200,38 @@ class ChatEngine:
                 state.transition_to(ChatState.HARDSHIP_DISCLOSURE)
                 reply_text = get_string("hardship_prompt", state.lang)
 
-            # Hardship disclosure turn
+            # Hardship disclosure turn (Task 4.2)
             elif state.current_state == ChatState.HARDSHIP_DISCLOSURE:
-                if nlu_res.slots.get("hardship_type"):
-                    state.hardship_type = str(nlu_res.slots["hardship_type"])
-                state.hardship_details = req.text
-                state.transition_to(ChatState.AFFORDABILITY)
-                reply_text = get_string("hardship_acknowledged", state.lang)
+                hardship_res = handle_hardship_turn(state, req.text, nlu_res)
+                reply_text = hardship_res.reply_text
+                quick_replies = hardship_res.quick_replies
+                state.transition_to(hardship_res.next_state)
+                if hardship_res.pause_suggested:
+                    state.pause_outreach_suggested = True
+                for f in hardship_res.flags:
+                    state.add_flag(f)
+
+            # Affordability assessment turn (Task 4.2)
+            elif state.current_state == ChatState.AFFORDABILITY:
+                aff_res = handle_affordability_turn(state, req.text, nlu_res)
+                for f in aff_res.flags:
+                    state.add_flag(f)
+
+                if aff_res.next_state == ChatState.OPTIONS:
+                    state.transition_to(ChatState.OPTIONS)
+                    reply_text = (
+                        "Thank you for confirming your budget. Based on approved bank policy, "
+                        "here are the relief options available for your account:"
+                    )
+                elif aff_res.next_state == ChatState.ZERO_CAPACITY:
+                    state.transition_to(ChatState.ZERO_CAPACITY)
+                    reply_text = (
+                        "We understand you currently have no surplus capacity to make payments. "
+                        "We will not ask you for payments right now."
+                    )
+                else:
+                    reply_text = aff_res.reply_text
+                    quick_replies = aff_res.quick_replies
 
             else:
                 # Default safe conversational fallback
