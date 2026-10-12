@@ -18,7 +18,7 @@ probability is documented in [`data/README.md`](../../data/README.md).
 | Generate tables (1.1) | `uv run datagen generate` | customers, protected attributes, statements, salary, shocks, transactions |
 | Demo personas (1.1 step 6) | part of `generate` | 10 fixed `CUST-DEMO-*` customers, `demo_personas.json` |
 | Features + labels (1.2) | `uv run datagen features [--samples data/samples]` | done |
-| Experiment (1.3) | `uv run datagen experiment [--month 2026-06]` | randomised experiment + `simulate_policy()` |
+| Experiment (1.3) | `uv run datagen experiment [--month 2026-06] [--months 6]` | randomised experiment pooled over 6 months + `simulate_policy()` |
 | Everything | `uv run datagen all` | runs the steps in order |
 
 ## How to run

@@ -45,7 +45,8 @@ def build_parser() -> argparse.ArgumentParser:
     feat = sub.add_parser("features", parents=[common], help="build features and labels (task 1.2)")
     feat.add_argument("--samples", type=Path, help="also write the small samples to this folder")
     exp = sub.add_parser("experiment", parents=[common], help="simulate the experiment (task 1.3)")
-    exp.add_argument("--month", help="experiment month YYYY-MM (default 2026-06)")
+    exp.add_argument("--month", help="last experiment month YYYY-MM (default 2026-06)")
+    exp.add_argument("--months", type=int, help="months pooled, ending --month (default 6)")
     return parser
 
 
@@ -57,6 +58,8 @@ def config_from_args(args: argparse.Namespace) -> DatagenConfig:
         overrides["data_dir"] = args.out
     if getattr(args, "n", None) is not None:
         overrides["n_customers"] = args.n
+    if getattr(args, "months", None) is not None:
+        overrides["experiment_months"] = args.months
     if getattr(args, "month", None) is not None:
         overrides["experiment_month"] = args.month
     if getattr(args, "samples", None) is not None:

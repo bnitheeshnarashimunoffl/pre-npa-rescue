@@ -1,8 +1,10 @@
 """Randomised collections experiment and policy simulator (task 1.3).
 
-For accounts at risk in the experiment month (default ``2026-06``; at risk = ``segment_truth``
-is not ``not_at_risk``), treatments are assigned at random, exactly 20% each: ``none``,
-``reminder``, ``chat_invite``, ``agent_call``, ``relief_offer``.
+The experiment pools ``experiment_months`` months (default 6) ending at the experiment month
+(default ``2026-06``, so ``2026-01``..``2026-06``). Every account at risk in any of those months
+(``segment_truth`` is not ``not_at_risk``) is enrolled **once**, at its first at-risk month, so
+``experiment.parquet`` stays keyed by ``customer_id``. Treatments are assigned at random, exactly
+20% each: ``none``, ``reminder``, ``chat_invite``, ``agent_call``, ``relief_offer``.
 
 Each account gets a hidden ``true_uplift_group`` from its behaviour type plus noise
 (``GROUP_MIX``); demo personas keep their scripted group. 90-day outcomes follow explicit,
@@ -117,6 +119,13 @@ def _assign_groups(
     return groups
 
 
+def pool_months(month: str, n_months: int) -> list[str]:
+    """The ``n_months`` months ending at ``month``, oldest first."""
+    if n_months < 1:
+        raise ValueError("n_months must be >= 1")
+    return [add_months(month, -k) for k in range(n_months - 1, -1, -1)]
+
+
 def build_experiment(
     labels: pd.DataFrame,
     account_months: pd.DataFrame,
@@ -124,12 +133,20 @@ def build_experiment(
     behaviour: pd.DataFrame,
     month: str,
     seed: int,
+    n_months: int = 6,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Return ``(experiment, potential_outcomes)`` for the at-risk accounts in ``month``."""
-    if month not in set(labels["month"]):
-        raise ValueError(f"no labels for {month}: the experiment needs a full 90-day horizon")
-    pop = labels[(labels["month"] == month) & (labels["segment_truth"] != "not_at_risk")]
-    pop = pop.sort_values("account_id").reset_index(drop=True)
+    """Return ``(experiment, potential_outcomes)``: at-risk accounts pooled over the
+    ``n_months`` months ending ``month``, each enrolled once at its first at-risk month."""
+    pool = pool_months(month, n_months)
+    missing = sorted(set(pool) - set(labels["month"]))
+    if missing:
+        raise ValueError(f"no labels for {missing}: the experiment needs a full 90-day horizon")
+    at_risk = labels[labels["month"].isin(pool) & (labels["segment_truth"] != "not_at_risk")]
+    pop = (
+        at_risk.sort_values(["account_id", "month"])
+        .drop_duplicates("account_id", keep="first")
+        .reset_index(drop=True)
+    )
     acc_to_cust = account_months.drop_duplicates("account_id").set_index("account_id")
     cust = acc_to_cust.loc[pop["account_id"], "customer_id"].to_numpy()
     n = len(pop)
@@ -143,13 +160,16 @@ def build_experiment(
     # Exactly 20% per arm, in random order.
     assigned = rng.permutation(np.resize(np.array(TREATMENTS, dtype=object), n))
     u_cure, u_npa = rng.random(n), rng.random(n)
-    waiver = waiver_paise(account_months, month).reindex(pop["account_id"]).fillna(0)
+    waiver = np.zeros(n, dtype=np.int64)  # late fees + GST in the 3 months up to enrolment
+    for enrol_month, idx in pop.groupby("month").indices.items():
+        fees = waiver_paise(account_months, str(enrol_month))
+        waiver[idx] = fees.reindex(pop["account_id"].iloc[idx]).fillna(0).to_numpy(np.int64)
 
     potential = pd.DataFrame(
         {
             "account_id": pop["account_id"],
             "customer_id": cust,
-            "month": month,
+            "month": pop["month"].to_numpy(),
             "true_uplift_group": groups,
         }
     )
@@ -160,14 +180,14 @@ def build_experiment(
         potential[f"npa_{t}"] = ~cured & (u_npa < p_npa)
         cost = np.full(n, COST_RUPEES[t] * 100, dtype=np.int64)
         if t == Treatment.RELIEF_OFFER.value:
-            cost = cost + waiver.to_numpy(np.int64)
+            cost = cost + waiver
         potential[f"cost_{t}"] = cost
 
     experiment = pd.DataFrame(
         {
             "customer_id": cust,
             "account_id": pop["account_id"].to_numpy(),
-            "month": month,
+            "month": pop["month"].to_numpy(),
             "treatment": assigned,
             "outcome_cured_90d": _take(potential, "cured", assigned).astype(bool),
             "outcome_npa_90d": _take(potential, "npa", assigned).astype(bool),
@@ -215,7 +235,7 @@ def simulate_policy(
     accounts the policy contacts; accounts it leaves out get ``none``. The baseline gives every
     account ``baseline_treatment`` (an agent call). Returns a dict with the shape of
     ``contracts/fixtures/simulation_metrics.json`` (``SimulationMetrics``); ``as_of_month`` is
-    the experiment month.
+    the last month of the experiment pool.
     """
     if potential is None:
         potential = pd.read_parquet((data_dir or DatagenConfig().data_dir) / POTENTIAL_FILE)
@@ -238,7 +258,7 @@ def simulate_policy(
     ours = _metrics(potential, chosen, strategy)
     reduction = 0.0 if base.npa_rate == 0 else (base.npa_rate - ours.npa_rate) / base.npa_rate
     result = SimulationMetrics(
-        as_of_month=str(potential["month"].iloc[0]) if n else "2026-06",
+        as_of_month=str(potential["month"].max()) if n else "2026-06",
         n_accounts=n,
         horizon_days=HORIZON_DAYS,
         baseline=base,
@@ -280,6 +300,7 @@ def run_experiment(cfg: DatagenConfig) -> None:
         pd.read_parquet(d / "behaviour_types.parquet"),
         cfg.experiment_month,
         cfg.seed,
+        cfg.experiment_months,
     )
     write_table(experiment, "experiment", d)
     write_parquet(potential, d / POTENTIAL_FILE, None)

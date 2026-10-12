@@ -247,12 +247,20 @@ stores only those months' `account_id, month, dpd, bucket` in the internal
 
 ## Experiment simulator (task 1.3)
 
-`datagen experiment [--month 2026-06]` writes `experiment.parquet` (contract) and the hidden
+`datagen experiment [--month 2026-06] [--months 6]` writes `experiment.parquet` (contract) and the hidden
 `experiment_potential.parquet` (internal: every account's outcome under **every** treatment).
 
-**Population:** accounts at risk in the experiment month (`labels.segment_truth` ≠
-`not_at_risk`): 1,529 of 10,010 for seed 42 at `2026-06`. **Assignment:** exactly 20% each to
-`none`, `reminder`, `chat_invite`, `agent_call`, `relief_offer`, in random order.
+**Population (pooled):** the experiment pools `experiment_months` months (default **6**) ending
+at the experiment month (default `2026-06`, so `2026-01`..`2026-06`). Every account at risk
+(`labels.segment_truth` ≠ `not_at_risk`) in any of those months is enrolled **once, at its first
+at-risk month**, so `experiment.parquet` stays keyed by `customer_id` and `month` is the enrolment
+month. Seed 42, 10,010 accounts: **2,120 enrolled** (424 per arm), against 1,529 with a single
+month: January 1,287 (everyone already at risk), then 133–192 newly at-risk accounts a month.
+Many at-risk accounts stay at risk for months, so pooling adds new accounts, not repeats. Rows
+scale linearly with `--n` (≈ 21% of customers), so `--n 50000` gives about 10,600 rows (2,100
+per arm). `--months 1` reproduces the single-month design. The arms, costs, probabilities and
+hidden uplift groups below are unchanged. **Assignment:** exactly 20% each to `none`,
+`reminder`, `chat_invite`, `agent_call`, `relief_offer`, in random order.
 
 **Hidden `true_uplift_group`** (evaluation only), drawn from the behaviour context:
 
@@ -285,19 +293,19 @@ experiment month).
 **`experiment.simulate_policy(assignments)`** takes a DataFrame of `account_id, treatment` (accounts
 left out get `none`), applies it to the same population and returns a dict shaped like
 `contracts/fixtures/simulation_metrics.json` (`SimulationMetrics`). The baseline is "call
-everyone" (an agent call for every account); `as_of_month` is the experiment month; `illustrative`
-is `true`.
+everyone" (an agent call for every account); `as_of_month` is the last month of the pool;
+`illustrative` is `true`. Its interface is unchanged by pooling.
 
-**Acceptance (seed 42, 10,000 customers, 2026-06):**
+**Acceptance (seed 42, 10,000 customers, pool 2026-01..2026-06):**
 
 | Strategy | Contacts | NPA rate | Cure rate | Cost |
 |---|---|---|---|---|
-| Call everyone (agent call) | 1,529 | 38.9% | 38.3% | ₹91,740 |
-| Oracle (chat with true persuadables only) | 693 | 35.6% (−8.6%) | 46.0% | ₹3,465 |
-| Random 693 accounts, chat | 693 | 39.6% (+1.9%) | 36.4% | ₹3,465 |
+| Call everyone (agent call) | 2,120 | 37.9% | 40.4% | ₹1,27,200 |
+| Oracle (chat with true persuadables only) | 896 | 33.3% (−12.2%) | 48.4% | ₹4,480 |
+| Random 896 accounts, chat | 896 | 37.0% (−2.5%) | 40.6% | ₹4,480 |
 
 With known groups the oracle beats calling everyone on both NPA and cost; random targeting at the
-same budget does not reduce NPA. So the simulator has signal for WS2's uplift model to find.
+same budget gets only a small fraction of that NPA gain. So the simulator has signal for WS2's uplift model to find.
 These outcomes are a separate simulation; they do not rewrite the statement history after the
 experiment month.
 

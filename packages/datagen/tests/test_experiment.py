@@ -16,6 +16,7 @@ from datagen.experiment import (
     build_experiment,
     cure_probability,
     oracle_policy,
+    pool_months,
     random_policy,
     run_experiment,
     simulate_policy,
@@ -46,8 +47,8 @@ def big(tmp_path_factory: pytest.TempPathFactory) -> tuple[pd.DataFrame, pd.Data
 def test_experiment_table_matches_contract(big: tuple[pd.DataFrame, pd.DataFrame]) -> None:
     experiment, _ = big
     validate(experiment, "experiment")
-    assert experiment["month"].eq("2026-06").all()
-    assert experiment["account_id"].is_unique
+    assert experiment["month"].between("2026-01", "2026-06").all()  # 6-month pool
+    assert experiment["account_id"].is_unique and experiment["customer_id"].is_unique
 
 
 def test_treatments_split_exactly_20_percent(big: tuple[pd.DataFrame, pd.DataFrame]) -> None:
@@ -175,3 +176,46 @@ def test_run_experiment_cli_step(small_written: Path, small_cfg: DatagenConfig) 
     out = simulate_policy(exp[["account_id"]].assign(treatment="reminder"), data_dir=small_written)
     assert out["ours"]["contacts_made"] == len(exp)
     assert np.isclose(out["ours"]["collection_cost_paise"], 200 * len(exp))
+
+
+def _labels(data: GeneratedData) -> pd.DataFrame:
+    return build_labels(data.account_months, data.shocks, data.behaviour, data.label_horizon)
+
+
+def test_pool_months() -> None:
+    assert pool_months("2026-06", 6) == [f"2026-0{m}" for m in range(1, 7)]
+    assert pool_months("2026-06", 1) == ["2026-06"]
+    with pytest.raises(ValueError):
+        pool_months("2026-06", 0)
+
+
+def test_enrolled_once_at_first_at_risk_month(small_data: GeneratedData) -> None:
+    d = small_data
+    labels = _labels(d)
+    experiment, _ = build_experiment(
+        labels, d.account_months, d.shocks, d.behaviour, "2026-06", 42, n_months=6
+    )
+    at_risk = labels[labels["month"].between("2026-01", "2026-06")]
+    at_risk = at_risk[at_risk["segment_truth"] != "not_at_risk"]
+    first = at_risk.groupby("account_id")["month"].min()
+    got = experiment.set_index("account_id")["month"]
+    pd.testing.assert_series_equal(got.sort_index(), first.sort_index(), check_names=False)
+
+
+def test_pooling_adds_rows_and_one_month_is_the_old_design(small_data: GeneratedData) -> None:
+    d = small_data
+    labels = _labels(d)
+    one, _ = build_experiment(labels, d.account_months, d.shocks, d.behaviour, "2026-06", 42, 1)
+    six, _ = build_experiment(labels, d.account_months, d.shocks, d.behaviour, "2026-06", 42, 6)
+    june = labels[(labels["month"] == "2026-06") & (labels["segment_truth"] != "not_at_risk")]
+    assert set(one["account_id"]) == set(june["account_id"])
+    assert len(six) > len(one)
+    counts = six["treatment"].value_counts()
+    assert counts.max() - counts.min() <= 1
+
+
+def test_simulate_policy_reports_last_pool_month(big: tuple[pd.DataFrame, pd.DataFrame]) -> None:
+    _, potential = big
+    out = simulate_policy(oracle_policy(potential), potential=potential)
+    assert out["as_of_month"] == "2026-06"
+    assert out["n_accounts"] == len(potential)
