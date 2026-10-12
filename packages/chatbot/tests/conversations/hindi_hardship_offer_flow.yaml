@@ -1,0 +1,44 @@
+scenario: "Hindi Hardship and Offer Flow"
+description: "Language switch to Hindi, business loss disclosure, affordability assessment, and offer presentation in Hindi."
+customer_id: "CUST-DEMO-PRIYA"
+turns:
+  - user: "नमस्ते"
+    expected_state: "CONSENT_NOTICE"
+    expected_reply_contains:
+      - "नमस्ते"
+      - "रिकॉर्ड"
+
+  - user: "हिन्दी"
+    expected_state: "HARDSHIP_DISCLOSURE"
+    expected_lang: "hi"
+    expected_reply_contains:
+      - "साझा करना"
+
+  - user: "व्यापार में भारी नुकसान हुआ है"
+    expected_state: "AFFORDABILITY"
+    expected_lang: "hi"
+    expected_flags:
+      - "hardship_classified_business_loss"
+    expected_reply_contains:
+      - "व्यापार"
+      - "मासिक आय"
+
+  - user: "मैं हर महीने 2000 रुपये दे सकता हूँ"
+    expected_state: "OPTIONS"
+    expected_lang: "hi"
+    expected_flags:
+      - "affordability_assessed"
+    expected_reply_contains:
+      - "योजना"
+      - "2,000"
+      - "1,180"
+
+  - user: "स्वीकार"
+    expected_state: "ACCEPTED"
+    expected_lang: "hi"
+    expected_flags:
+      - "offer_accepted"
+      - "rbi_454aa_grievance_attached"
+    expected_reply_contains:
+      - "स्वीकार करने के लिए धन्यवाद"
+      - "2,000"

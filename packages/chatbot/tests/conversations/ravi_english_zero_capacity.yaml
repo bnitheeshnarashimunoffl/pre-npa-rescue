@@ -1,0 +1,47 @@
+scenario: "Ravi Zero-Capacity Full Demo Flow (English)"
+description: "Job loss disclosure, zero repayment capacity, stop-ask, insurance referral, zero-capacity options, and 11:00 AM hardship officer callback booking in English."
+customer_id: "CUST-DEMO-RAVI"
+turns:
+  - user: "Hi"
+    expected_state: "CONSENT_NOTICE"
+    expected_lang: "en"
+    expected_reply_contains:
+      - "Ravi"
+      - "recorded"
+
+  - user: "English"
+    expected_state: "HARDSHIP_DISCLOSURE"
+    expected_lang: "en"
+    expected_reply_contains:
+      - "tell me what has been happening"
+
+  - user: "I lost my job 3 months ago and have zero income"
+    expected_state: "AFFORDABILITY"
+    expected_lang: "en"
+    expected_flags:
+      - "hardship_classified_job_loss"
+    expected_reply_contains:
+      - "job loss"
+      - "monthly take-home income"
+
+  - user: "I can't pay even 500 rupees right now, I have zero capacity"
+    expected_state: "ZERO_CAPACITY"
+    expected_lang: "en"
+    expected_flags:
+      - "zero_capacity_detected"
+      - "insurance_cover_referred"
+    expected_reply_contains:
+      - "will not ask you for payments right now"
+      - "insurance cover"
+      - "ℹ️"
+
+  - user: "Please book the 11:00 AM slot with the hardship officer"
+    expected_state: "HANDOFF"
+    expected_lang: "en"
+    expected_flags:
+      - "callback_booked"
+      - "rbi_454aa_grievance_attached"
+    expected_reply_contains:
+      - "11:00 AM"
+      - "tell your story once"
+      - "@"

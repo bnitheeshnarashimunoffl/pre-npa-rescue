@@ -24,6 +24,7 @@ Multilingual (English, Tamil, Hindi) hardship chatbot library designed for empat
 - `state.py`: `ConversationState` model and `InMemorySessionStore` implementing `SessionStore`.
 - `i18n/`: String bundles for `en`, `ta`, and `hi` with parameter interpolation and fallback.
 - `tests/fakes.py`: Provider test doubles loaded from `contracts/fixtures/`.
+- `tests/conversations/`: Scripted YAML multi-turn conversation scenarios (Priya Tamil full flow, Ravi English zero-capacity, Hindi business flow, Complaint interrupt, Bereavement outreach pause, Severe distress intervention, and Prompt injection attack).
 
 ## Running Checks
 ```bash

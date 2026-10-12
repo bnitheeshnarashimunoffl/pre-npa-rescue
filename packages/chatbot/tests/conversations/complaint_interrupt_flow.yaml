@@ -1,0 +1,24 @@
+scenario: "Complaint Interrupt and Redressal Flow"
+description: "Global complaint interrupt with IS/ISO 10002:2018 docket generation, 30-day timeline, RBI Ombudsman advice, and dialogue resume."
+customer_id: "CUST-DEMO-PRIYA"
+turns:
+  - user: "Hello"
+    expected_state: "CONSENT_NOTICE"
+    expected_reply_contains:
+      - "பதிவு"
+
+  - user: "I want to lodge a formal complaint about agent harassment and threatening calls"
+    expected_state: "COMPLAINT"
+    expected_flags:
+      - "complaint_reported"
+      - "harassment_reported"
+    expected_reply_contains:
+      - "CMP-"
+      - "30"
+      - "cms.rbi.org.in"
+      - "14448"
+
+  - user: "Let's continue exploring relief options"
+    expected_state: "CONSENT_NOTICE"
+    expected_reply_contains:
+      - "விருப்பமே"

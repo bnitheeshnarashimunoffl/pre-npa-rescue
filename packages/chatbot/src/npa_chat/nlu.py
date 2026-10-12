@@ -356,7 +356,7 @@ class NLU:
             hardship_kind = "other"
             if any(k in lower for k in ["job", "வேலை", "नौकरी"]):
                 hardship_kind = "job_loss"
-            elif any(k in lower for k in ["medical", "hospital", "மருத்துவம்", "बीमार"]):
+            elif any(k in lower for k in ["medical", "hospital", "மருத்துவ", "மருத்துவம்", "बीमार"]):
                 hardship_kind = "medical"
             elif any(k in lower for k in ["business", "நஷ்டம்", "व्यापार"]):
                 hardship_kind = "business_loss"

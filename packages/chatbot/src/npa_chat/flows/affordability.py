@@ -169,6 +169,42 @@ def handle_affordability_turn(
             flags=["zero_capacity_detected"],
         )
 
+    # Check for direct capacity declaration (e.g. "I can pay 2000",
+    # "மாதம் 2000 ரூபாய் என்னால் செலுத்த முடியும்", "मैं हर महीने 2000 रुपये दे सकता हूँ")
+    direct_capacity_keywords = [
+        "can pay",
+        "able to pay",
+        "can afford",
+        "செலுத்த முடியும்",
+        "தர முடியும்",
+        "கொடுக்க முடியும்",
+        "दे सकता",
+        "दे सकती",
+        "सकता हूँ",
+        "सकती हूँ",
+    ]
+    if (
+        parsed_amount is not None
+        and parsed_amount > 0
+        and any(k in lower for k in direct_capacity_keywords)
+        and state.declared_income_paise is None
+    ):
+        state.declared_income_paise = parsed_amount
+        state.declared_expenses_paise = 0
+        state.max_monthly_payment_paise = parsed_amount
+        affordability = estimate_affordability(
+            customer_id=state.customer_id,
+            declared_income_paise=parsed_amount,
+            declared_expenses_paise=0,
+            dependants=state.dependants or 1,
+        )
+        return AffordabilityTurnResult(
+            reply_text="",
+            next_state=ChatState.OPTIONS,
+            affordability=affordability,
+            flags=["affordability_assessed", "affordability_confirmed"],
+        )
+
     # Step 1: Collecting income
     if state.declared_income_paise is None:
         if parsed_amount is not None:

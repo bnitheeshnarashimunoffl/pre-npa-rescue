@@ -39,7 +39,7 @@ class HardshipTurnResult:
 
 def is_pause_eligible(hardship_type: str | None) -> bool:
     """Return True if the hardship qualifies for immediate outreach pause under RBI para 454Y(6)."""
-    return hardship_type in (HARDSHIP_BEREAVEMENT, HARDSHIP_MEDICAL)
+    return hardship_type == HARDSHIP_BEREAVEMENT
 
 
 def classify_hardship(text: str, nlu_result: NLUResult | None = None) -> str:
@@ -101,6 +101,7 @@ def classify_hardship(text: str, nlu_result: NLUResult | None = None) -> str:
         "health",
         "accident",
         "icu",
+        "மருத்துவ",
         "மருத்துவம்",
         "மருத்துவமனை",
         "உடல்நிலை",
