@@ -89,8 +89,19 @@ Web app -> API -> policy engine -> conversation and human oversight
 ```
 
 The API depends on provider contracts rather than package internals. Shared JSON, API and
-Parquet interfaces live in [`contracts/`](contracts/README.md). Detailed Mermaid diagrams are
-planned in `docs/architecture.md` as the next task 8.3 deliverable.
+Parquet interfaces live in [`contracts/`](contracts/README.md). See the five detailed Mermaid
+views in the [architecture document](docs/architecture.md).
+
+## Demo and presentation
+
+- [Five-minute operator script](docs/demo_script.md)
+- [Slide-by-slide deck content](docs/deck/deck.md)
+- [Copy-ready RBI slide](docs/deck/rbi_slide.md)
+- [Copy-ready BIS slide](docs/deck/bis_slide.md)
+- [Judges’ FAQ](docs/faq_judges.md)
+
+These documents distinguish fixtures from measured results and retain evidence-path
+placeholders until the producing workstreams commit their final artifacts.
 
 ## Repository map
 
