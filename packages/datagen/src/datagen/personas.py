@@ -30,6 +30,7 @@ from datagen.statements import (
     PAY_AMOUNT,
     PAY_FULL,
     PAY_MIN,
+    PAY_MIN_FRAC,
     PAY_NONE,
     PAY_OLDEST,
     PAY_TOTAL_FRAC,
@@ -69,6 +70,8 @@ class Persona:
     shock: tuple[str, str | None, float, str | None] = ("none", None, 0.0, None)
     wont_pay_start: str | None = None
     facts: dict[str, Any] = field(default_factory=dict)
+    # Payment after the window (label horizon only); None = pay_default.
+    pay_after: Pay | None = None
 
     @property
     def customer_id(self) -> str:
@@ -122,6 +125,7 @@ PERSONAS: tuple[Persona, ...] = (
             "other": 1_500,
         },
         pay_default=(PAY_TOTAL_FRAC, 0.22, -4),
+        pay_after=(PAY_MIN_FRAC, 0.7, -1),
         pay={
             "2026-07": (PAY_MIN, 0, -2),
             "2026-08": (PAY_MIN, 0, -1),
@@ -186,6 +190,7 @@ PERSONAS: tuple[Persona, ...] = (
             "other": 1_000,
         },
         pay_default=(PAY_TOTAL_FRAC, 0.28, -3),
+        pay_after=(PAY_NONE, 0, 0),
         pay={"2026-07": (PAY_MIN, 0, -1), "2026-08": (PAY_NONE, 0, 0), "2026-09": (PAY_NONE, 0, 0)},
         spend_scale=[("2026-07", None, {"discretionary": 0.2, "travel": 0.0, "other": 0.5})],
         cash={"2026-07": 4_000},
@@ -243,6 +248,7 @@ PERSONAS: tuple[Persona, ...] = (
             "other": 4_000,
         },
         pay_default=(PAY_FULL, 0, -6),
+        pay_after=(PAY_FULL, 0, -5),
         pay={"2025-12": (PAY_FULL, 0, 6), "2026-09": (PAY_NONE, 0, 0)},
         facts={
             "story": "Pays in full every month; paid six days late once (2025-12) and forgot "
@@ -290,6 +296,7 @@ PERSONAS: tuple[Persona, ...] = (
             "other": 7_000,
         },
         pay_default=(PAY_TOTAL_FRAC, 0.35, -5),
+        pay_after=(PAY_NONE, 0, 0),
         pay={
             "2026-05": (PAY_MIN, 0, -1),
             "2026-06": (PAY_MIN, 0, -1),
@@ -345,6 +352,7 @@ PERSONAS: tuple[Persona, ...] = (
             "other": 1_500,
         },
         pay_default=(PAY_TOTAL_FRAC, 0.12, -3),
+        pay_after=(PAY_MIN, 0, -2),
         pay={
             "2025-08": (PAY_NONE, 0, 0),
             "2025-09": (PAY_MIN, 0, -2),
@@ -446,6 +454,7 @@ PERSONAS: tuple[Persona, ...] = (
             "other": 1_000,
         },
         pay_default=(PAY_TOTAL_FRAC, 0.20, -3),
+        pay_after=(PAY_OLDEST, 0, -1),
         pay={
             "2026-05": (PAY_MIN, 0, -1),
             "2026-06": (PAY_MIN, 0, -1),
@@ -506,6 +515,7 @@ PERSONAS: tuple[Persona, ...] = (
             "other": 3_000,
         },
         pay_default=(PAY_TOTAL_FRAC, 0.15, -3),
+        pay_after=(PAY_NONE, 0, 0),
         pay={
             "2025-12": (PAY_MIN, 0, -1),
             "2026-01": (PAY_MIN, 0, -1),
@@ -654,7 +664,11 @@ class ScriptedPolicy:
         return PaymentDecision(self.mode[:, t], self.frac[:, t], self.late[:, t], self.amount[:, t])
 
 
-def _scripts(personas: tuple[Persona, ...], months: list[str]) -> tuple[ScriptedPolicy, SpendPlan]:
+def _scripts(
+    personas: tuple[Persona, ...], months: list[str], extra: list[str]
+) -> tuple[ScriptedPolicy, SpendPlan]:
+    window = len(months)
+    months = months + extra
     n, t_len = len(personas), len(months)
     mode = np.zeros((n, t_len), dtype=np.int8)
     frac = np.zeros((n, t_len))
@@ -663,11 +677,17 @@ def _scripts(personas: tuple[Persona, ...], months: list[str]) -> tuple[Scripted
     cash = np.zeros((n, t_len), dtype=np.int64)
     count = np.zeros((n, t_len), dtype=np.int64)
     rng = np.random.default_rng(PERSONA_SEED)
-    noise = np.exp(0.08 * rng.standard_normal((n, t_len, len(PURCHASE_CATEGORIES))))
+    # Window noise first, label-horizon noise after: the window's draws never change.
+    noise = np.exp(0.08 * rng.standard_normal((n, window, len(PURCHASE_CATEGORIES))))
+    noise_extra = np.exp(0.08 * rng.standard_normal((n, len(extra), len(PURCHASE_CATEGORIES))))
+    noise = np.concatenate([noise, noise_extra], axis=1)
     for i, p in enumerate(personas):
         base_total = sum(p.spend.values())
         for t, m in enumerate(months):
-            mode[i, t], frac[i, t], late[i, t] = p.pay.get(m, p.pay_default)
+            if t >= window:
+                mode[i, t], frac[i, t], late[i, t] = p.pay_after or p.pay_default
+            else:
+                mode[i, t], frac[i, t], late[i, t] = p.pay.get(m, p.pay_default)
             for k, cat in enumerate(PURCHASE_CATEGORIES):
                 scale = 1.0
                 for start, end, mult in p.spend_scale:
@@ -714,11 +734,17 @@ def _solve_priya(run: Callable[[int, int], pd.DataFrame], months: list[str]) -> 
     raise RuntimeError("could not solve Priya's 2026-09 payment")  # pragma: no cover
 
 
-def build_personas(months: list[str]) -> dict[str, pd.DataFrame]:
-    """All persona tables (same columns as the generated tables)."""
+def build_personas(months: list[str], extra: list[str] | None = None) -> dict[str, pd.DataFrame]:
+    """All persona tables (same columns as the generated tables).
+
+    ``extra`` months are simulated after the window for the label horizon only; they are
+    returned as ``label_horizon`` (account, month, DPD, bucket) and never in the other tables.
+    """
     personas = PERSONAS
+    extra = extra or []
     accounts = _accounts(personas)
-    policy, plan = _scripts(personas, months)
+    policy, plan = _scripts(personas, months, extra)
+    all_months = months + extra
     priya = next(i for i, p in enumerate(personas) if p.key == "PRIYA")
     t_as_of = months.index(AS_OF)
     k_other = PURCHASE_CATEGORIES.index("other")
@@ -729,12 +755,18 @@ def build_personas(months: list[str]) -> dict[str, pd.DataFrame]:
         purchases = plan.purchases.copy()
         purchases[priya, t_as_of, k_other] += nudge * 100
         p2 = SpendPlan(purchases, plan.cash_advance, plan.txn_count)
-        am, spend = simulate_statements(accounts, months, policy, p2)
+        am, spend = simulate_statements(accounts, all_months, policy, p2)
         spend_frames["spend"] = spend
         return am
 
-    account_months = _solve_priya(run, months)
-    monthly_spend = spend_frames["spend"]
+    full = _solve_priya(run, months)
+    inside = full["month"] <= months[-1]
+    account_months = full[inside].reset_index(drop=True)
+    label_horizon = full.loc[~inside, ["account_id", "month", "dpd", "bucket"]].reset_index(
+        drop=True
+    )
+    spend = spend_frames["spend"]
+    monthly_spend = spend[spend["month"] <= months[-1]].reset_index(drop=True)
 
     customers = pd.DataFrame(
         [{"customer_id": p.customer_id, "account_id": p.account_id, **p.customer} for p in personas]
@@ -796,6 +828,7 @@ def build_personas(months: list[str]) -> dict[str, pd.DataFrame]:
         "salary": salary,
         "shocks": shocks,
         "behaviour": behaviour,
+        "label_horizon": label_horizon,
     }
 
 

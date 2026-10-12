@@ -126,7 +126,7 @@ def test_persona_json(small_written: Path, small_cfg: DatagenConfig, tmp_path: P
     assert priya["customers"]["full_name"] == "Priya Subramanian"
     assert priya["protected_attributes"]["state"] == "Tamil Nadu"
     assert len(priya["account_months"]) == 24
-    assert len(priya["features"]) == 24 and len(priya["labels"]) == 21
+    assert len(priya["features"]) == 24 and len(priya["labels"]) == 24
     assert priya["transactions"] and priya["transactions"][0]["ts"].endswith("+00:00")
     sample = json.loads((tmp_path / PERSONAS_JSON).read_text(encoding="utf-8"))
     assert "transactions" not in sample["CUST-DEMO-PRIYA"]

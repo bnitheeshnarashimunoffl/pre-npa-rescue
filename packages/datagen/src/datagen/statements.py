@@ -86,6 +86,27 @@ class SpendPlan:
     txn_count: IntArray
 
 
+def carry_forward(plan: SpendPlan, extra: int) -> SpendPlan:
+    """Extend ``plan`` by ``extra`` months repeating its last month (no randomness).
+
+    Used for the label horizon beyond the window, so the in-window plan and its random draws
+    stay exactly as they are.
+    """
+    if extra <= 0:
+        return plan
+    return SpendPlan(
+        purchases=np.concatenate(
+            [plan.purchases, np.repeat(plan.purchases[:, -1:, :], extra, axis=1)], axis=1
+        ),
+        cash_advance=np.concatenate(
+            [plan.cash_advance, np.repeat(plan.cash_advance[:, -1:], extra, axis=1)], axis=1
+        ),
+        txn_count=np.concatenate(
+            [plan.txn_count, np.repeat(plan.txn_count[:, -1:], extra, axis=1)], axis=1
+        ),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Accounts:
     account_id: npt.NDArray[np.object_]

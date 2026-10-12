@@ -1240,6 +1240,27 @@
     "reaches_npa_90d": false,
     "rolls_forward_60d": false,
     "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-ANITA",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "forgot"
+   },
+   {
+    "account_id": "ACC-DEMO-ANITA",
+    "month": "2026-08",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "forgot"
+   },
+   {
+    "account_id": "ACC-DEMO-ANITA",
+    "month": "2026-09",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "forgot"
    }
   ],
   "protected_attributes": {
@@ -2642,6 +2663,27 @@
    {
     "account_id": "ACC-DEMO-ARJUN",
     "month": "2026-06",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-ARJUN",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-ARJUN",
+    "month": "2026-08",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-ARJUN",
+    "month": "2026-09",
     "reaches_npa_90d": false,
     "rolls_forward_60d": false,
     "segment_truth": "not_at_risk"
@@ -4050,6 +4092,27 @@
     "reaches_npa_90d": false,
     "rolls_forward_60d": true,
     "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-FATIMA",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-FATIMA",
+    "month": "2026-08",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-FATIMA",
+    "month": "2026-09",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "cant_pay"
    }
   ],
   "protected_attributes": {
@@ -5452,6 +5515,27 @@
    {
     "account_id": "ACC-DEMO-JOSEPH",
     "month": "2026-06",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-JOSEPH",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-JOSEPH",
+    "month": "2026-08",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-JOSEPH",
+    "month": "2026-09",
     "reaches_npa_90d": false,
     "rolls_forward_60d": false,
     "segment_truth": "not_at_risk"
@@ -6860,6 +6944,27 @@
     "reaches_npa_90d": false,
     "rolls_forward_60d": false,
     "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-KAVYA",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-KAVYA",
+    "month": "2026-08",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-KAVYA",
+    "month": "2026-09",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "not_at_risk"
    }
   ],
   "protected_attributes": {
@@ -8120,6 +8225,27 @@
     "reaches_npa_90d": false,
     "rolls_forward_60d": false,
     "segment_truth": "not_at_risk"
+   },
+   {
+    "account_id": "ACC-DEMO-MEERA",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-MEERA",
+    "month": "2026-08",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "forgot"
+   },
+   {
+    "account_id": "ACC-DEMO-MEERA",
+    "month": "2026-09",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "forgot"
    }
   ],
   "protected_attributes": {
@@ -9538,6 +9664,27 @@
     "reaches_npa_90d": false,
     "rolls_forward_60d": false,
     "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-PRIYA",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-PRIYA",
+    "month": "2026-08",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-PRIYA",
+    "month": "2026-09",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": false,
+    "segment_truth": "cant_pay"
    }
   ],
   "protected_attributes": {
@@ -10953,6 +11100,27 @@
     "reaches_npa_90d": false,
     "rolls_forward_60d": true,
     "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-RAVI",
+    "month": "2026-07",
+    "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-RAVI",
+    "month": "2026-08",
+    "reaches_npa_90d": true,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-RAVI",
+    "month": "2026-09",
+    "reaches_npa_90d": true,
+    "rolls_forward_60d": true,
+    "segment_truth": "cant_pay"
    }
   ],
   "protected_attributes": {
@@ -12358,6 +12526,27 @@
     "reaches_npa_90d": true,
     "rolls_forward_60d": false,
     "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-SURESH",
+    "month": "2026-07",
+    "reaches_npa_90d": true,
+    "rolls_forward_60d": false,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-SURESH",
+    "month": "2026-08",
+    "reaches_npa_90d": true,
+    "rolls_forward_60d": false,
+    "segment_truth": "cant_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-SURESH",
+    "month": "2026-09",
+    "reaches_npa_90d": true,
+    "rolls_forward_60d": false,
+    "segment_truth": "cant_pay"
    }
   ],
   "protected_attributes": {
@@ -13616,6 +13805,27 @@
     "account_id": "ACC-DEMO-VIKRAM",
     "month": "2026-06",
     "reaches_npa_90d": false,
+    "rolls_forward_60d": true,
+    "segment_truth": "wont_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-VIKRAM",
+    "month": "2026-07",
+    "reaches_npa_90d": true,
+    "rolls_forward_60d": true,
+    "segment_truth": "wont_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-VIKRAM",
+    "month": "2026-08",
+    "reaches_npa_90d": true,
+    "rolls_forward_60d": true,
+    "segment_truth": "wont_pay"
+   },
+   {
+    "account_id": "ACC-DEMO-VIKRAM",
+    "month": "2026-09",
+    "reaches_npa_90d": true,
     "rolls_forward_60d": true,
     "segment_truth": "wont_pay"
    }

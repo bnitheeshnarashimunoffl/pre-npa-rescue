@@ -22,7 +22,8 @@ def features(small_data: GeneratedData) -> pd.DataFrame:
 
 @pytest.fixture(scope="module")
 def labels(small_data: GeneratedData) -> pd.DataFrame:
-    return build_labels(small_data.account_months, small_data.shocks, small_data.behaviour)
+    d = small_data
+    return build_labels(d.account_months, d.shocks, d.behaviour, d.label_horizon)
 
 
 def test_columns_match_contract_exactly(features: pd.DataFrame) -> None:
@@ -65,8 +66,8 @@ def test_feature_sanity(features: pd.DataFrame) -> None:
 
 def test_labels(labels: pd.DataFrame, small_data: GeneratedData) -> None:
     validate(labels, "labels")
-    assert labels["month"].max() == "2026-06"  # 3-month horizon inside the window
-    assert len(labels) == len(small_data.customers) * 21
+    assert labels["month"].max() == "2026-09"  # every window month, via the label horizon
+    assert len(labels) == len(small_data.customers) * 24
     assert labels["rolls_forward_60d"].any()
     assert set(labels["segment_truth"]) <= {"forgot", "cant_pay", "wont_pay", "not_at_risk"}
     # Already-NPA accounts that stay NPA are reaches_npa_90d.

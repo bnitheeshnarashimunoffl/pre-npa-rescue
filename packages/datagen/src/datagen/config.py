@@ -36,6 +36,8 @@ class DatagenConfig(BaseSettings):
     end_month: str = Field(default=SIM_END_MONTH, pattern=_MONTH_PATTERN)
     write_transactions: bool = True
     experiment_month: str = Field(default="2026-06", pattern=_MONTH_PATTERN)
+    # Months simulated past end_month only to compute labels for the last window months.
+    label_horizon_months: int = Field(default=3, ge=0, le=12)
     samples_dir: Path | None = None  # if set, `features` also writes the committed samples
 
     @model_validator(mode="after")

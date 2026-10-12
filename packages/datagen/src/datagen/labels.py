@@ -6,8 +6,11 @@
 * ``segment_truth``: forgot / cant_pay / wont_pay / not_at_risk from the hidden behaviour type
   (``behaviour_types.parquet``, ``shocks.parquet``) for accounts at risk at ``t``.
 
-Only months with the full 3-month horizon inside the window get a row (``2024-10`` to
-``2026-06`` for the default calendar), so no label is computed from a truncated future.
+**Label horizon.** The generator keeps simulating ``LABEL_HORIZON_MONTHS`` (default 3) past the
+window and stores only those months' DPD and bucket in ``label_horizon.parquet``. With it, every
+window month gets a label (``2024-10`` to ``2026-09``); without it, only months whose full
+3-month horizon is inside the window (to ``2026-06``). A label is never computed from a truncated
+future. The horizon rows feed labels only: features never read them.
 """
 
 import numpy as np
@@ -29,7 +32,10 @@ def _month_index(values: pd.Series, months: list[str]) -> npt.NDArray[np.int64]:
 
 
 def build_labels(
-    account_months: pd.DataFrame, shocks: pd.DataFrame, behaviour: pd.DataFrame
+    account_months: pd.DataFrame,
+    shocks: pd.DataFrame,
+    behaviour: pd.DataFrame,
+    horizon: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     am = account_months.sort_values(["account_id", "month"], kind="stable").reset_index(drop=True)
     months = sorted(am["month"].unique())
@@ -37,12 +43,21 @@ def build_labels(
     n, t_len = accounts.size, len(months)
     if len(am) != n * t_len:
         raise ValueError("account_months must be a full account x month panel")
-    last = t_len - HORIZON_MONTHS  # labelled months: 0 .. last-1
-    if last <= 0:
-        raise ValueError("window too short for a 3-month label horizon")
-
     rank = am["bucket"].map(BUCKET_RANK).to_numpy().reshape(n, t_len)
     dpd = am["dpd"].to_numpy().reshape(n, t_len)
+    if horizon is not None and len(horizon):
+        # Months after the window (labels only): append their bucket and DPD to the panel.
+        hz = horizon.set_index(["account_id", "month"]).sort_index()
+        ext = sorted(horizon["month"].unique())
+        keys = pd.MultiIndex.from_product([accounts, ext], names=["account_id", "month"])
+        hz = hz.reindex(keys)
+        if hz["bucket"].isna().any():
+            raise ValueError("label horizon must cover every account for every extra month")
+        rank = np.hstack([rank, hz["bucket"].map(BUCKET_RANK).to_numpy().reshape(n, len(ext))])
+        dpd = np.hstack([dpd, hz["dpd"].to_numpy().reshape(n, len(ext))])
+    last = min(t_len, rank.shape[1] - HORIZON_MONTHS)  # labelled window months: 0 .. last-1
+    if last <= 0:
+        raise ValueError("window too short for a 3-month label horizon")
     pay_late = (
         (am["payment_date"] > am.groupby("account_id")["due_date"].shift(1))
         .to_numpy()

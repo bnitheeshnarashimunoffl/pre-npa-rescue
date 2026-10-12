@@ -14,7 +14,7 @@ import pandas as pd
 import pyarrow as pa
 
 from datagen.behaviour import NormalBehaviour, spend_plan
-from datagen.calendar import BILL_DAYS, month_range
+from datagen.calendar import BILL_DAYS, add_months, month_range
 from datagen.calibrate_uci import load_calibration
 from datagen.config import DatagenConfig
 from datagen.customers import generate_customers
@@ -34,7 +34,12 @@ from datagen.shocks import (
     behaviour_frame,
     shocks_frame,
 )
-from datagen.statements import PURCHASE_CATEGORIES, Accounts, simulate_statements
+from datagen.statements import (
+    PURCHASE_CATEGORIES,
+    Accounts,
+    carry_forward,
+    simulate_statements,
+)
 from datagen.transactions import write_transactions
 from datagen.validate import check_integrity, write_parquet, write_table
 
@@ -64,6 +69,16 @@ MONTHLY_SPEND_SCHEMA = pa.schema(
         pa.field("txn_count", pa.int64(), nullable=False),
     ]
 )
+HORIZON_COLUMNS = ("account_id", "month", "dpd", "bucket")
+LABEL_HORIZON_FILE = "label_horizon.parquet"
+LABEL_HORIZON_SCHEMA = pa.schema(
+    [
+        pa.field("account_id", pa.string(), nullable=False),
+        pa.field("month", pa.string(), nullable=False),
+        pa.field("dpd", pa.int32(), nullable=False),
+        pa.field("bucket", pa.string(), nullable=False),
+    ]
+)
 BEHAVIOUR_SCHEMA = pa.schema(
     [
         pa.field("customer_id", pa.string(), nullable=False),
@@ -86,6 +101,7 @@ class GeneratedData:
     salary: pd.DataFrame
     shocks: pd.DataFrame
     behaviour: pd.DataFrame
+    label_horizon: pd.DataFrame  # DPD/bucket after the window: labels only, never features
 
 
 def build(cfg: DatagenConfig, calibration: dict[str, Any] | None = None) -> GeneratedData:
@@ -122,11 +138,19 @@ def build(cfg: DatagenConfig, calibration: dict[str, Any] | None = None) -> Gene
     plan, base = spend_plan(customers["monthly_income_paise"].to_numpy(np.int64), months, spend_rng)
     plan = apply_spend_effects(plan, base, truth, spend_rng)
 
+    # Label horizon: keep simulating a few months past the window, only so labels exist for the
+    # last window months. Policies draw month by month, so the extra months come after every
+    # in-window draw; spend is carried forward without new draws. In-window output is unchanged.
+    extra = horizon_months(cfg)
     normal = NormalBehaviour.from_calibration(
         calibration, limit.size, rng_for(cfg.seed, STREAM_NORMAL)
     )
     policy = BehaviourModel(normal, truth, rng_for(cfg.seed, STREAM_OVERRIDES))
-    account_months, monthly_spend = simulate_statements(accounts, months, policy, plan)
+    full_am, full_spend = simulate_statements(
+        accounts, months + extra, policy, carry_forward(plan, len(extra))
+    )
+    account_months, horizon = split_horizon(full_am, cfg.end_month)
+    monthly_spend = full_spend[full_spend["month"] <= cfg.end_month].reset_index(drop=True)
 
     salary = generate_salary(customers, months, truth, rng_for(cfg.seed, STREAM_SALARY))
     generated = {
@@ -140,12 +164,31 @@ def build(cfg: DatagenConfig, calibration: dict[str, Any] | None = None) -> Gene
     }
     # Demo personas (CUST-DEMO-*) are appended after the random population; their histories
     # are scripted and identical for every seed.
-    personas = build_personas(months)
+    personas = build_personas(months, extra)
     merged = {
         k: pd.concat([v, personas[k]], ignore_index=True).astype(v.dtypes.to_dict())
         for k, v in generated.items()
     }
+    persona_horizon = personas["label_horizon"]
+    merged["label_horizon"] = pd.concat([horizon, persona_horizon], ignore_index=True).astype(
+        horizon.dtypes.to_dict()
+    )
     return GeneratedData(**merged)
+
+
+def horizon_months(cfg: DatagenConfig) -> list[str]:
+    """Months simulated after the window for labels only (``LABEL_HORIZON_MONTHS``)."""
+    return [add_months(cfg.end_month, k) for k in range(1, cfg.label_horizon_months + 1)]
+
+
+def split_horizon(
+    account_months: pd.DataFrame, end_month: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split simulated statements into the window and the label-only horizon (DPD, bucket)."""
+    inside = account_months["month"] <= end_month
+    window = account_months[inside].reset_index(drop=True)
+    horizon = account_months.loc[~inside, list(HORIZON_COLUMNS)].reset_index(drop=True)
+    return window, horizon
 
 
 def write(data: GeneratedData, cfg: DatagenConfig) -> list[Path]:
@@ -171,10 +214,14 @@ def write(data: GeneratedData, cfg: DatagenConfig) -> list[Path]:
         write_table(data.shocks, "shocks", out),
     ]
     for df, name, schema in (
-        (data.monthly_spend, "monthly_spend", MONTHLY_SPEND_SCHEMA),
-        (data.behaviour, "behaviour_types", BEHAVIOUR_SCHEMA),
+        (data.monthly_spend, "monthly_spend.parquet", MONTHLY_SPEND_SCHEMA),
+        (data.behaviour, "behaviour_types.parquet", BEHAVIOUR_SCHEMA),
+        (data.label_horizon, LABEL_HORIZON_FILE, LABEL_HORIZON_SCHEMA),
     ):
-        path = out / f"{name}.parquet"
+        path = out / name
+        if name == LABEL_HORIZON_FILE and df.empty:
+            path.unlink(missing_ok=True)  # horizon switched off: labels stop at end - 3 months
+            continue
         write_parquet(df, path, schema)
         paths.append(path)
     persona_txns = None

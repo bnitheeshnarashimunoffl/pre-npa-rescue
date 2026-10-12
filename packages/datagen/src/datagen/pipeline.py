@@ -10,7 +10,7 @@ import pandas as pd
 
 from datagen.config import DatagenConfig
 from datagen.features import build_features
-from datagen.generate import PERSONAS_JSON
+from datagen.generate import LABEL_HORIZON_FILE, PERSONAS_JSON
 from datagen.labels import build_labels
 from datagen.personas import to_records, write_json
 from datagen.validate import arrow_schema, table_spec, validate, write_parquet, write_table
@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 SAMPLE_ACCOUNTS = 200
 SAMPLE_MONTHS = 10  # 200 accounts x 10 consecutive labelled months = 2,000 rows
+SAMPLE_LAST_MONTH = "2026-06"  # pinned, so the committed samples stay byte-identical
 SAMPLE_STREAM = 20
 
 
@@ -26,6 +27,8 @@ def read_inputs(data_dir: Path) -> dict[str, pd.DataFrame]:
     names = ("customers", "account_months", "monthly_spend", "salary_credits", "shocks")
     tables = {name: pd.read_parquet(data_dir / f"{name}.parquet") for name in names}
     tables["behaviour_types"] = pd.read_parquet(data_dir / "behaviour_types.parquet")
+    horizon = data_dir / LABEL_HORIZON_FILE
+    tables["label_horizon"] = pd.read_parquet(horizon) if horizon.exists() else pd.DataFrame()
     for col in ("statement_date", "due_date", "payment_date"):
         tables["account_months"][col] = pd.to_datetime(tables["account_months"][col])
     tables["customers"]["card_open_date"] = pd.to_datetime(tables["customers"]["card_open_date"])
@@ -35,12 +38,13 @@ def read_inputs(data_dir: Path) -> dict[str, pd.DataFrame]:
 def make_samples(
     features: pd.DataFrame, labels: pd.DataFrame, seed: int
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Small committed samples for WS2 tests: 200 accounts x the last 10 labelled months.
+    """Small committed samples for WS2 tests: 200 accounts x 10 labelled months ending
+    ``SAMPLE_LAST_MONTH`` (2025-09..2026-06).
 
     Half the accounts are drawn from those that are ever past due in the sampled months, so
     both label classes appear; the rest at random. Features and labels share the same keys.
     """
-    months = sorted(labels["month"].unique())[-SAMPLE_MONTHS:]
+    months = sorted(m for m in labels["month"].unique() if m <= SAMPLE_LAST_MONTH)[-SAMPLE_MONTHS:]
     lab = labels[labels["month"].isin(months)]
     feat = features[features["month"].isin(months)]
     risky = feat.loc[feat["dpd"] > 0, "account_id"].unique()
@@ -62,7 +66,9 @@ def run_features(cfg: DatagenConfig) -> None:
     features = build_features(
         t["customers"], t["account_months"], t["monthly_spend"], t["salary_credits"]
     )
-    labels = build_labels(t["account_months"], t["shocks"], t["behaviour_types"])
+    labels = build_labels(
+        t["account_months"], t["shocks"], t["behaviour_types"], t["label_horizon"]
+    )
     write_table(features, "features", cfg.data_dir)
     write_table(labels, "labels", cfg.data_dir)
     logger.info("features rows=%d labels rows=%d", len(features), len(labels))

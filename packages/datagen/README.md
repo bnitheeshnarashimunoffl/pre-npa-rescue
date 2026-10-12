@@ -57,7 +57,8 @@ Contract tables: `customers`, `protected_attributes`, `account_months`, `salary_
 `shocks`, `transactions` (folder, one file per month), `features`, `labels`, plus
 `demo_personas.json` and `experiment`. Internal tables
 (not features, not contracts): `monthly_spend` (category totals per account-month),
-`behaviour_types` (hidden ground truth) and `experiment_potential` (hidden potential outcomes).
+`behaviour_types` (hidden ground truth), `label_horizon` (DPD/bucket for 3 months after the
+window, labels only) and `experiment_potential` (hidden potential outcomes).
 Same seed ⇒ byte-identical Parquet.
 
 ## Public API
