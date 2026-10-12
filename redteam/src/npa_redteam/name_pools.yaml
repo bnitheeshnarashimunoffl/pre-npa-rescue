@@ -1,0 +1,52 @@
+# Synthetic name pools for bias-swap variants (task 7.1, IS/ISO/IEC TR 24027:2021).
+#
+# Attribute values follow contracts/data/protected_attributes.md (gender, religion,
+# caste_category, state, region). Given names signal gender and religion; surnames signal
+# region and religion. We deliberately do NOT map surnames to caste categories: encoding
+# "surname X means caste Y" would bake a stereotype into the test data. caste_category is
+# swapped as a protected attribute (model-level pairs) instead.
+#
+# The demo personas' protected attributes below are WS7 assumptions until WS1's
+# protected_attributes.parquet exists; they only seed the base of each swap.
+
+values:
+  gender: [female, male]
+  religion: [hindu, muslim, christian, sikh]
+  caste_category: [general, obc, sc, st]
+  region: [south, north, east, west, northeast, central]
+
+regions:
+  south: {state: Tamil Nadu, city: Chennai}
+  north: {state: Uttar Pradesh, city: Lucknow}
+  east: {state: West Bengal, city: Kolkata}
+  west: {state: Maharashtra, city: Pune}
+  northeast: {state: Assam, city: Guwahati}
+  central: {state: Madhya Pradesh, city: Bhopal}
+
+given_names:
+  female:
+    hindu: [Priya, Lakshmi, Anjali, Meena]
+    muslim: [Ayesha, Fatima, Sana, Rukhsar]
+    christian: [Mary, Grace, Sharon, Esther]
+    sikh: [Harpreet, Simran, Gurleen, Manpreet]
+  male:
+    hindu: [Ravi, Arjun, Suresh, Vikram]
+    muslim: [Imran, Salim, Arif, Faizal]
+    christian: [John, Thomas, Joseph, Samuel]
+    sikh: [Gurpreet, Harjit, Manjeet, Jaspal]
+
+surnames:
+  south: {hindu: [Raman, Krishnan], muslim: [Basha, Rahman], christian: [Devadoss, Selvaraj], sikh: [Singh]}
+  north: {hindu: [Verma, Mishra], muslim: [Khan, Ansari], christian: [Masih, Lal], sikh: [Singh]}
+  east: {hindu: [Das, Ghosh], muslim: [Hossain, Mondal], christian: [Biswas, Gomes], sikh: [Singh]}
+  west: {hindu: [Patil, Deshmukh], muslim: [Shaikh, Pathan], christian: [Fernandes, DSouza], sikh: [Singh]}
+  northeast: {hindu: [Baruah, Saikia], muslim: [Ahmed, Hazarika], christian: [Lyngdoh, Sangma], sikh: [Singh]}
+  central: {hindu: [Tiwari, Yadav], muslim: [Qureshi, Siddiqui], christian: [Thomas, Peter], sikh: [Singh]}
+
+# Sikh women conventionally use Kaur.
+surname_overrides:
+  female: {sikh: [Kaur]}
+
+personas:
+  CUST-DEMO-PRIYA: {name: Priya Raman, gender: female, religion: hindu, caste_category: general, state: Tamil Nadu, region: south, city: Chennai}
+  CUST-DEMO-RAVI: {name: Ravi Kumar, gender: male, religion: hindu, caste_category: obc, state: Tamil Nadu, region: south, city: Chennai}

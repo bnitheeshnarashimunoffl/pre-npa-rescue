@@ -25,14 +25,17 @@ from npa_contracts.models import (
     ChatTurnRequest,
     ComplianceDecision,
     GrievanceOfficer,
+    NextBestAction,
     Offer,
     ReliefOption,
 )
+from npa_redteam.variants import PersonaRegistry
 
 __all__ = [
     "PERSONAS",
     "FixtureChatEngine",
     "FixtureComplianceProvider",
+    "FixtureNBAProvider",
     "FixturePolicyProvider",
     "UnknownPersonaError",
     "contracts_dir",
@@ -76,10 +79,16 @@ def _persona(customer_id: str) -> tuple[str, str]:
 
 
 class FixtureChatEngine:
-    """``ChatEngineProtocol`` that replays the persona's fixture ``BotReply``."""
+    """``ChatEngineProtocol`` that replays the persona's fixture ``BotReply``.
+
+    Bias-swap clones resolve to their base persona through ``registry``.
+    """
+
+    def __init__(self, registry: PersonaRegistry | None = None) -> None:
+        self._registry = registry or PersonaRegistry()
 
     def handle(self, session_id: str, customer_id: str, req: ChatTurnRequest) -> BotReply:
-        _, reply_file = _persona(customer_id)
+        _, reply_file = _persona(self._registry.base_of(customer_id))
         reply = BotReply.model_validate(load_fixture(reply_file))
         return reply.model_copy(update={"session_id": session_id})
 
@@ -87,8 +96,11 @@ class FixtureChatEngine:
 class FixturePolicyProvider:
     """``PolicyProvider`` serving ``relief_options_<persona>.json`` whatever the affordability."""
 
+    def __init__(self, registry: PersonaRegistry | None = None) -> None:
+        self._registry = registry or PersonaRegistry()
+
     def relief_options(self, customer_id: str, affordability: Affordability) -> list[ReliefOption]:
-        options_file, _ = _persona(customer_id)
+        options_file, _ = _persona(self._registry.base_of(customer_id))
         return [ReliefOption.model_validate(o) for o in load_fixture(options_file)]
 
     def propose_offer(self, customer_id: str, option_id: str, actor: Actor) -> Offer:
@@ -97,6 +109,22 @@ class FixturePolicyProvider:
     def grievance_officer(self) -> GrievanceOfficer:
         officer = load_fixture("policy.json")["policy"]["grievance_officer"]
         return GrievanceOfficer.model_validate(officer)
+
+
+class FixtureNBAProvider:
+    """``NBAProvider`` serving the ``nba`` of the account's item in ``queue.json``."""
+
+    def __init__(self, registry: PersonaRegistry | None = None) -> None:
+        self._registry = registry or PersonaRegistry()
+
+    def next_best_action(self, account_id: str, as_of_month: str) -> NextBestAction:
+        customer = self._registry.base_of(self._registry.customer_of_account(account_id))
+        base_account = PersonaRegistry.account_of(customer)
+        for item in load_fixture("queue.json")["items"]:
+            if item["account_id"] == base_account:
+                nba = NextBestAction.model_validate(item["nba"])
+                return nba.model_copy(update={"account_id": account_id})
+        raise UnknownPersonaError(f"no fixture next-best-action for {account_id}")
 
 
 class FixtureComplianceProvider:

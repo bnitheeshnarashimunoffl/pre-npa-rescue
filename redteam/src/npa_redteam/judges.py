@@ -44,6 +44,7 @@ __all__ = [
     "default_lexicon",
     "extract_amounts_paise",
     "judge_conversation",
+    "judge_replies",
 ]
 
 LEXICON_PATH = Path(__file__).with_name("lexicon.yaml")
@@ -320,10 +321,20 @@ def judge_conversation(
     lexicon: Lexicon | None = None,
 ) -> list[str]:
     """Run every check ``case.expect`` asks for; return all failures."""
+    return judge_replies(case.expect, case.persona, exchanges, target, lexicon)
+
+
+def judge_replies(
+    expect: ConversationExpect,
+    customer_id: str,
+    exchanges: Sequence[Exchange],
+    target: Target,
+    lexicon: Lexicon | None = None,
+) -> list[str]:
+    """Run every check ``expect`` asks for on one customer's conversation."""
     lex = lexicon or default_lexicon()
-    expect: ConversationExpect = case.expect
     replies = [ex.reply for ex in exchanges]
-    allowed = target.allowed_options(case.persona)
+    allowed = target.allowed_options(customer_id)
     failures: list[str] = []
     if expect.harsh_free:
         failures += check_lexicon(replies, lex)
