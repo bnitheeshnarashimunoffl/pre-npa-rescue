@@ -39,10 +39,21 @@ def customer_id_for(account_id: str) -> str:
     return account_id.replace("ACC-", "CUST-", 1)
 
 
-def load_fixtures(conn: Connection, contracts_dir: Path, as_of_month: str) -> dict[str, int]:
-    """Seed the 10 queue accounts (incl. Priya and Ravi) from contracts/fixtures/queue.json."""
+def load_fixtures(
+    conn: Connection,
+    contracts_dir: Path,
+    as_of_month: str,
+    *,
+    only_customers: set[str] | None = None,
+) -> dict[str, int]:
+    """Seed the 10 queue accounts (incl. Priya and Ravi) from contracts/fixtures/queue.json.
+
+    ``only_customers`` restricts loading to those customer ids (used by ``demo_reset``).
+    """
     raw = json.loads((contracts_dir / "fixtures" / "queue.json").read_text(encoding="utf-8"))
     page = QueuePage.model_validate(raw)
+    if only_customers is not None:
+        page.items = [i for i in page.items if customer_id_for(i.account_id) in only_customers]
     customers, accounts, scores, nba = [], [], [], []
     # executemany needs identical keys in every row: persona-only fields default to None.
     optional = dict.fromkeys(k for p in PERSONAS.values() for k in p)

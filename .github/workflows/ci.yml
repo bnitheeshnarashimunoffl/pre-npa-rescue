@@ -29,6 +29,7 @@ jobs:
       python: ${{ steps.filter.outputs.python }}
       contracts: ${{ steps.filter.outputs.contracts }}
       web: ${{ steps.filter.outputs.web }}
+      docker: ${{ steps.filter.outputs.docker }}
     steps:
       # On push to main every job runs anyway, so only PRs are path-filtered.
       - uses: dorny/paths-filter@v3
@@ -59,6 +60,13 @@ jobs:
               - 'apps/web/**'
               - 'contracts/openapi.yaml'
               - 'contracts/fixtures/**'
+            docker:
+              - *shared
+              - 'services/api/**'
+              - 'packages/contracts/**'
+              - 'contracts/**'
+              - 'docker-compose.yml'
+              - '.dockerignore'
 
   python:
     needs: changes
@@ -185,9 +193,44 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  docker:
+    # Builds the API image and runs the compose demo stack end to end (task 5.5).
+    needs: changes
+    if: needs.changes.outputs.docker == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start the demo stack (migrate + seed on start)
+        run: docker compose up -d --build --wait --wait-timeout 300
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          api=http://localhost:8000/api/v1
+          curl -fsS "$api/health" | tee health.json
+          jq -e '.status == "ok"' health.json
+          token=$(curl -fsS -X POST "$api/auth/login" -H 'content-type: application/json' \
+            -d '{"username":"collector1","password":"demo"}' | jq -r .access_token)
+          curl -fsS "$api/collector/queue" -H "Authorization: Bearer $token" \
+            | jq -e '.items | length == 10'
+          # demo reset twice: idempotent, clear success line
+          docker compose exec -T api python -m seed.demo_reset | tee reset1.txt
+          docker compose exec -T api python -m seed.demo_reset | tee reset2.txt
+          grep -q '^DEMO RESET OK' reset1.txt && grep -q '^DEMO RESET OK' reset2.txt
+          # entrypoint pass-through, as used by the Render cron job
+          docker compose run --rm -T api python -m app.retention --dry-run
+          # the container runs as the non-root app user
+          test "$(docker compose exec -T api id -u)" = "10001"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
   ci-passed:
     if: always()
-    needs: [changes, python, contracts, web, hygiene]
+    needs: [changes, python, contracts, web, docker, hygiene]
     runs-on: ubuntu-latest
     steps:
       - name: All required jobs passed or were skipped

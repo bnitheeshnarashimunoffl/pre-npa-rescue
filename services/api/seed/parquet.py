@@ -74,9 +74,16 @@ def _required(table: Table) -> set[str]:
 
 
 def _batches(
-    path: Path, table: Table, rename: dict[str, str] | None = None
+    path: Path,
+    table: Table,
+    rename: dict[str, str] | None = None,
+    *,
+    keep: tuple[str, set[str]] | None = None,
 ) -> Iterator[pa.RecordBatch]:
-    """Record batches of ``path`` restricted to (and renamed to) ``table``'s columns."""
+    """Record batches of ``path`` restricted to (and renamed to) ``table``'s columns.
+
+    ``keep=(column, values)`` keeps only rows whose ``column`` (source name) is in ``values``.
+    """
     rename = rename or {}
     pf = pq.ParquetFile(path)
     available = set(pf.schema_arrow.names)
@@ -89,13 +96,23 @@ def _batches(
     missing = _required(table) - {rename.get(c, c) for c in columns}
     if missing:
         raise SeedError(f"{path.name} is missing columns for {table.name}: {sorted(missing)}")
-    for batch in pf.iter_batches(batch_size=BATCH_ROWS, columns=columns):
+    read = list(columns)
+    if keep is not None and keep[0] not in read:
+        read.append(keep[0])
+    for batch in pf.iter_batches(batch_size=BATCH_ROWS, columns=read):
+        if keep is not None:
+            mask = pc.is_in(batch.column(keep[0]), value_set=pa.array(sorted(keep[1])))
+            batch = batch.filter(mask)
+            if keep[0] not in columns:
+                batch = batch.drop_columns([keep[0]])
         yield batch.rename_columns([rename.get(n, n) for n in batch.schema.names])
 
 
-def _scores_batches(path: Path) -> Iterator[pa.RecordBatch]:
+def _scores_batches(
+    path: Path, keep: tuple[str, set[str]] | None = None
+) -> Iterator[pa.RecordBatch]:
     # `reasons` may be a JSON string or a list<struct> column; store it as JSON text.
-    for batch in _batches(path, table_of(Score)):
+    for batch in _batches(path, table_of(Score), keep=keep):
         idx = batch.schema.get_field_index("reasons")
         col = batch.column(idx)
         if not (pa.types.is_string(col.type) or pa.types.is_large_string(col.type)):
@@ -103,12 +120,27 @@ def _scores_batches(path: Path) -> Iterator[pa.RecordBatch]:
         yield batch.set_column(idx, "reasons", pc.cast(col, pa.string()))
 
 
-def load_parquet(conn: Connection, data_dir: Path, scores_path: Path | None) -> dict[str, int]:
-    """Load WS1 tables (and WS2 scores if present). Raises SeedError on schema problems."""
+def load_parquet(
+    conn: Connection,
+    data_dir: Path,
+    scores_path: Path | None,
+    *,
+    only_customers: set[str] | None = None,
+) -> dict[str, int]:
+    """Load WS1 tables (and WS2 scores if present). Raises SeedError on schema problems.
+
+    ``only_customers`` restricts loading to those customers and their accounts (``demo_reset``).
+    """
+    by_customer = ("customer_id", only_customers) if only_customers is not None else None
+    by_account = (
+        ("account_id", {c.replace("CUST-", "ACC-", 1) for c in only_customers})
+        if only_customers is not None
+        else None
+    )
     customers = data_dir / "customers.parquet"
     counts = {
         "customers": load_batches(
-            conn, table_of(Customer), _batches(customers, table_of(Customer))
+            conn, table_of(Customer), _batches(customers, table_of(Customer), keep=by_customer)
         ),
         "accounts": load_batches(
             conn,
@@ -117,6 +149,7 @@ def load_parquet(conn: Connection, data_dir: Path, scores_path: Path | None) -> 
                 customers,
                 table_of(Account),
                 {"card_limit_paise": "limit_paise", "card_open_date": "opened_on"},
+                keep=by_customer,
             ),
         ),
     }
@@ -126,7 +159,11 @@ def load_parquet(conn: Connection, data_dir: Path, scores_path: Path | None) -> 
     ):
         path = data_dir / f"{name}.parquet"
         if path.exists():
-            counts[name] = load_batches(conn, table_of(model), _batches(path, table_of(model)))
+            counts[name] = load_batches(
+                conn, table_of(model), _batches(path, table_of(model), keep=by_customer)
+            )
     if scores_path is not None and scores_path.exists():
-        counts["scores"] = load_batches(conn, table_of(Score), _scores_batches(scores_path))
+        counts["scores"] = load_batches(
+            conn, table_of(Score), _scores_batches(scores_path, keep=by_account)
+        )
     return counts

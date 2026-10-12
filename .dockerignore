@@ -10,3 +10,8 @@ data/generated
 packages/models/artifacts
 **/node_modules
 apps/web/.next
+.pgdata
+apps/web
+**/.hypothesis
+**/htmlcov
+.coverage*

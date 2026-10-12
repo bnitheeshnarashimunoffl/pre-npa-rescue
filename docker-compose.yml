@@ -1,15 +1,18 @@
-# Local demo stack (owned by WS5). `docker compose up` -> postgres :5432, api :8000, web :3000.
-# Task 5.5 hardens this; the web service is enabled once WS6 provides apps/web/Dockerfile.
+# Local demo stack (owned by WS5, task 5.5).
+#   docker compose up --build      -> postgres :5432, api :8000 (web :3000 once WS6 adds its Dockerfile)
+# The api container migrates the database and seeds it on first start (SEED_ON_START), using WS1's
+# Parquet from ./data/generated when present, else the fixture accounts. Reset the demo with
+# `make demo-reset` (keeps the audit log). Wipe everything with `docker compose down -v`.
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: npa
-      POSTGRES_PASSWORD: npa
+      POSTGRES_PASSWORD: npa # local demo only; hosted credentials come from the platform
       POSTGRES_DB: npa
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -25,20 +28,27 @@ services:
     env_file:
       - path: .env
         required: false
-    environment:
+    environment: # overrides .env inside the container
       DATABASE_URL: postgresql+psycopg://npa:npa@postgres:5432/npa
-      DATA_DIR: /data/generated
-      MODEL_DIR: /models
-      CONTRACTS_DIR: /app/contracts
-      POLICY_PATH: /app/packages/rules/policies/bank_policy.yaml
+      RUN_MIGRATIONS: "true"
+      SEED_ON_START: "true"
+      WEB_CONCURRENCY: "1"
+      CORS_ORIGINS: http://localhost:3000
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - ./data/generated:/data/generated:ro
       - ./packages/models/artifacts:/models:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
 
   # web:
   #   build:
@@ -48,9 +58,10 @@ services:
   #     NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
   #     NEXT_PUBLIC_USE_MOCKS: "false"
   #   ports:
-  #     - "3000:3000"
+  #     - "127.0.0.1:3000:3000"
   #   depends_on:
-  #     - api
+  #     api:
+  #       condition: service_healthy
 
 volumes:
   pgdata:

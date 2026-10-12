@@ -1,0 +1,68 @@
+# Render Blueprint for the hosted demo API + Postgres (owned by WS5, task 5.5).
+# Render dashboard -> New -> Blueprint -> this repo. Steps and secrets: docs/setup.md "Hosted demo".
+# NOT YET VALIDATED against a live Render account (no access from the WS5 environment): check
+# plan names and fields in the dashboard preview before applying.
+
+databases:
+  - name: npa-db
+    databaseName: npa
+    user: npa
+    postgresMajorVersion: "16"
+    plan: basic-256mb # the free plan expires after 30 days; fine for a short hackathon demo
+
+services:
+  - type: web
+    name: npa-api
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeploy: false # deploy deliberately (demo-freeze)
+    envVars:
+      - key: DATABASE_URL # Render gives postgres://...; app.config switches it to psycopg
+        fromDatabase:
+          name: npa-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true # random, never in Git
+      - key: JWT_EXPIRE_MINUTES
+        value: "120"
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: SEED_ON_START # seeds an empty database on first start (fixture accounts)
+        value: "true"
+      - key: WEB_CONCURRENCY # in-memory rate limits are per process
+        value: "1"
+      - key: CORS_ORIGINS # the Vercel URL(s) of the web app, comma-separated
+        sync: false
+      - key: LLM_PROVIDER
+        value: mock
+      - key: LLM_MODEL
+        value: claude-sonnet-5-5
+      - key: ANTHROPIC_API_KEY # only if LLM_PROVIDER=anthropic
+        sync: false
+      - key: AS_OF_MONTH
+        value: "2026-09"
+      - key: TZ_BUSINESS
+        value: Asia/Kolkata
+      - key: LOG_LEVEL
+        value: INFO
+
+  # RBI RBC Directions para 454P: purge call/chat records older than 180 days, daily at
+  # 02:00 IST (20:30 UTC). Same image; the entrypoint runs the given command as a one-off job.
+  - type: cron
+    name: npa-retention
+    runtime: docker
+    plan: starter
+    region: singapore
+    schedule: "30 20 * * *"
+    dockerfilePath: ./services/api/Dockerfile
+    dockerContext: .
+    dockerCommand: python -m app.retention
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: npa-db
+          property: connectionString

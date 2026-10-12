@@ -6,7 +6,7 @@ SHELL := /bin/sh
 .DEFAULT_GOAL := help
 API_PORT ?= 8000
 
-.PHONY: help setup data train migrate seed dev-db api web test lint format typecheck contracts check-contracts redteam demo
+.PHONY: help setup data train migrate seed dev-db api web test lint format typecheck contracts check-contracts redteam demo demo-reset
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-16s %s\n", $$1, $$2}'
@@ -72,10 +72,13 @@ redteam: ## Run the red-team harness against the local API (WS7)
 	@if uv run python -c "import npa_redteam.cli" 2>/dev/null; then uv run npa-redteam run; \
 	else echo "[redteam] red-team harness not available yet (WS7 task 7.1)"; fi
 
-demo: ## docker compose up + seed + print URLs
+demo: ## docker compose up (the api migrates + seeds on first start) and print URLs
 	@if ! command -v docker >/dev/null 2>&1; then echo "[demo] docker not installed"; exit 0; fi
-	docker compose up -d --build
-	@if [ -f services/api/seed/__main__.py ]; then docker compose exec api python -m seed; \
-	else echo "[demo] seed loader not available yet (WS5 task 5.2)"; fi
+	docker compose up -d --build --wait
 	@echo "API:  http://localhost:$(API_PORT)/docs"
 	@echo "Web:  http://localhost:3000 (once WS6 adds apps/web/Dockerfile)"
+
+demo-reset: ## Reset demo data to the seeded state (personas, users, policy); keeps audit_log
+	@if command -v docker >/dev/null 2>&1 && [ -n "$$(docker compose ps -q --status running api 2>/dev/null)" ]; then \
+		docker compose exec -T api python -m seed.demo_reset; \
+	else uv run python -m seed.demo_reset; fi

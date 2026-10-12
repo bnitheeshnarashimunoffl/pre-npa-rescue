@@ -44,7 +44,8 @@ Run from the repo root. These work in PowerShell, bash and zsh.
 | `make seed` | migrate, then `uv run python -m seed` (add `--reset` to replace existing rows) |
 | `make web` | `pnpm -C apps/web dev` (once WS6 ships) |
 | `make redteam` | `uv run npa-redteam run` (once WS7 ships) |
-| `make demo` | `docker compose up -d --build` then seed (task 5.5) |
+| `make demo` | `docker compose up -d --build --wait` (the api migrates and seeds on first start) |
+| `make demo-reset` | `docker compose exec -T api python -m seed.demo_reset` (or `uv run python -m seed.demo_reset` without Docker) |
 
 Running one package's tests: `uv run pytest packages/rules/tests`.
 Adding a dependency to your package: `uv add --package npa-rules pyyaml`.
@@ -137,9 +138,10 @@ uv run python -m app.retention --dry-run   # counts only (still audited)
 uv run python -m app.retention             # delete contact_events / chat turns older than 180 days
 ```
 
-Schedule it daily: a cron entry (`0 2 * * * cd /app && python -m app.retention`), a Render cron
-job running the same command, or a scheduled GitHub Actions workflow with `DATABASE_URL` from
-secrets (set up in task 5.5). `--days` can lengthen retention but never shorten it below 180.
+It runs daily on the hosted demo as the Render cron job `npa-retention` (02:00 IST, see
+`render.yaml`). Elsewhere, schedule `python -m app.retention` once a day (cron, or
+`docker compose run --rm api python -m app.retention`). `--days` can lengthen retention but never
+shorten it below 180.
 
 ## API (task 5.1)
 
@@ -161,11 +163,81 @@ database is unreachable) and, per provider, whether it is `real` or a `fixture` 
 See `.env.example` (A11). Never commit `.env`. CI always runs with `LLM_PROVIDER=mock` and
 `DATAGEN_N_CUSTOMERS=2000`, with no network calls from tests.
 
-## Hosting (task 5.5, planned)
+## Deployment (task 5.5)
 
-API + Postgres on **Render** (web service from `services/api/Dockerfile` + managed Postgres 16);
-web on **Vercel**. Secrets live in the platform env and GitHub Actions secrets only. Exact steps
-are added in task 5.5.
+> **Not yet run by WS5:** Docker is not installed on the WS5 machine and there is no Render or
+> Vercel access from it. The image, `docker compose up`, the demo-reset-in-container path and the
+> entrypoint pass-through are exercised by the CI `docker` job on Linux; `render.yaml` and the
+> Vercel steps below are untested until someone applies them. The Python parts (entrypoint,
+> demo reset, URL handling) are unit-tested locally on SQLite and Postgres.
+
+### Local demo stack (Docker)
+
+```bash
+docker compose up -d --build --wait     # postgres + api; api migrates and seeds on first start
+open http://localhost:8000/docs         # demo users: priya, ravi, collector1, officer1, admin1, auditor1 / demo
+make demo-reset                         # or: docker compose exec -T api python -m seed.demo_reset
+docker compose down -v                  # stop and delete the database volume
+```
+
+- The api container: non-root user (uid 10001), read-only root filesystem, all Linux
+  capabilities dropped, `no-new-privileges`, healthcheck on `/api/v1/health`, ports bound to
+  `127.0.0.1` only.
+- Startup (`python -m app.entrypoint`): wait for Postgres -> `alembic upgrade head`
+  (`RUN_MIGRATIONS`) -> seed an *empty* database (`SEED_ON_START`; WS1 Parquet from
+  `./data/generated` if present, else the 10 fixture accounts) -> uvicorn on `$PORT`.
+  `WEB_CONCURRENCY` stays 1 (rate limits are per process). Any other command given to the image
+  runs as-is (e.g. `docker compose run --rm api python -m app.retention`).
+
+### `make demo-reset` (issue #83)
+
+One command between demo runs; safe to repeat; prints `DEMO RESET OK (...)` or
+`DEMO RESET FAILED: ...` (exit 1).
+
+- Clears: chat sessions and turns, callbacks, complaints, offers, contact events and flags,
+  red-team runs, policy versions, users.
+- Re-seeds: the Priya and Ravi persona rows (profile, statements, scores, queue entry) from the
+  same source as the seed, the six demo users (password `demo`) and the seed bank policy.
+- Keeps: every non-demo customer as seeded, and the **audit log** (append-only evidence; the
+  reset is recorded in it as `demo.reset`).
+- Takes seconds even with 5 lakh customers (only persona rows are reloaded). On an empty,
+  migrated database it runs the full seed instead.
+
+### Hosted demo: API + Postgres on Render
+
+1. Render dashboard -> **New -> Blueprint** -> select this repository. Render reads
+   `render.yaml`: web service `npa-api` (Docker, `services/api/Dockerfile`, health check
+   `/api/v1/health`), Postgres 16 `npa-db`, and cron job `npa-retention` (daily 02:00 IST).
+   Region: Singapore.
+2. In the preview, set the secrets the blueprint leaves blank:
+   - `CORS_ORIGINS` = the Vercel URL(s) of the web app, comma-separated
+     (e.g. `https://pre-npa-rescue.vercel.app`);
+   - `ANTHROPIC_API_KEY` only if `LLM_PROVIDER` is switched to `anthropic`.
+   `JWT_SECRET` is generated by Render; `DATABASE_URL` comes from `npa-db` (its `postgres://`
+   scheme is converted to `postgresql+psycopg://` by the app).
+3. Apply. The first deploy migrates and seeds the empty database. `autoDeploy` is off: deploy a
+   chosen commit (e.g. the `demo-freeze` tag) with **Manual Deploy**.
+4. Check `https://<npa-api>.onrender.com/api/v1/health` -> `"status": "ok"`.
+5. Reset the hosted demo: Render shell on `npa-api` -> `python -m seed.demo_reset`.
+
+Plans: the web service and cron job need a paid instance type (cron jobs are not available on
+the free tier); Postgres `basic-256mb`. Never put secrets in Git; GitHub Actions secrets are only
+needed if a workflow deploys (none does yet).
+
+### Hosted demo: web on Vercel (WS6 app)
+
+1. Vercel -> **Add New Project** -> import this repository; **Root Directory** `apps/web`;
+   framework Next.js; install command `pnpm install --frozen-lockfile`.
+2. Environment variables (Production):
+   - `NEXT_PUBLIC_API_BASE_URL` = `https://<npa-api>.onrender.com/api/v1`
+   - `NEXT_PUBLIC_USE_MOCKS` = `false`
+3. Deploy, then add the Vercel URL to `CORS_ORIGINS` on Render and redeploy the API.
+
+### Performance targets
+
+API p95 < 300 ms for non-chat routes on 5 lakh customers; chat turn p95 < 4 s with the real LLM.
+Measured so far: the 5 lakh seed loads in about 4 minutes; route latency at that size is measured
+after the real providers are wired (phase-2 integration).
 
 ---
 
