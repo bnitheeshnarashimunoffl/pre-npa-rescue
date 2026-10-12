@@ -20,7 +20,7 @@
 # (npa_rules.disclosures) and the truthful denials in tests/test_compliance_guard.py must
 # always pass: tests enforce both directions.
 
-version: "2026.10-v2"
+version: "2026.10-v3"
 rules:
   - rule_id: RBI-454Z-ABUSIVE
     description: Abusive or insulting language about the borrower
@@ -73,8 +73,9 @@ rules:
       en:
         - '(?<!not )(?<!never )(?<!n''t )\b(tell|inform|call|contact|message|notify) your (employer|boss|manager|colleagues?|co-?workers?|neighbou?rs?|relatives?|friends?|family)\b'
         - '\byour (employer|boss|manager|colleagues?|neighbou?rs?|relatives?) will (be told|be informed|know|find out)\b'
-      hi: ['(आपके|तुम्हारे) (बॉस|मालिक|सहकर्मियों|पड़ोसियों|रिश्तेदारों|परिवार|ऑफिस) को (बताएंगे|बता देंगे|फ़ोन करेंगे|फोन करेंगे)']
-      ta: ['உங்கள் (முதலாளி|மேலாளர்|சக ஊழியர்கள்|அண்டை வீட்டார்|உறவினர்கள்|குடும்பத்தினர்)(க்கு|இடம்) (சொல்வோம்|தெரிவிப்போம்)']
+      # hi/ta: affirmative verb forms only; "को नहीं बताएंगे" / "சொல்ல மாட்டோம்" do not match.
+      hi: ['(आपके|तुम्हारे) (बॉस|मालिक|नियोक्ता|मैनेजर|सहकर्मियों|पड़ोसियों|रिश्तेदारों|परिवार(वालों)?|घरवालों|ऑफिस|दफ़्तर|दफ्तर) (को (बताएंगे|बताएँगे|बता देंगे|सूचित करेंगे|फ़ोन करेंगे|फोन करेंगे)|से (संपर्क करेंगे|बात करेंगे))']
+      ta: ['உங்கள் (முதலாளி|மேலாளர்|சக ஊழியர்|அண்டை வீட்டார்|உறவினர்|குடும்பத்தினர்|அலுவலக)\S*\s+(நாங்கள்\s+)?(சொல்வோம்|தெரிவிப்போம்|தொடர்பு கொள்வோம்|அழைப்போம்|போன் செய்வோம்)']
       xx: ['\b(boss|rishtedaron|padosiyon) ko (batayenge|bata denge)\b']
 
   - rule_id: RBI-454Z-SHAMING

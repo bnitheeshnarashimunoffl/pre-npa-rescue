@@ -192,6 +192,15 @@ def test_reload_policy(policy: Policy) -> None:
         ("போலீஸ் உங்கள் வீட்டுக்கு வரும்.", Lang.TA, "RBI-454Z-THREAT"),
         ("உங்கள் குடும்பம் இதைக் கட்ட வேண்டும்.", Lang.TA, "RBI-454Z-MISLEADING"),
         ("உங்கள் முதலாளிக்கு சொல்வோம்.", Lang.TA, "RBI-454Z-THIRD-PARTY"),
+        ("We will contact your employer.", Lang.EN, "RBI-454Z-THIRD-PARTY"),
+        ("हम आपके नियोक्ता को बता देंगे।", Lang.HI, "RBI-454Z-THIRD-PARTY"),
+        ("हम आपके नियोक्ता से संपर्क करेंगे।", Lang.HI, "RBI-454Z-THIRD-PARTY"),
+        ("हम आपके घरवालों को फोन करेंगे।", Lang.HI, "RBI-454Z-THIRD-PARTY"),
+        ("உங்கள் முதலாளியிடம் சொல்வோம்.", Lang.TA, "RBI-454Z-THIRD-PARTY"),
+        ("உங்கள் முதலாளியை நாங்கள் தொடர்பு கொள்வோம்.", Lang.TA, "RBI-454Z-THIRD-PARTY"),
+        ("உங்கள் உறவினர்களுக்கு தெரிவிப்போம்.", Lang.TA, "RBI-454Z-THIRD-PARTY"),
+        ("नहीं भरा तो आप जेल जाएंगे।", Lang.HI, "RBI-454Z-MISLEADING"),
+        ("பணம் கட்டவில்லை என்றால் சிறைக்கு அனுப்புவோம்.", Lang.TA, "RBI-454Z-MISLEADING"),
     ],
 )
 def test_harsh_text_blocked(policy: Policy, text: str, lang: Lang, rule: str) -> None:
@@ -258,6 +267,13 @@ TRUTHFUL_DENIALS = [
     ("हम आपके बॉस को नहीं बताएंगे।", Lang.HI),
     ("போலீஸ் வராது. நீங்கள் கைது செய்யப்பட மாட்டீர்கள்.", Lang.TA),
     ("உங்கள் முதலாளிக்கு சொல்ல மாட்டோம்.", Lang.TA),
+    # Reassurances about contacting third parties, in every language.
+    ("We will never contact your employer.", Lang.EN),
+    ("We won't tell your family or your neighbours.", Lang.EN),
+    ("हम आपके नियोक्ता से कभी संपर्क नहीं करेंगे।", Lang.HI),
+    ("हम आपके घरवालों को कुछ नहीं बताएंगे।", Lang.HI),
+    ("உங்கள் முதலாளியை நாங்கள் ஒருபோதும் தொடர்பு கொள்ள மாட்டோம்.", Lang.TA),
+    ("உங்கள் உறவினர்களுக்கு எதுவும் தெரிவிக்க மாட்டோம்.", Lang.TA),
     ("Police nahi aayegi, aap jail nahi jaoge.", Lang.HI),
 ]
 
