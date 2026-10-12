@@ -11,6 +11,7 @@ from datetime import UTC, date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from npa_contracts.constants import COMPLAINT_SLA_DAYS
 from npa_contracts.enums import Actor, Channel, ComplaintStatus, Lang, Role
 from npa_contracts.models import (
     Affordability,
@@ -135,8 +136,16 @@ class FakeComplaintSink:
         raw = _load_fixture("complaint.json")
         self._template = Complaint.model_validate(raw)
 
-    def open(self, customer_id: str, category: str, text: str, lang: Lang) -> Complaint:
-        now = datetime.now(UTC)
+    def open(
+        self,
+        customer_id: str,
+        category: str,
+        text: str,
+        lang: Lang,
+        *,
+        at: datetime | None = None,
+    ) -> Complaint:
+        now = at if at is not None else datetime.now(UTC)
         docket = f"CMP-{now.strftime('%Y%m%d')}-{len(self.complaints) + 1:04d}"
         complaint = Complaint(
             docket_no=docket,
@@ -147,7 +156,7 @@ class FakeComplaintSink:
             status=ComplaintStatus.OPEN,
             escalation_level=0,
             created_at=now,
-            sla_due_at=now.replace(day=min(now.day + 30, 28)),
+            sla_due_at=now + timedelta(days=COMPLAINT_SLA_DAYS),
             grievance_officer=self._template.grievance_officer,
         )
         self.complaints.append(complaint)
@@ -177,7 +186,7 @@ class FakeCallbackScheduler:
             customer_id=customer_id,
             role=role,
             slot_start=slot_start,
-            slot_end=slot_start,
+            slot_end=slot_start + timedelta(minutes=30),
             summary=summary,
             created_at=now,
         )

@@ -1,7 +1,8 @@
 """Tests for fixture-backed provider fakes."""
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
+from npa_contracts.constants import COMPLAINT_SLA_DAYS
 from npa_contracts.enums import Actor, Channel, Lang, Role
 from npa_contracts.models import Affordability, ContactEvent
 from npa_contracts.providers import (
@@ -109,6 +110,17 @@ def test_fake_complaint_and_callback() -> None:
     )
     assert complaint.docket_no.startswith("CMP-")
     assert complaint.status == "open"
+    # Verify Complaint SLA delta is exactly 30 days
+    assert complaint.sla_due_at == complaint.created_at + timedelta(days=COMPLAINT_SLA_DAYS)
+    assert (complaint.sla_due_at - complaint.created_at).days == 30
+
+    # Month-boundary case (e.g. created on Jan 31 or Oct 31)
+    boundary_dt = datetime(2026, 1, 31, 10, 0, tzinfo=UTC)
+    complaint_boundary = complaint_sink.open(  # type: ignore[call-arg]
+        "CUST-DEMO-PRIYA", "fees_and_charges", "Late fee dispute", Lang.EN, at=boundary_dt
+    )
+    assert complaint_boundary.sla_due_at == boundary_dt + timedelta(days=COMPLAINT_SLA_DAYS)
+    assert (complaint_boundary.sla_due_at - boundary_dt).days == 30
 
     scheduler: CallbackScheduler = FakeCallbackScheduler()
     today = date(2026, 10, 15)
@@ -121,6 +133,9 @@ def test_fake_complaint_and_callback() -> None:
 
     cb = scheduler.book("CUST-DEMO-RAVI", slot_start, Role.HARDSHIP_OFFICER, "Summary")
     assert cb.customer_id == "CUST-DEMO-RAVI"
+    # Assert slot_end > slot_start and duration is exactly 30 minutes
+    assert cb.slot_end > cb.slot_start
+    assert cb.slot_end - cb.slot_start == timedelta(minutes=30)
 
 
 def test_fake_customer_context_provider() -> None:
