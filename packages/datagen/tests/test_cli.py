@@ -30,7 +30,7 @@ def test_command_is_required() -> None:
 
 
 def test_unimplemented_step_exits_non_zero() -> None:
-    assert cli.main(["features"]) == 2
+    assert cli.main(["experiment"]) == 2
 
 
 def test_all_runs_every_step_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
