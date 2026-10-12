@@ -71,7 +71,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 "**/tests/**" = ["T20"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["npa_contracts", "datagen", "npa_models", "npa_rules", "npa_chat", "app", "npa_redteam"]
+known-first-party = ["npa_contracts", "datagen", "npa_models", "npa_rules", "npa_chat", "app", "seed", "tests", "npa_redteam"]
 
 # ---------------------------------------------------------------- mypy
 [tool.mypy]
@@ -84,6 +84,7 @@ files = [
     "packages/rules/src",
     "packages/chatbot/src",
     "services/api/app",
+    "services/api/seed",
     "redteam/src",
     "scripts",
 ]
